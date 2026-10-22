@@ -1,0 +1,68 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fieldvisory",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-04-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": [
+      "/health",
+      "/auth/*",
+      "/api/*",
+      "/webhooks/*",
+      "/mcp",
+      "/oauth/*",
+      "/.well-known/*"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fieldvisory",
+      "database_id": "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID",
+      "migrations_dir": "./db/migrations"
+    }
+  ],
+  "vars": {
+    "SAFEPAY_ENV": "sandbox",
+    "SAFEPAY_API_BASE": "https://sandbox.api.getsafepay.com",
+    "APP_BASE_URL": "http://localhost:5173",
+    "LOG_RETENTION_DAYS": "90"
+  },
+  "triggers": {
+    "crons": ["0 3 * * *", "0 * * * *"]
+  },
+  "env": {
+    "production": {
+      "vars": {
+            "AI_MODEL": "gpt-6-luna",
+			"AI_PROVIDER": "openai",
+			"APP_BASE_URL": "https://tradesmatic.com",
+			"BREVO_NEW_SIGNUP_LIST_ID": "8",
+			"BREVO_SENDER_EMAIL": "noreply@tradesmatic.com",
+			"BREVO_SENDER_NAME": "Tradesmatic",
+			"BRIEFING_FROM_EMAIL": "briefings@tradesmatic.com",
+			"DEFAULT_TIMEZONE": "America/New_York",
+			"GOOGLE_CLIENT_ID": "980211207017-risgihuf4o6kqi8qc04cearg7svufpmr.apps.googleusercontent.com",
+			"RESEND_FROM_EMAIL": "Tradesmatic <noreply@tradesmatic.com>",
+			"SAFEPAY_API_BASE": "https://sandbox.api.getsafepay.com",
+			"SAFEPAY_ENV": "sandbox",
+			"SUPERADMIN_EMAILS": "mfaizanzahid@gmail.com",
+			"LOG_RETENTION_DAYS": "90"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "fieldvisory-db-prod",
+          "database_id": "ea04c13e-e371-4917-8d69-748724e2bebe",
+          "migrations_dir": "./db/migrations"
+        }
+      ],
+      "triggers": {
+        "crons": ["0 3 * * *", "0 * * * *"]
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+MCP_BASE_URL=http://localhost:8787
+MCP_TOKEN_PEPPER=replace-me
+MCP_ENCRYPTION_KEY=replace-with-32-byte-secret
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+DEFAULT_TIMEZONE=America/New_York
+BRIEFING_FROM_EMAIL=briefings@example.com

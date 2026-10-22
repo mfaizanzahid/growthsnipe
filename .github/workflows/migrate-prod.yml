@@ -1,0 +1,29 @@
+# Manual production D1 migration. Run from the Actions tab BEFORE deploying
+# schema changes (the deploy does not migrate automatically).
+#
+# Production deploys themselves come from Cloudflare Workers Builds (git
+# integration): a push to main builds and deploys. This workflow only applies
+# the database migration.
+#
+# Needs the repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+name: Migrate production D1
+
+on: workflow_dispatch
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: production-d1
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate:prod
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

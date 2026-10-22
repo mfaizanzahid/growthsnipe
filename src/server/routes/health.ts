@@ -1,0 +1,12 @@
+import { Hono } from "hono";
+import type { Env } from "../types";
+
+export const healthRoutes = new Hono<{ Bindings: Env }>();
+
+healthRoutes.get("/health", (c) =>
+  c.json({
+    ok: true,
+    service: "saas-billing-portal",
+    environment: c.env.SAFEPAY_ENV,
+  }),
+);

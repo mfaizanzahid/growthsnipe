@@ -1,0 +1,2 @@
+# ISN
+Read `docs/isn-contract.md` and the vendored `docs/isn.yaml` before writing ISN code. Base `https://{host}/{companyKey}/rest` (host + key configurable); HTTP Basic with access/secret keys (never expire, full user privileges — encrypt, never log). Check `{status: ok|error}` before reading payloads. ISN is order-native (`/orders`, `/order/{id}`); map fields only from observed live responses. Stub stays fail-closed until the read model is live-probed. Spec-listed writes are out of V1 scope.

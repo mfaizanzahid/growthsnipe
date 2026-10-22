@@ -1,0 +1,110 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "AGENTS.md",
+    "docs/agent-rules/*.md"
+  ],
+  "mcp": {
+    "cloudflare-docs": {
+      "type": "remote",
+      "url": "https://docs.mcp.cloudflare.com/mcp",
+      "enabled": true
+    },
+    "shadcn": {
+      "type": "local",
+      "command": [
+        "npx",
+        "shadcn@latest",
+        "mcp"
+      ],
+      "enabled": true
+    },
+    "resend": {
+      "type": "remote",
+      "url": "https://mcp.resend.com/mcp",
+      "enabled": true
+    },
+	"brevo-docs": {
+      "type": "remote",
+      "url": "https://developers.brevo.com/_mcp/server",
+      "enabled": true
+    },
+    "drizzle-orm": {
+      "type": "remote",
+      "url": "https://gitmcp.io/drizzle-team/drizzle-orm",
+      "enabled": true
+    },
+    "better-auth": {
+      "type": "remote",
+      "url": "https://mcp.better-auth.com/mcp",
+      "enabled": true
+    }
+  },
+  "permission": {
+    "edit": "allow",
+    "webfetch": "allow",
+    "bash": {
+      "*": "allow",
+      "git status *": "allow",
+      "git diff *": "allow",
+      "git log *": "allow",
+      "npm test*": "allow",
+      "npm run*": "allow",
+      "npm run typecheck*": "allow",
+      "npm run lint*": "allow",
+      "npm run build*": "allow",
+      "wrangler --version": "allow"
+    },
+    "cloudflare-docs_*": "allow"
+  },
+  "agent": {
+    "implementation-planner": {
+      "mode": "subagent"
+    },
+    "billing-specialist": {
+      "mode": "subagent"
+    },
+    "portal-frontend": {
+      "mode": "subagent"
+    },
+    "safepay-specialist": {
+      "mode": "subagent"
+    },
+    "cloudflare-specialist": {
+      "mode": "subagent"
+    },
+	"content-strategist": {
+      "mode": "subagent"
+    },
+    "spectora-specialist": {
+      "mode": "subagent"
+    },
+    "isn-specialist": {
+      "mode": "subagent"
+    },
+    "test-engineer": {
+      "mode": "subagent"
+    },
+    "security-reviewer": {
+      "mode": "subagent"
+    },
+    "mcp-engineer": {
+      "mode": "subagent"
+    },
+    "provider-engineer": {
+      "mode": "subagent"
+    },
+    "scheduler-engineer": {
+      "mode": "subagent"
+    },
+    "sidekick-intelligence": {
+      "mode": "subagent"
+    },
+    "ui-engineer": {
+      "mode": "subagent"
+    },
+    "orchestrator": {
+      "mode": "primary"
+    }
+  }
+}

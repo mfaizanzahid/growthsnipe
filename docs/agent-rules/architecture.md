@@ -1,0 +1,2 @@
+# Architecture
+One unified SaaS app (Tradesmatic): single dashboard shell, single auth/org model, single Worker, single D1. Billing & payments is one feature area; marketing pages + dynamic pricing (`GET /api/plans`) are part of the same app. MCP is the only customer-facing AI connection. Tenant context comes from authenticated principal, never tool arguments. Provider-specific details remain inside adapters.

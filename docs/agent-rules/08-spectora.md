@@ -1,0 +1,2 @@
+# Spectora
+Read `docs/spectora-contract.md` before writing Spectora code. Direct REST only (`GET {base}/v2/...`, Bearer API key — no MCP transport): flat query objects; page-based pagination (max 200); verified filters only (arrays serialize as repeated `key[]` params). Normalize JSON:API at the boundary; canonical word is `order` (Spectora says "inspections"). Throw `SpectoraApiError` on non-2xx. Our adapter stays read-only — fail closed. Never invent fields, tools, or params.

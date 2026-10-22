@@ -1,0 +1,25 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "radix-mira",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/react-app/styles.css",
+    "baseColor": "mist",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/react-app/components",
+    "utils": "@/react-app/lib/utils",
+    "ui": "@/react-app/components/ui",
+    "lib": "@/react-app/lib",
+    "hooks": "@/react-app/hooks"
+  },
+  "iconLibrary": "phosphor",
+  "rtl": false,
+  "menuColor": "default-translucent",
+  "menuAccent": "subtle",
+  "registries": {}
+}
