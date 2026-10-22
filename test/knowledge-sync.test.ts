@@ -14,7 +14,8 @@ import {
 } from "../src/server/sidekick/knowledge";
 
 const root = process.cwd();
-const read = (rel: string) => readFileSync(join(root, rel), "utf8");
+const normalize = (s: string) => s.replace(/\r\n/g, "\n");
+const read = (rel: string) => normalize(readFileSync(join(root, rel), "utf8"));
 
 /** knowledge.ts must mirror the Markdown sources (regenerate: npm run inline-docs). */
 describe("knowledge sync", () => {
@@ -31,7 +32,7 @@ describe("knowledge sync", () => {
   ];
   for (const [file, bundled] of cases) {
     it(`${file} matches the bundle`, () => {
-      expect(bundled).toBe(read(file));
+      expect(normalize(bundled)).toBe(read(file));
     });
   }
 });

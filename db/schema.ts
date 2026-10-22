@@ -129,10 +129,12 @@ export const plans = sqliteTable("plans", {
   currency: text("currency").notNull().default("USD"),
   active: integer("active").notNull().default(1),
   /** Plan limits: max users (NULL = unlimited), scheduled briefings allowed. */
-  maxUsers: integer("max_users"),
-  allowBriefings: integer("allow_briefings").notNull().default(1),
-  /** Comma-separated feature bullets (single source of truth for pricing + billing). */
-  features: text("features"),
+    maxUsers: integer("max_users"),
+    allowBriefings: integer("allow_briefings").notNull().default(1),
+    /** Contact-only plans are displayed but cannot be purchased (no self-serve checkout). */
+    contactOnly: integer("contact_only").notNull().default(0),
+    /** Comma-separated feature bullets (single source of truth for pricing + billing). */
+    features: text("features"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -367,7 +369,7 @@ export const paymentSessions = sqliteTable("payment_sessions", {
   createdAt: integer("created_at").notNull(),
 });
 
-/* Tradesmatic sidekick tables (single-table definitions live in
+/* GrowthSnipe sidekick tables (single-table definitions live in
  * src/server/db/schema.ts so MCP/scheduler code can import them without the
  * billing schema; re-exported here so the app Db, drizzle-kit, and migrations
  * see one unified schema). */

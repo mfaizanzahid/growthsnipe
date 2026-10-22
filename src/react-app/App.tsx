@@ -27,9 +27,6 @@ import { AdminSettings } from "./pages/admin/SettingsPage";
 import { ClientProfile } from "./pages/ClientProfile";
 import { AcceptInvitation } from "./pages/AcceptInvitation";
 import { Connections } from "./pages/Connections";
-import { McpAccess } from "./pages/McpAccess";
-import { Employees } from "./pages/Employees";
-import { Schedules } from "./pages/Schedules";
 import { BusinessProfile } from "./pages/BusinessProfile";
 import { AuditLog } from "./pages/AuditLog";
 import { NotFound } from "./pages/NotFound";
@@ -67,9 +64,6 @@ export const router = createBrowserRouter([
     children: [
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/connections", element: <Connections /> },
-      { path: "/mcp-access", element: <McpAccess /> },
-      { path: "/employees", element: <Employees /> },
-      { path: "/briefings-schedules", element: <Schedules /> },
       { path: "/business-profile", element: <BusinessProfile /> },
       { path: "/billing", element: <Billing /> },
       { path: "/audit", element: <AuditLog /> },
@@ -96,7 +90,7 @@ export function App() {
         const name = (d as { portal_name?: string } | null)?.portal_name;
         // Per-page marketing titles win: only apply the portal name while the
         // title is still the index.html default (slow fetch must not clobber).
-        if (name && (document.title === "Tradesmatic" || !document.title)) document.title = name;
+        if (name && (document.title === "GrowthSnipe" || !document.title)) document.title = name;
       })
       .catch(() => undefined);
   }, []);

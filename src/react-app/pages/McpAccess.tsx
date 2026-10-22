@@ -199,7 +199,7 @@ export function McpAccess() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">AI access</h1>
-          <p className="text-sm text-muted-foreground">Connect your AI client to your business data through Tradesmatic.</p>
+          <p className="text-sm text-muted-foreground">Connect your AI client to your business data through GrowthSnipe.</p>
         </div>
         <Skeleton className="h-32 w-full" />
       </div>
@@ -211,7 +211,7 @@ export function McpAccess() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">AI access</h1>
-          <p className="text-sm text-muted-foreground">Connect your AI client to your business data through Tradesmatic.</p>
+          <p className="text-sm text-muted-foreground">Connect your AI client to your business data through GrowthSnipe.</p>
         </div>
         <Card>
           <CardHeader>
@@ -237,7 +237,7 @@ export function McpAccess() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">AI access</h1>
-        <p className="text-sm text-muted-foreground">Connect your AI client to your business data through Tradesmatic.</p>
+        <p className="text-sm text-muted-foreground">Connect your AI client to your business data through GrowthSnipe.</p>
       </div>
 
       <Card>
@@ -245,7 +245,7 @@ export function McpAccess() {
           <CardTitle>How to connect your AI</CardTitle>
           <CardDescription>
             This is the MCP server URL — it is required to connect any AI. Paste it into your AI client when adding a
-            custom MCP server. It uses OAuth by default: sign in with your Tradesmatic account and pick the workspace
+            custom MCP server. It uses OAuth by default: sign in with your GrowthSnipe account and pick the workspace
             to authorize.
           </CardDescription>
         </CardHeader>

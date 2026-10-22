@@ -9,31 +9,29 @@ export function Terms() {
           <strong>Last Updated: September 27, 2026</strong>
         </p>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          These Terms of Service (&quot;Terms&quot;) govern your access to and use of Tradesmatic,
+          These Terms of Service (&quot;Terms&quot;) govern your access to and use of GrowthSnipe,
           a software-as-a-service platform operated by{" "}
-          <strong>Optasoft (Private) Limited</strong> (&quot;Optasoft&quot;, &quot;Tradesmatic&quot;,
+          <strong>Optasoft (Private) Limited</strong> (&quot;Optasoft&quot;, &quot;GrowthSnipe&quot;,
           &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;).
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          By creating an account, accessing Tradesmatic, starting a free trial, purchasing a
+          By creating an account, accessing GrowthSnipe, starting a free trial, purchasing a
           subscription, or otherwise using the Services, you agree to these Terms. If you do not
-          agree to these Terms, you must not use Tradesmatic.
+          agree to these Terms, you must not use GrowthSnipe.
         </p>
         <div className="mt-8 space-y-6 text-sm leading-relaxed">
           <section>
-            <h2 className="text-lg font-semibold">1. About Tradesmatic</h2>
+            <h2 className="text-lg font-semibold">1. About GrowthSnipe</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic is a decision-making platform designed for owner-operated home service
+              GrowthSnipe is a decision-making platform designed for owner-operated home service
               businesses.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Through the Multi-Trades™ MCP Server, Tradesmatic can provide compatible
-              artificial-intelligence tools with access to information from your connected business
-              systems, including jobs, clients, agents, and events. This enables users to obtain
-              insights, decision-ready answers, and data-backed actions through compatible AI tools.
+              GrowthSnipe connects to the booking, CRM, phone, and advertising systems you authorize
+              so it can report on jobs, calls, and spend, and help you act on that information.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic may connect to third-party services using authorization technologies such
+              GrowthSnipe may connect to third-party services using authorization technologies such
               as OAuth. The availability and functionality of third-party integrations may change
               from time to time.
             </p>
@@ -41,15 +39,15 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">2. Eligibility</h2>
             <p className="mt-2 text-muted-foreground">
-              You must be at least <strong>18 years old</strong> to create or use a Tradesmatic
+              You must be at least <strong>18 years old</strong> to create or use a GrowthSnipe
               account.
             </p>
             <p className="mt-2 text-muted-foreground">
-              If you use Tradesmatic on behalf of a business or organization, you represent that
+              If you use GrowthSnipe on behalf of a business or organization, you represent that
               you have authority to accept these Terms on behalf of that business or organization.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic is available to customers worldwide, subject to applicable laws and any
+              GrowthSnipe is available to customers worldwide, subject to applicable laws and any
               restrictions that may apply to particular jurisdictions or services.
             </p>
           </section>
@@ -63,10 +61,10 @@ export function Terms() {
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
               <li>maintaining the confidentiality of your account credentials;</li>
               <li>maintaining the security of your account;</li>
-              <li>ensuring that information provided to Tradesmatic is accurate;</li>
+              <li>ensuring that information provided to GrowthSnipe is accurate;</li>
               <li>
                 ensuring that you have the necessary rights and permissions to connect third-party
-                business systems and data to Tradesmatic; and
+                business systems and data to GrowthSnipe; and
               </li>
               <li>all activity conducted through your account.</li>
             </ul>
@@ -78,7 +76,7 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">4. Free Trial</h2>
             <p className="mt-2 text-muted-foreground">
-              New users may receive a <strong>30-day free trial</strong> of Tradesmatic.
+              New users may receive a <strong>30-day free trial</strong> of GrowthSnipe.
             </p>
             <p className="mt-2 text-muted-foreground">The free trial:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
@@ -110,7 +108,7 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">5. Subscriptions and Billing</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic offers subscription billing on a <strong>monthly or annual</strong> basis.
+              GrowthSnipe offers subscription billing on a <strong>monthly or annual</strong> basis.
               Subscription prices and available plans may change from time to time and will be
               displayed to you before you purchase or change a subscription.
             </p>
@@ -149,13 +147,13 @@ export function Terms() {
             </p>
             <p className="mt-2 text-muted-foreground">
               You are responsible for ensuring that the email address associated with your
-              Tradesmatic account is current and capable of receiving these notifications.
+              GrowthSnipe account is current and capable of receiving these notifications.
             </p>
           </section>
           <section>
             <h2 className="text-lg font-semibold">7. Cancellation</h2>
             <p className="mt-2 text-muted-foreground">
-              You may cancel your subscription directly through your Tradesmatic account.
+              You may cancel your subscription directly through your GrowthSnipe account.
             </p>
             <p className="mt-2 text-muted-foreground">
               Cancellation stops the subscription from automatically renewing for the next billing
@@ -245,7 +243,7 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">10. Changes to Plans, Pricing and Services</h2>
             <p className="mt-2 text-muted-foreground">
-              We may modify, replace, add, or discontinue features of Tradesmatic from time to time.
+              We may modify, replace, add, or discontinue features of GrowthSnipe from time to time.
             </p>
             <p className="mt-2 text-muted-foreground">
               We may also change subscription plans or pricing. Where a change affects a future
@@ -260,19 +258,19 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">11. Acceptable Use</h2>
             <p className="mt-2 text-muted-foreground">
-              You may use Tradesmatic only for lawful purposes and in accordance with these Terms.
+              You may use GrowthSnipe only for lawful purposes and in accordance with these Terms.
             </p>
             <p className="mt-2 text-muted-foreground">You must not:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-              <li>use Tradesmatic to violate any applicable law or regulation;</li>
-              <li>attempt to gain unauthorized access to Tradesmatic or another user&apos;s account;</li>
+              <li>use GrowthSnipe to violate any applicable law or regulation;</li>
+              <li>attempt to gain unauthorized access to GrowthSnipe or another user&apos;s account;</li>
               <li>interfere with or disrupt the operation or security of the Services;</li>
               <li>
                 reverse engineer, decompile, disassemble, or attempt to derive the source code of
-                Tradesmatic, except to the extent expressly permitted by applicable law;
+                GrowthSnipe, except to the extent expressly permitted by applicable law;
               </li>
               <li>circumvent security, access-control, usage, or technical restrictions;</li>
-              <li>use Tradesmatic to transmit malicious code or harmful material;</li>
+              <li>use GrowthSnipe to transmit malicious code or harmful material;</li>
               <li>
                 use the Services to infringe another person&apos;s intellectual-property, privacy,
                 confidentiality, or other rights;
@@ -282,7 +280,7 @@ export function Terms() {
                 authorization;
               </li>
               <li>
-                use Tradesmatic to collect or process information that you do not have the legal
+                use GrowthSnipe to collect or process information that you do not have the legal
                 right to access or process; or
               </li>
               <li>
@@ -298,11 +296,11 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">12. Third-Party Integrations and AI Services</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic may integrate with third-party platforms, including compatible AI tools
+              GrowthSnipe may integrate with third-party platforms, including compatible AI tools
               and business software.
             </p>
             <p className="mt-2 text-muted-foreground">
-              When you connect a third-party service, you authorize Tradesmatic to access the
+              When you connect a third-party service, you authorize GrowthSnipe to access the
               information and functionality made available through that integration, subject to the
               permissions and authorization you grant.
             </p>
@@ -312,10 +310,10 @@ export function Terms() {
             </p>
             <p className="mt-2 text-muted-foreground">
               We do not control third-party services and cannot guarantee their availability,
-              accuracy, functionality, security, or continued compatibility with Tradesmatic.
+              accuracy, functionality, security, or continued compatibility with GrowthSnipe.
             </p>
             <p className="mt-2 text-muted-foreground">
-              AI-generated information may contain errors, omissions, or inaccuracies. Tradesmatic
+              AI-generated information may contain errors, omissions, or inaccuracies. GrowthSnipe
               is intended to support business decision-making; it does not replace your own
               professional judgment, verification, or responsibility for business decisions.
             </p>
@@ -324,14 +322,14 @@ export function Terms() {
             <h2 className="text-lg font-semibold">13. Your Data</h2>
             <p className="mt-2 text-muted-foreground">
               You retain your rights in the business and personal information that you submit to
-              Tradesmatic or make available through your connected services.
+              GrowthSnipe or make available through your connected services.
             </p>
             <p className="mt-2 text-muted-foreground">
               You grant Optasoft a limited right to process such information solely as reasonably
               necessary to:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
-              <li>provide and operate Tradesmatic;</li>
+              <li>provide and operate GrowthSnipe;</li>
               <li>provide integrations and requested functionality;</li>
               <li>maintain security;</li>
               <li>provide customer support;</li>
@@ -341,14 +339,14 @@ export function Terms() {
             </ul>
             <p className="mt-2 text-muted-foreground">
               You are responsible for ensuring that you have all necessary rights, permissions,
-              notices, and lawful bases required to provide data to Tradesmatic and to authorize us
+              notices, and lawful bases required to provide data to GrowthSnipe and to authorize us
               to process it.
             </p>
           </section>
           <section>
             <h2 className="text-lg font-semibold">14. API Tokens and Connected Accounts</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic may process authentication credentials, authorization tokens, API tokens,
+              GrowthSnipe may process authentication credentials, authorization tokens, API tokens,
               or similar technical credentials that you provide or authorize us to obtain for the
               purpose of connecting your business software.
             </p>
@@ -364,8 +362,8 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">15. Intellectual Property</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic, including its software, platform architecture, Multi-Trades™ MCP Server,
-              trademarks, branding, documentation, interfaces, designs, and other underlying
+              GrowthSnipe, including its software, platform architecture, SNIPE Intelligence™,
+              SNIPE VoiceIQ™, trademarks, branding, documentation, interfaces, designs, and other underlying
               technology, is owned by or licensed to <strong>Optasoft (Private) Limited</strong>{" "}
               and is protected by applicable intellectual-property laws.
             </p>
@@ -375,17 +373,17 @@ export function Terms() {
             </p>
             <p className="mt-2 text-muted-foreground">
               You may not copy, reproduce, distribute, resell, sublicense, lease, or commercially
-              exploit Tradesmatic except as expressly authorized by us.
+              exploit GrowthSnipe except as expressly authorized by us.
             </p>
             <p className="mt-2 text-muted-foreground">
-              &quot;Tradesmatic&quot; and &quot;Multi-Trades™&quot; are used as trademarks or brand
-              identifiers of Optasoft (Private) Limited.
+              &quot;GrowthSnipe&quot;, &quot;SNIPE Intelligence&quot;, and &quot;SNIPE VoiceIQ&quot;
+              are used as trademarks or brand identifiers of Optasoft (Private) Limited.
             </p>
           </section>
           <section>
             <h2 className="text-lg font-semibold">16. Customer Data Export</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic does not currently provide a general-purpose customer data export
+              GrowthSnipe does not currently provide a general-purpose customer data export
               facility.
             </p>
             <p className="mt-2 text-muted-foreground">
@@ -400,7 +398,7 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">17. Service Availability</h2>
             <p className="mt-2 text-muted-foreground">
-              We aim to provide reliable access to Tradesmatic, but we do not guarantee that the
+              We aim to provide reliable access to GrowthSnipe, but we do not guarantee that the
               Services will always be uninterrupted, available, secure, or error-free.
             </p>
             <p className="mt-2 text-muted-foreground">
@@ -413,7 +411,7 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">18. Disclaimer of Warranties</h2>
             <p className="mt-2 text-muted-foreground">
-              To the maximum extent permitted by applicable law, Tradesmatic is provided on an{" "}
+              To the maximum extent permitted by applicable law, GrowthSnipe is provided on an{" "}
               <strong>&quot;as is&quot; and &quot;as available&quot;</strong> basis.
             </p>
             <p className="mt-2 text-muted-foreground">We do not warrant that:</p>
@@ -426,7 +424,7 @@ export function Terms() {
               </li>
               <li>third-party integrations will remain available or compatible;</li>
               <li>the Services will be free from defects or security vulnerabilities; or</li>
-              <li>business results or outcomes will result from using Tradesmatic.</li>
+              <li>business results or outcomes will result from using GrowthSnipe.</li>
             </ul>
             <p className="mt-2 text-muted-foreground">
               Nothing in these Terms excludes a warranty or consumer right that cannot lawfully be
@@ -473,7 +471,7 @@ export function Terms() {
           </section>
           <section>
             <h2 className="text-lg font-semibold">21. Suspension and Termination</h2>
-            <p className="mt-2 text-muted-foreground">You may stop using Tradesmatic at any time.</p>
+            <p className="mt-2 text-muted-foreground">You may stop using GrowthSnipe at any time.</p>
             <p className="mt-2 text-muted-foreground">
               We may suspend or terminate an account where reasonably necessary because of:
             </p>
@@ -485,7 +483,7 @@ export function Terms() {
               <li>fraud or suspected fraudulent activity;</li>
               <li>a legal or regulatory requirement; or</li>
               <li>
-                circumstances where continued access could reasonably harm Tradesmatic, our users,
+                circumstances where continued access could reasonably harm GrowthSnipe, our users,
                 or third parties.
               </li>
             </ul>
@@ -505,8 +503,8 @@ export function Terms() {
             </p>
             <p className="mt-2 text-muted-foreground">
               You may request deletion of your data by contacting us at{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>
               .
             </p>
@@ -528,8 +526,8 @@ export function Terms() {
             <p className="mt-2 text-muted-foreground">Complaints may be submitted through:</p>
             <p className="mt-2 text-muted-foreground">
               <strong>Email:</strong>{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>
               <br />
               <strong>Phone:</strong> +92-321-2260075
@@ -559,7 +557,7 @@ export function Terms() {
           <section>
             <h2 className="text-lg font-semibold">24. Electronic Communications</h2>
             <p className="mt-2 text-muted-foreground">
-              By using Tradesmatic, you consent to receiving electronic communications from us
+              By using GrowthSnipe, you consent to receiving electronic communications from us
               concerning your account and Services, including account notices, security
               communications, billing information, subscription notices, renewal reminders, service
               announcements, and support communications.
@@ -594,7 +592,7 @@ export function Terms() {
               notification where appropriate.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Your continued use of Tradesmatic after the effective date of updated Terms
+              Your continued use of GrowthSnipe after the effective date of updated Terms
               constitutes acceptance of the updated Terms to the extent permitted by law.
             </p>
           </section>
@@ -611,7 +609,7 @@ export function Terms() {
             <p className="mt-2 text-muted-foreground">
               These Terms, together with the Privacy Policy and any additional terms expressly
               incorporated into the Services, constitute the agreement between you and Optasoft
-              (Private) Limited concerning your use of Tradesmatic.
+              (Private) Limited concerning your use of GrowthSnipe.
             </p>
           </section>
           <section>
@@ -625,8 +623,8 @@ export function Terms() {
             </p>
             <p className="mt-2 text-muted-foreground">
               <strong>Email:</strong>{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>
               <br />
               <strong>Phone:</strong> +92-321-2260075

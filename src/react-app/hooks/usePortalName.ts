@@ -6,7 +6,7 @@ export interface PortalInfo {
 }
 
 /** Portal display name + support address from server settings, with static fallbacks. */
-export function usePortal(fallbackName = "Tradesmatic"): PortalInfo {
+export function usePortal(fallbackName = "GrowthSnipe"): PortalInfo {
   const [info, setInfo] = useState<PortalInfo>({ name: fallbackName, supportEmail: "" });
   useEffect(() => {
     fetch("/api/portal")
@@ -25,6 +25,6 @@ export function usePortal(fallbackName = "Tradesmatic"): PortalInfo {
 }
 
 /** Portal display name from server settings, with a static fallback. */
-export function usePortalName(fallback = "Tradesmatic"): string {
+export function usePortalName(fallback = "GrowthSnipe"): string {
   return usePortal(fallback).name;
 }

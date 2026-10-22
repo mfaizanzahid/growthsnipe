@@ -1,3 +1,5 @@
+> **Superseded for the current release.** GrowthSnipe is a productized growth company and SNIPE Intelligence™ is the analytics product. See `docs/growthsnipe-context.md` and `AGENTS.md`. Sections below that describe Tradesmatic positioning, the MCP server, AI advisors, or briefings apply only to dormant, UI-hidden code.
+
 # Implementation plan — Tradesmatic (unified SaaS app)
 
 > History: Phases 0–5 built the billing engine (manual Safepay schedules) as the foundation. Billing is now one feature area of the unified app — not a separate product. Phase 6 builds the Sidekick, marketing, and remaining dashboard surfaces around it.

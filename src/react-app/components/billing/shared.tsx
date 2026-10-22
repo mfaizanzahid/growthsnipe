@@ -40,7 +40,7 @@ export function toastBulk(action: string, result: BulkResult): void {
     toast.success(`${action}: ${result.ok} succeeded`);
   } else {
     toast.error(
-      `${action}: ${result.ok} succeeded, ${result.failed.length} failed — ${result.failed[0]?.error}`,
+      `${action}: ${result.ok} succeeded, ${result.failed.length} failed; ${result.failed[0]?.error}`,
       { duration: 6000 },
     );
   }

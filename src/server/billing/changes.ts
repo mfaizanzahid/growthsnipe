@@ -8,7 +8,7 @@ import { decryptCustomerToken } from "./customers";
 import { sendChargeReceipt, sendSubscriptionNotice } from "./mail";
 import { BillingError } from "./errors";
 import type { Gateway } from "./gateway";
-import { isPrepaidTrial } from "./access";
+import { isPrepaidTrial, isPurchasablePlan } from "./access";
 import { logEvent } from "../lib/app-logs";
 
 export interface ChangeInput {
@@ -57,6 +57,9 @@ export async function changePlan(
   }
   const plan = await store.getPlan(input.newPlanId);
   if (!plan || plan.active !== 1) throw new BillingError("Plan is not available", 422);
+  if (!isPurchasablePlan(plan)) {
+    throw new BillingError("This plan is contact-only. Contact us for pricing", 422);
+  }
   if (input.newInterval !== "month" && input.newInterval !== "year") {
     throw new BillingError("Interval must be month or year", 422);
   }

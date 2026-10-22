@@ -114,7 +114,7 @@ export function VerifyEmail() {
         <CardContent className="space-y-3">
           {verified && (
             <p className="text-center text-sm font-medium text-green-600">
-              Your email is verified — you can continue.
+              Your email is verified. You can continue.
             </p>
           )}
           {!email && (

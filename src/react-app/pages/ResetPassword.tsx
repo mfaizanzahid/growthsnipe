@@ -29,7 +29,7 @@ export function ResetPassword() {
     try {
       const { error } = await authClient.resetPassword({ newPassword: password, token });
       if (error) throw new Error(error.message ?? "Could not reset password");
-      toast.success("Password updated — please sign in");
+      toast.success("Password updated. Please sign in");
       navigate("/login");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not reset password");

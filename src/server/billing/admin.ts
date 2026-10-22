@@ -427,6 +427,8 @@ export interface PlanInput {
   active?: number | null;
   maxUsers?: number | null;
   allowBriefings?: number | null;
+  /** 1 = displayed but not purchasable (contact sales). */
+  contactOnly?: number | null;
   /** Comma-separated feature bullets (single source of truth for pricing + billing). */
   features?: string | null;
 }
@@ -455,6 +457,9 @@ function validatePlanInput(input: PlanInput): void {
   if (input.allowBriefings !== undefined && input.allowBriefings !== null && input.allowBriefings !== 0 && input.allowBriefings !== 1) {
     throw new BillingError("allowBriefings must be 0 or 1", 422);
   }
+  if (input.contactOnly !== undefined && input.contactOnly !== null && input.contactOnly !== 0 && input.contactOnly !== 1) {
+    throw new BillingError("contactOnly must be 0 or 1", 422);
+  }
   if (input.features !== undefined && input.features !== null) {
     if (typeof input.features !== "string" || input.features.length > 2000) {
       throw new BillingError("features must be a comma-separated string up to 2000 characters", 422);
@@ -481,6 +486,7 @@ export async function createPlan(store: BillingStore, input: PlanInput): Promise
     active: input.active ?? 1,
     maxUsers: input.maxUsers ?? null,
     allowBriefings: input.allowBriefings ?? 1,
+    contactOnly: input.contactOnly ?? 0,
     features: input.features ?? null,
   });
 }
@@ -513,6 +519,9 @@ export async function updatePlan(
     ...(patch.maxUsers !== undefined ? { maxUsers: patch.maxUsers } : {}),
     ...(patch.allowBriefings !== undefined && patch.allowBriefings !== null
       ? { allowBriefings: patch.allowBriefings }
+      : {}),
+    ...(patch.contactOnly !== undefined && patch.contactOnly !== null
+      ? { contactOnly: patch.contactOnly }
       : {}),
     ...(patch.features !== undefined ? { features: patch.features } : {}),
   });

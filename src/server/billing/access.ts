@@ -4,8 +4,13 @@ import { nowSec } from "../lib/time";
 /** Pro-trial length for a first organization (days). No card required. */
 export const TRIAL_DAYS = 30;
 
-/** The plan every trial runs on (Pro tier). */
-export const TRIAL_PLAN_ID = "pro";
+/** The plan every trial runs on (SNIPE Intelligence). */
+export const TRIAL_PLAN_ID = "snipe-intelligence";
+
+/** Contact-only plans render on the pricing page but are never purchasable. */
+export function isPurchasablePlan(plan: { contactOnly?: number | null } | null | undefined): boolean {
+  return !!plan && (plan.contactOnly ?? 0) === 0;
+}
 
 /** Trial reminder offsets, in days relative to trial end (negative = before). */
 export const TRIAL_REMINDER_OFFSETS = [-5, -3, 0, 3, 5] as const;

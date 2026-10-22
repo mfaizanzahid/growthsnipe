@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "fieldvisory",
+  "name": "growthsnipe",
   "main": "worker/index.ts",
   "compatibility_date": "2026-04-08",
   "compatibility_flags": ["nodejs_compat"],
@@ -20,7 +20,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "fieldvisory",
+      "database_name": "growthsnipe",
       "database_id": "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID",
       "migrations_dir": "./db/migrations"
     }
@@ -39,14 +39,14 @@
       "vars": {
             "AI_MODEL": "gpt-6-luna",
 			"AI_PROVIDER": "openai",
-			"APP_BASE_URL": "https://tradesmatic.com",
+			"APP_BASE_URL": "https://growthsnipe.com",
 			"BREVO_NEW_SIGNUP_LIST_ID": "8",
-			"BREVO_SENDER_EMAIL": "noreply@tradesmatic.com",
-			"BREVO_SENDER_NAME": "Tradesmatic",
-			"BRIEFING_FROM_EMAIL": "briefings@tradesmatic.com",
+			"BREVO_SENDER_EMAIL": "noreply@growthsnipe.com",
+			"BREVO_SENDER_NAME": "GrowthSnipe",
+			"BRIEFING_FROM_EMAIL": "briefings@growthsnipe.com",
 			"DEFAULT_TIMEZONE": "America/New_York",
 			"GOOGLE_CLIENT_ID": "980211207017-risgihuf4o6kqi8qc04cearg7svufpmr.apps.googleusercontent.com",
-			"RESEND_FROM_EMAIL": "Tradesmatic <noreply@tradesmatic.com>",
+			"RESEND_FROM_EMAIL": "GrowthSnipe <noreply@growthsnipe.com>",
 			"SAFEPAY_API_BASE": "https://sandbox.api.getsafepay.com",
 			"SAFEPAY_ENV": "sandbox",
 			"SUPERADMIN_EMAILS": "mfaizanzahid@gmail.com",
@@ -55,7 +55,7 @@
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "fieldvisory-db-prod",
+          "database_name": "growthsnipe-db-prod",
           "database_id": "ea04c13e-e371-4917-8d69-748724e2bebe",
           "migrations_dir": "./db/migrations"
         }

@@ -18,7 +18,7 @@ export interface Env {
   BREVO_NEW_SIGNUP_LIST_ID?: string;
   APP_BASE_URL: string;
   SUPERADMIN_EMAILS?: string;
-  // Tradesmatic MCP (V1 market test, optional so billing-only envs keep working)
+  // GrowthSnipe MCP (V1 market test, optional so billing-only envs keep working)
   MCP_BASE_URL?: string;
   MCP_TOKEN_PEPPER?: string;
   MCP_ENCRYPTION_KEY?: string;

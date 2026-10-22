@@ -72,7 +72,7 @@ export function AuditLog() {
                       {e.provider} · {e.principalType} · {new Date(e.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  {e.targetId && <div className="mt-1 text-xs text-muted-foreground">Target: {e.targetType ?? "—"} {e.targetId}</div>}
+                  {e.targetId && <div className="mt-1 text-xs text-muted-foreground">Target: {e.targetType ?? "-"} {e.targetId}</div>}
                 </li>
               ))}
             </ul>

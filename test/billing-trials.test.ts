@@ -20,6 +20,7 @@ const enc = (s: string) => encryptSecret(s, KEY);
 
 function baseStore() {
   const store = memoryStore();
+  store.seed.plan({ id: "snipe-intelligence", name: "SNIPE Intelligence", monthlyMinor: 19900, annualMinor: 199000, maxUsers: null, allowBriefings: 1 });
   store.seed.plan({ id: "starter", name: "Starter", monthlyMinor: 1900, annualMinor: 19000, maxUsers: 1, allowBriefings: 0 });
   store.seed.plan({ id: "pro", name: "Pro", monthlyMinor: 2900, annualMinor: 29000, maxUsers: null, allowBriefings: 1 });
   return store;
@@ -38,14 +39,14 @@ function fakeGateway(): Gateway {
 }
 
 describe("startTrial", () => {
-  it("starts a 30-day Pro trial with no charge", async () => {
+  it("starts a 30-day SNIPE Intelligence trial with no charge", async () => {
     expect(TRIAL_DAYS).toBe(30);
     const store = baseStore();
     const { subscriptionId, trialEndsAt } = await startTrial(store, { orgId: "o1", userId: "u1" }, NOW);
     expect(trialEndsAt).toBe(NOW + 30 * DAY);
     const sub = await store.getSubscription(subscriptionId);
     expect(sub?.status).toBe("trialing");
-    expect(sub?.planId).toBe("pro");
+    expect(sub?.planId).toBe("snipe-intelligence");
     expect(sub?.defaultPaymentMethodId).toBeNull();
     expect(sub?.cyclesCharged).toBe(0);
   });

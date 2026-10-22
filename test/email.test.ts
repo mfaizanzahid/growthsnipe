@@ -65,7 +65,7 @@ describe("email service", () => {
       planName: "<Plan>",
     });
     expect(outbox).toHaveLength(1);
-    expect(outbox[0]?.subject).toContain("[Tradesmatic]");
+    expect(outbox[0]?.subject).toContain("[GrowthSnipe]");
     expect(outbox[0]?.html).toContain("&lt;Plan&gt;");
     expect(outbox[0]?.html).toContain("View billing");
     expect(outbox[0]?.html).toContain("help@test.com");

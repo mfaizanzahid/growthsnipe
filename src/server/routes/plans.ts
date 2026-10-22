@@ -17,6 +17,8 @@ export interface PlanRow {
   currency: string;
   maxUsers: number | null;
   allowBriefings: number;
+  /** 1 = display only; contact sales, never self-serve checkout. */
+  contactOnly: number;
   /** Comma-separated feature bullets; null when unset. */
   features: string | null;
 }
@@ -44,6 +46,7 @@ export function createPlansRoutes(
         currency: plans.currency,
         maxUsers: plans.maxUsers,
         allowBriefings: plans.allowBriefings,
+        contactOnly: plans.contactOnly,
         features: plans.features,
       })
       .from(plans)

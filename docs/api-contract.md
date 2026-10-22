@@ -1,4 +1,4 @@
-# API contract — Tradesmatic (unified app)
+# API contract: GrowthSnipe (unified app)
 
 Base: same origin (Worker serves the SPA). Auth: Better Auth session cookie on every call.
 
@@ -8,7 +8,7 @@ Base: same origin (Worker serves the SPA). Auth: Better Auth session cookie on e
 - Errors: `{ "error": "<message>" }` with HTTP status. Never leak secrets, tokens, or gateway internals.
 - Mutations: accept `Idempotency-Key` header; duplicates return the original result.
 - Money: integer minor units + `currency` (USD). Dates: UTC seconds.
-- Plans are data: the pricing page, signup picker, and onboarding plan step all render from `GET /api/plans` (active only). Never hard-code plans/prices in UI.
+- Plans are data: the pricing page, signup picker, and onboarding plan step all render from `GET /api/plans` (active only). Never hard-code plans/prices in UI. Each plan carries `contactOnly` (0/1); contact-only plans return price fields at 0, are excluded from the max-4 active self-serve count, and are refused by checkout, signup, and plan change with a 422. Only SNIPE Intelligence™ may display a price.
 
 ## Routes (implemented)
 
@@ -22,7 +22,7 @@ Base: same origin (Worker serves the SPA). Auth: Better Auth session cookie on e
 | POST/PATCH | `/api/superadmin/plans` | superadmin | plans CRUD (max 4 active; delete blocked with subscribers; `features` comma-separated bullets) |
 | GET/PUT | `/api/superadmin/settings` | superadmin | `portal_name`, `support_email` |
 | POST | `/api/billing/signup` | session+`orgId` | plan+interval+coupon+payment-method → setup+first-period charge → subscription + invoice (legacy paid-first path) |
-| POST | `/api/billing/trial/start` | user+`orgId` | start 30-day Pro trial, first workspace only, no card (409 otherwise) |
+| POST | `/api/billing/trial/start` | user+`orgId` | start the 30-day SNIPE Intelligence™ trial, first workspace only, no card (409 otherwise) |
 | POST | `/api/billing/subscribe` | user+`orgId` | convert trial (or paid-first create): plan+interval+coupon+payment-method → first-period charge → active subscription + invoice. Subscribing DURING a trial keeps the trial tier until the trial ends (`trial_prepaid`), starts the paid plan at `trial_ends_at` and anchors `nextCharge` to it; the response adds `prepaid` + `planStartsAt` |
 | GET | `/api/billing/invoices` | member | invoice list for active org |
 | GET | `/api/billing/invoices/:id` | member | invoice detail + items |
@@ -51,7 +51,7 @@ Base: same origin (Worker serves the SPA). Auth: Better Auth session cookie on e
 | GET/POST/PATCH | `/api/superadmin/coupons` | superadmin | coupon CRUD + plan applicability |
 | POST | `/webhooks/safepay` | signed | Safepay events (verify `X-SFPY-SIGNATURE` first, dedupe `evt_`) |
 
-## Routes (Sidekick dashboard + MCP — implemented, Phase 6.2)
+## Dormant routes (Sidekick + MCP, code retained, UI hidden)
 
 Public marketing pages are served by the SPA; only the pricing content is API-driven (`GET /api/plans`, live):
 

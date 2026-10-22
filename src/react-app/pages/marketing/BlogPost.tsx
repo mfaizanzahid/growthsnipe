@@ -9,10 +9,10 @@ import { getPost } from "./blog-posts";
 
 export function BlogPost() {
   const { slug } = useParams();
-  const post = getPost(slug);
+  const post = getPost(slug ?? "");
   usePageMeta(
     post
-      ? { title: `${post.title} | Tradesmatic Blog`, description: post.metaDescription }
+      ? { title: `${post.title} | GrowthSnipe Blog`, description: post.metaDescription }
       : { title: "", description: "" },
   );
 
@@ -23,7 +23,7 @@ export function BlogPost() {
           <BlogArt />
           <h1 className="mt-6 text-3xl font-bold tracking-tight">Post not found</h1>
           <p className="mt-3 text-muted-foreground">
-            That post doesn't exist — or hasn't been written yet.
+            That post doesn't exist, or hasn't been written yet.
           </p>
           <Button className="mt-6" variant="outline" asChild>
             <Link to="/blog">Back to the blog</Link>
@@ -79,7 +79,7 @@ export function BlogPost() {
       </article>
       <CtaBand
         title="Put this into practice on your own numbers"
-        body="Connect your software and get the briefing version of this post — built from your live data, every morning."
+        body="Connect your software and get the briefing version of this post: built from your live data, every morning."
       />
     </MarketingLayout>
   );

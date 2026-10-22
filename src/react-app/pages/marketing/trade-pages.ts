@@ -52,10 +52,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       "AI for home inspectors: deep insights from Spectora and ISN inside Claude, ChatGPT, and Gemini.",
     eyebrow: "For home inspectors",
     lede:
-      "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For home inspectors, that means deep insights and data-backed actions inside the AI you already use — built from your inspections, clients, agents, and events.",
+      "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For home inspectors, that means deep insights and data-backed actions inside the AI you already use — built from your inspections, clients, agents, and events.",
     problemTitle: "A slow month with no explanation",
     problemBody:
-      "Tradesmatic is a decision-making platform for owner-operated inspection businesses. Through our Multi-Trades™ MCP Server, it connects your inspection software to the AI you already use, so every answer is decision-ready and backed by real data.",
+      "GrowthSnipe is a decision-making platform for owner-operated inspection businesses. Through our Multi-Trades™ MCP Server, it connects your inspection software to the AI you already use, so every answer is decision-ready and backed by real data.",
     pains: [
       {
         title: "A February dip you can't explain",
@@ -89,10 +89,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
     ],
     integrationsBody:
-      "Tradesmatic connects Spectora and ISN to Claude, ChatGPT, and Gemini in real time — inspections, clients, agents, and events read when you ask, nothing migrated, nothing re-typed. Your business data is never stored on our servers.",
+      "GrowthSnipe connects Spectora and ISN to Claude, ChatGPT, and Gemini in real time — inspections, clients, agents, and events read when you ask, nothing migrated, nothing re-typed. Your business data is never stored on our servers.",
     integrationLinks: [
-      { slug: "spectora", label: "Tradesmatic for Spectora" },
-      { slug: "isn", label: "Tradesmatic for ISN" },
+      { slug: "spectora", label: "GrowthSnipe for Spectora" },
+      { slug: "isn", label: "GrowthSnipe for ISN" },
     ],
     extraSection: {
       eyebrow: "A Monday routine",
@@ -120,16 +120,16 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
     },
     faqs: [
       {
-        q: "How does Tradesmatic work with Spectora or ISN?",
-        a: "Tradesmatic connects Spectora and ISN to Claude, ChatGPT, and Gemini in real time through our Multi-Trades™ MCP Server. You ask a plain question in the AI you already use and get deep insights built from your inspections, clients, agents, and events — with nothing to migrate and nothing stored on our servers.",
+        q: "How does GrowthSnipe work with Spectora or ISN?",
+        a: "GrowthSnipe connects Spectora and ISN to Claude, ChatGPT, and Gemini in real time through our Multi-Trades™ MCP Server. You ask a plain question in the AI you already use and get deep insights built from your inspections, clients, agents, and events — with nothing to migrate and nothing stored on our servers.",
       },
       {
         q: "Do I need a new AI subscription?",
-        a: "No. Tradesmatic works with the AI you already use — Claude, ChatGPT, and Gemini — so your existing subscription becomes a business-aware advisor team. Setup is a copy-paste configuration that takes minutes.",
+        a: "No. GrowthSnipe works with the AI you already use — Claude, ChatGPT, and Gemini — so your existing subscription becomes a business-aware advisor team. Setup is a copy-paste configuration that takes minutes.",
       },
       {
         q: "Is my inspection data stored anywhere?",
-        a: "No. Tradesmatic reads your business data in real time from your connected software and never stores it on our servers. Disconnect at any time and access ends with it. See our security page for the full explanation.",
+        a: "No. GrowthSnipe reads your business data in real time from your connected software and never stores it on our servers. Disconnect at any time and access ends with it. See our security page for the full explanation.",
       },
     ],
     ctaTitle: "Ask your business a question tonight",
@@ -146,10 +146,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       "AI for HVAC contractors: deep insights from ServiceTitan inside Claude, ChatGPT, and Gemini.",
     eyebrow: "For HVAC contractors",
     lede:
-      "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For HVAC shops, that means ticket mix, maintenance agreements, and crew capacity in one morning view — deep insights and data-backed actions inside the AI you already use.",
+      "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For HVAC shops, that means ticket mix, maintenance agreements, and crew capacity in one morning view — deep insights and data-backed actions inside the AI you already use.",
     problemTitle: "Busy season hides what shoulder season exposes",
     problemBody:
-      "Tradesmatic is a decision-making platform for owner-operated HVAC businesses. Through our Multi-Trades™ MCP Server, your jobs, clients, and events become decision-ready answers backed by real data.",
+      "GrowthSnipe is a decision-making platform for owner-operated HVAC businesses. Through our Multi-Trades™ MCP Server, your jobs, clients, and events become decision-ready answers backed by real data.",
     pains: [
       {
         title: "A slow month with no diagnosis",
@@ -179,11 +179,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
     ],
     integrationsBody:
-      "Tradesmatic connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller shops run the same workflow through Housecall Pro or Jobber.",
+      "GrowthSnipe connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller shops run the same workflow through Housecall Pro or Jobber.",
     integrationLinks: [
-      { slug: "servicetitan", label: "Tradesmatic for ServiceTitan" },
-      { slug: "housecall-pro", label: "Tradesmatic for Housecall Pro" },
-      { slug: "jobber", label: "Tradesmatic for Jobber" },
+      { slug: "servicetitan", label: "GrowthSnipe for ServiceTitan" },
+      { slug: "housecall-pro", label: "GrowthSnipe for Housecall Pro" },
+      { slug: "jobber", label: "GrowthSnipe for Jobber" },
     ],
     faqs: [
       {
@@ -192,11 +192,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
       {
         q: "Does it work with the AI I already pay for?",
-        a: "Yes. Tradesmatic works with the AI you already use — Claude, ChatGPT, and Gemini — with no new AI subscription required. Your existing tool becomes the place you ask about scheduling, pricing, and capacity.",
+        a: "Yes. GrowthSnipe works with the AI you already use — Claude, ChatGPT, and Gemini — with no new AI subscription required. Your existing tool becomes the place you ask about scheduling, pricing, and capacity.",
       },
       {
         q: "Do you store my customer or job data?",
-        a: "No. Tradesmatic reads your connected software in real time through the Multi-Trades™ MCP Server and never stores business data on our servers.",
+        a: "No. GrowthSnipe reads your connected software in real time through the Multi-Trades™ MCP Server and never stores business data on our servers.",
       },
     ],
     ctaTitle: "See your ticket mix before Monday",
@@ -213,10 +213,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       "AI for plumbers: deep insights on tickets and jobs from ServiceTitan, in Claude, ChatGPT, and Gemini.",
     eyebrow: "For plumbing contractors",
     lede:
-      "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For plumbers, that means average ticket, add-on quoting, and repeat-client follow-up without digging through reports — deep insights and data-backed actions inside the AI you already use.",
+      "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For plumbers, that means average ticket, add-on quoting, and repeat-client follow-up without digging through reports — deep insights and data-backed actions inside the AI you already use.",
     problemTitle: "The ticket looks fine until you split it",
     problemBody:
-      "Tradesmatic is a decision-making platform for owner-operated plumbing businesses. Through our Multi-Trades™ MCP Server, every answer is pulled from your real-time jobs and clients — never stale, never guessed.",
+      "GrowthSnipe is a decision-making platform for owner-operated plumbing businesses. Through our Multi-Trades™ MCP Server, every answer is pulled from your real-time jobs and clients — never stale, never guessed.",
     pains: [
       {
         title: "An average ticket that drifts down quietly",
@@ -246,11 +246,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
     ],
     integrationsBody:
-      "Tradesmatic connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller plumbing teams use the same workflow through Housecall Pro or Jobber.",
+      "GrowthSnipe connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller plumbing teams use the same workflow through Housecall Pro or Jobber.",
     integrationLinks: [
-      { slug: "servicetitan", label: "Tradesmatic for ServiceTitan" },
-      { slug: "housecall-pro", label: "Tradesmatic for Housecall Pro" },
-      { slug: "jobber", label: "Tradesmatic for Jobber" },
+      { slug: "servicetitan", label: "GrowthSnipe for ServiceTitan" },
+      { slug: "housecall-pro", label: "GrowthSnipe for Housecall Pro" },
+      { slug: "jobber", label: "GrowthSnipe for Jobber" },
     ],
     faqs: [
       {
@@ -259,11 +259,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
       {
         q: "Which AI tools does it work with?",
-        a: "Tradesmatic works with the AI you already use — Claude, ChatGPT, and Gemini. Ask in whichever one you prefer; the deep insights come from the same connected business data.",
+        a: "GrowthSnipe works with the AI you already use — Claude, ChatGPT, and Gemini. Ask in whichever one you prefer; the deep insights come from the same connected business data.",
       },
       {
         q: "What happens to my data if I cancel?",
-        a: "Nothing stays behind: Tradesmatic never stores your business data on its servers, so cancelling ends real-time access with nothing retained to clean up.",
+        a: "Nothing stays behind: GrowthSnipe never stores your business data on its servers, so cancelling ends real-time access with nothing retained to clean up.",
       },
     ],
     ctaTitle: "Find the $35 hiding in your ticket",
@@ -280,10 +280,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       "AI for electricians: scheduling, quoting, and job insights from ServiceTitan in Claude, ChatGPT, and Gemini.",
     eyebrow: "For electrical contractors",
     lede:
-      "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For electrical shops, that means scheduling health, quoting conversion, and which jobs actually earn their keep — deep insights and data-backed actions inside the AI you already use.",
+      "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For electrical shops, that means scheduling health, quoting conversion, and which jobs actually earn their keep — deep insights and data-backed actions inside the AI you already use.",
     problemTitle: "A full board that still pays unevenly",
     problemBody:
-      "Tradesmatic is a decision-making platform for owner-operated electrical businesses. Through our Multi-Trades™ MCP Server, your schedule, quotes, and jobs become decision-ready answers backed by real data.",
+      "GrowthSnipe is a decision-making platform for owner-operated electrical businesses. Through our Multi-Trades™ MCP Server, your schedule, quotes, and jobs become decision-ready answers backed by real data.",
     pains: [
       {
         title: "Quotes that die quietly",
@@ -313,11 +313,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
     ],
     integrationsBody:
-      "Tradesmatic connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller electrical teams run the same workflow through Housecall Pro or Jobber.",
+      "GrowthSnipe connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller electrical teams run the same workflow through Housecall Pro or Jobber.",
     integrationLinks: [
-      { slug: "servicetitan", label: "Tradesmatic for ServiceTitan" },
-      { slug: "housecall-pro", label: "Tradesmatic for Housecall Pro" },
-      { slug: "jobber", label: "Tradesmatic for Jobber" },
+      { slug: "servicetitan", label: "GrowthSnipe for ServiceTitan" },
+      { slug: "housecall-pro", label: "GrowthSnipe for Housecall Pro" },
+      { slug: "jobber", label: "GrowthSnipe for Jobber" },
     ],
     faqs: [
       {
@@ -326,11 +326,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
       {
         q: "I already use ChatGPT — do I need something new?",
-        a: "No. Tradesmatic works with the AI you already use — Claude, ChatGPT, and Gemini — so the tool you already open becomes the one that knows your schedule, quotes, and ticket mix.",
+        a: "No. GrowthSnipe works with the AI you already use — Claude, ChatGPT, and Gemini — so the tool you already open becomes the one that knows your schedule, quotes, and ticket mix.",
       },
       {
         q: "Is my business data stored on your servers?",
-        a: "No. Tradesmatic reads your connected software in real time and never stores business data on our servers. Only your short business-context profile is saved, and you control or delete it any time.",
+        a: "No. GrowthSnipe reads your connected software in real time and never stores business data on our servers. Only your short business-context profile is saved, and you control or delete it any time.",
       },
     ],
     ctaTitle: "Know which quotes still close this week",
@@ -347,10 +347,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       "AI for roofers: pipeline and referral insights from ServiceTitan inside Claude, ChatGPT, and Gemini.",
     eyebrow: "For roofing contractors",
     lede:
-      "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For roofers, that means pipeline, referral sources, and seasonal dips you can plan around instead of react to — deep insights and data-backed actions inside the AI you already use.",
+      "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For roofers, that means pipeline, referral sources, and seasonal dips you can plan around instead of react to — deep insights and data-backed actions inside the AI you already use.",
     problemTitle: "Storm season covers a thin pipeline",
     problemBody:
-      "Tradesmatic is a decision-making platform for owner-operated roofing businesses. Through our Multi-Trades™ MCP Server, inspections, quotes, and jobs become decision-ready answers backed by real data.",
+      "GrowthSnipe is a decision-making platform for owner-operated roofing businesses. Through our Multi-Trades™ MCP Server, inspections, quotes, and jobs become decision-ready answers backed by real data.",
     pains: [
       {
         title: "A pipeline that looks full until it isn't",
@@ -380,11 +380,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
     ],
     integrationsBody:
-      "Tradesmatic connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller roofing crews use the same workflow through Housecall Pro or Jobber.",
+      "GrowthSnipe connects ServiceTitan to Claude, ChatGPT, and Gemini in real time. Smaller roofing crews use the same workflow through Housecall Pro or Jobber.",
     integrationLinks: [
-      { slug: "servicetitan", label: "Tradesmatic for ServiceTitan" },
-      { slug: "housecall-pro", label: "Tradesmatic for Housecall Pro" },
-      { slug: "jobber", label: "Tradesmatic for Jobber" },
+      { slug: "servicetitan", label: "GrowthSnipe for ServiceTitan" },
+      { slug: "housecall-pro", label: "GrowthSnipe for Housecall Pro" },
+      { slug: "jobber", label: "GrowthSnipe for Jobber" },
     ],
     faqs: [
       {
@@ -393,11 +393,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
       {
         q: "Which AI tools can I ask in?",
-        a: "Whichever you already use: Tradesmatic works with Claude, ChatGPT, and Gemini. The deep insights are the same in each, because they come from your connected business software, not the AI's training data.",
+        a: "Whichever you already use: GrowthSnipe works with Claude, ChatGPT, and Gemini. The deep insights are the same in each, because they come from your connected business software, not the AI's training data.",
       },
       {
         q: "Do you store my roofing job data?",
-        a: "No. Tradesmatic never stores your business data on our servers — it reads your connected software in real time when you ask, and access ends if you disconnect.",
+        a: "No. GrowthSnipe never stores your business data on our servers — it reads your connected software in real time when you ask, and access ends if you disconnect.",
       },
     ],
     ctaTitle: "See next month's installs today",
@@ -414,10 +414,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       "AI for general contractors: quotes, jobs, and decisions from Jobber inside Claude, ChatGPT, and Gemini.",
     eyebrow: "For general contractors",
     lede:
-      "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For GCs running quotes, jobs, and invoices across trades, that means the three decisions that matter today on top — deep insights and data-backed actions inside the AI you already use.",
+      "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For GCs running quotes, jobs, and invoices across trades, that means the three decisions that matter today on top — deep insights and data-backed actions inside the AI you already use.",
     problemTitle: "Five trades, one blurred picture",
     problemBody:
-      "Tradesmatic is a decision-making platform for owner-operated general contracting businesses. Through our Multi-Trades™ MCP Server, quotes, jobs, clients, and events become decision-ready answers backed by real data.",
+      "GrowthSnipe is a decision-making platform for owner-operated general contracting businesses. Through our Multi-Trades™ MCP Server, quotes, jobs, clients, and events become decision-ready answers backed by real data.",
     pains: [
       {
         title: "A slow month spread across trades",
@@ -447,11 +447,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
     ],
     integrationsBody:
-      "Tradesmatic connects Jobber to Claude, ChatGPT, and Gemini in real time. Smaller multi-trade teams run the same workflow through Housecall Pro, and larger crews connect through ServiceTitan.",
+      "GrowthSnipe connects Jobber to Claude, ChatGPT, and Gemini in real time. Smaller multi-trade teams run the same workflow through Housecall Pro, and larger crews connect through ServiceTitan.",
     integrationLinks: [
-      { slug: "jobber", label: "Tradesmatic for Jobber" },
-      { slug: "housecall-pro", label: "Tradesmatic for Housecall Pro" },
-      { slug: "servicetitan", label: "Tradesmatic for ServiceTitan" },
+      { slug: "jobber", label: "GrowthSnipe for Jobber" },
+      { slug: "housecall-pro", label: "GrowthSnipe for Housecall Pro" },
+      { slug: "servicetitan", label: "GrowthSnipe for ServiceTitan" },
     ],
     faqs: [
       {
@@ -460,11 +460,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
       {
         q: "Do I need to change how my team works?",
-        a: "No. Tradesmatic reads your existing software through the Multi-Trades™ MCP Server — nothing migrates, nothing re-trains. Your crew keeps booking and billing as usual; you get the decision-making layer on top.",
+        a: "No. GrowthSnipe reads your existing software through the Multi-Trades™ MCP Server — nothing migrates, nothing re-trains. Your crew keeps booking and billing as usual; you get the decision-making layer on top.",
       },
       {
         q: "Is my client and job data stored?",
-        a: "No. Tradesmatic never stores your business data on our servers. It reads your connected software in real time when you ask a question.",
+        a: "No. GrowthSnipe never stores your business data on our servers. It reads your connected software in real time when you ask a question.",
       },
     ],
     ctaTitle: "One view across every trade you run",
@@ -481,10 +481,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       "AI for pest control: routes, repeats, and retention from Housecall Pro in Claude, ChatGPT, and Gemini.",
     eyebrow: "For pest control operators",
     lede:
-      "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For pest control, that means routes, repeats, and retention in one morning view — deep insights and data-backed actions inside the AI you already use.",
+      "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. For pest control, that means routes, repeats, and retention in one morning view — deep insights and data-backed actions inside the AI you already use.",
     problemTitle: "Recurring revenue that quietly leaks",
     problemBody:
-      "Tradesmatic is a decision-making platform for owner-operated pest control businesses. Through our Multi-Trades™ MCP Server, your jobs, clients, and events become decision-ready answers backed by real data.",
+      "GrowthSnipe is a decision-making platform for owner-operated pest control businesses. Through our Multi-Trades™ MCP Server, your jobs, clients, and events become decision-ready answers backed by real data.",
     pains: [
       {
         title: "Cancellations nobody catches in time",
@@ -514,10 +514,10 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
     ],
     integrationsBody:
-      "Tradesmatic connects Housecall Pro to Claude, ChatGPT, and Gemini in real time. Teams on Jobber run the same workflow through Jobber.",
+      "GrowthSnipe connects Housecall Pro to Claude, ChatGPT, and Gemini in real time. Teams on Jobber run the same workflow through Jobber.",
     integrationLinks: [
-      { slug: "housecall-pro", label: "Tradesmatic for Housecall Pro" },
-      { slug: "jobber", label: "Tradesmatic for Jobber" },
+      { slug: "housecall-pro", label: "GrowthSnipe for Housecall Pro" },
+      { slug: "jobber", label: "GrowthSnipe for Jobber" },
     ],
     faqs: [
       {
@@ -526,11 +526,11 @@ export const TRADE_PAGES: Record<TradeSlug, TradePageData> = {
       },
       {
         q: "Which AI tools does it work with?",
-        a: "Tradesmatic works with the AI you already use — Claude, ChatGPT, and Gemini. Ask about routes, retention, or callbacks in whichever one you already open each day.",
+        a: "GrowthSnipe works with the AI you already use — Claude, ChatGPT, and Gemini. Ask about routes, retention, or callbacks in whichever one you already open each day.",
       },
       {
         q: "Do you store my customer list?",
-        a: "No. Tradesmatic reads your connected software in real time and never stores business data on our servers. Disconnect any time and access ends with it.",
+        a: "No. GrowthSnipe reads your connected software in real time and never stores business data on our servers. Disconnect any time and access ends with it.",
       },
     ],
     ctaTitle: "Keep every route — and every account",

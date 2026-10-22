@@ -17,7 +17,7 @@ export function AdminPlans() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
-  const [planForm, setPlanForm] = useState({ name: "", monthly: "", annual: "", maxUsers: "", briefings: true, features: "" });
+  const [planForm, setPlanForm] = useState({ name: "", monthly: "", annual: "", maxUsers: "", briefings: true, contactOnly: false, features: "" });
   const [editingFeaturesId, setEditingFeaturesId] = useState<string | null>(null);
   const [editingFeatures, setEditingFeatures] = useState("");
 
@@ -67,10 +67,14 @@ export function AdminPlans() {
                 <div>
                   <span className="font-medium">{String(p.name)}</span>{" "}
                   <span className="text-muted-foreground">
-                    {formatMoney(Number(p.monthlyMinor))}/mo · {formatMoney(Number(p.annualMinor))}/yr ·{" "}
+                    {Number(p.contactOnly) === 1
+                      ? "contact us for pricing"
+                      : `${formatMoney(Number(p.monthlyMinor))}/mo · ${formatMoney(Number(p.annualMinor))}/yr`}{" "}
+                    ·{" "}
                     {p.maxUsers == null ? "unlimited users" : `${Number(p.maxUsers)} user${Number(p.maxUsers) === 1 ? "" : "s"}`} ·{" "}
                     {Number(p.allowBriefings) === 1 ? "briefings on" : "no briefings"}
                   </span>{" "}
+                  {Number(p.contactOnly) === 1 && <Badge variant="secondary">contact only</Badge>}{" "}
                   {Number(p.active) !== 1 && <Badge>archived</Badge>}
                 </div>
                 <div className="flex gap-2">
@@ -151,6 +155,10 @@ export function AdminPlans() {
                 <Checkbox checked={planForm.briefings} onCheckedChange={(v) => setPlanForm({ ...planForm, briefings: v === true })} />
                 Scheduled briefings allowed
               </label>
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={planForm.contactOnly} onCheckedChange={(v) => setPlanForm({ ...planForm, contactOnly: v === true })} />
+                Contact-only (not purchasable)
+              </label>
               <div className="sm:col-span-2">
                 <Textarea
                   rows={2}
@@ -173,10 +181,11 @@ export function AdminPlans() {
                       trialPeriodDays: 0,
                       maxUsers: planForm.maxUsers.trim() === "" ? null : Math.max(1, Math.round(Number(planForm.maxUsers))),
                       allowBriefings: planForm.briefings ? 1 : 0,
+                      contactOnly: planForm.contactOnly ? 1 : 0,
                       features: planForm.features.trim() === "" ? null : planForm.features,
                     }),
                   });
-                  setPlanForm({ name: "", monthly: "", annual: "", maxUsers: "", briefings: true, features: "" });
+                  setPlanForm({ name: "", monthly: "", annual: "", maxUsers: "", briefings: true, contactOnly: false, features: "" });
                 }, "Plan created")
               }
             >

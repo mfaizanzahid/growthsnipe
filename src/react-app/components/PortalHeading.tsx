@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 /** Portal name heading for auth pages (loaded live from settings). Blank until loaded. */
 export function PortalHeading() {
-  const [portalName, setPortalName] = useState("Tradesmatic");
+  const [portalName, setPortalName] = useState("GrowthSnipe");
 
   useEffect(() => {
     fetch("/api/portal")
@@ -16,7 +16,7 @@ export function PortalHeading() {
 
   return (
     <h1 className="min-h-9 text-center text-3xl font-bold tracking-tight text-primary">
-      {portalName || "Tradesmatic"}
+      {portalName || "GrowthSnipe"}
     </h1>
   );
 }

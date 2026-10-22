@@ -10,7 +10,7 @@ declare global {
   interface Window {
     dataLayer?: Array<unknown>;
     gtag?: (...args: unknown[]) => void;
-    __tradesmaticGaInit?: boolean;
+    __growthsnipeGaInit?: boolean;
   }
 }
 
@@ -22,8 +22,8 @@ export function gaMeasurementId(): string {
 export function initAnalytics(): void {
   const id = gaMeasurementId();
   if (!id || typeof document === "undefined") return;
-  if (window.__tradesmaticGaInit) return;
-  window.__tradesmaticGaInit = true;
+  if (window.__growthsnipeGaInit) return;
+  window.__growthsnipeGaInit = true;
   window.dataLayer = window.dataLayer ?? [];
   // NOTE: push the `arguments` object exactly like Google's snippet — the
   // tag runtime silently drops queue entries pushed as real arrays (proven

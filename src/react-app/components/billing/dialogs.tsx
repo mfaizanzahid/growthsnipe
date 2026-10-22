@@ -75,7 +75,7 @@ export function InvoicePreviewDialog({ open, onClose, invoice, items, loading }:
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Invoice {invoice?.number ?? ""}</DialogTitle>
-          <DialogDescription>HTML preview — use PDF for the downloadable copy.</DialogDescription>
+          <DialogDescription>HTML preview: use PDF for the downloadable copy.</DialogDescription>
         </DialogHeader>
         {loading || !invoice ? (
           <div className="space-y-2 py-4">
@@ -191,9 +191,9 @@ export function ChangePlanDialog({
           {target && (
             <p className="text-sm text-muted-foreground">
               {target.name} ({interval === "month" ? "monthly" : "yearly"}): {formatWholeMoney(targetPrice, target.currency)}
-              {kind === "upgrade" && " — charged immediately, prorated for the remaining cycle."}
-              {kind === "downgrade" && " — takes effect from the next billing cycle."}
-              {kind === "same" && " — no change."}
+              {kind === "upgrade" && ": charged immediately, prorated for the remaining cycle."}
+              {kind === "downgrade" && ": takes effect from the next billing cycle."}
+              {kind === "same" && ": no change."}
             </p>
           )}
         </div>
@@ -283,7 +283,7 @@ export function ChargeDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New charge — {orgName}</DialogTitle>
+          <DialogTitle>New charge: {orgName}</DialogTitle>
           <DialogDescription>Creates an invoice and charges the default card now.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -340,7 +340,7 @@ export function ChargeDialog({
           </div>
           <div className="space-y-2">
             <Label>Description</Label>
-            <Input placeholder="Extra seats — September" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Input placeholder="Extra seats: September" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
         </div>
         <DialogFooter>
@@ -393,7 +393,7 @@ export function RetryDialog({
         <DialogHeader>
           <DialogTitle>Retry payment</DialogTitle>
           <DialogDescription>
-            {invoiceLabel} — charges one attempt on the selected card.
+            {invoiceLabel}: charges one attempt on the selected card.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
@@ -454,7 +454,7 @@ export function RefundDialog({
         <DialogHeader>
           <DialogTitle>Issue refund</DialogTitle>
           <DialogDescription>
-            {invoiceLabel} — blank amount refunds in full. No credit balances.
+            {invoiceLabel}. Blank amount refunds in full. No credit balances.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">

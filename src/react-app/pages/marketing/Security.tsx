@@ -41,7 +41,7 @@ const FAQS = [
   },
   {
     q: "What happens to my data when I disconnect or cancel?",
-    a: "Access ends: with no real-time connection there is nothing left to read, because nothing was copied. Account and billing data follow the privacy policy, and you can ask the Tradesmatic team to delete your business context profile.",
+    a: "Access ends: with no real-time connection there is nothing left to read, because nothing was copied. Account and billing data follow the privacy policy, and you can ask the GrowthSnipe team to delete your business context profile.",
   },
   {
     q: "Who can see my workspace?",
@@ -55,7 +55,7 @@ export function Security() {
       <PageHero
         eyebrow="Security"
         title="We don't store your business data. Full stop."
-        lede="Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time through our Multi-Trades™ MCP Server. Business data from your connected software is read in real time and passed through — never stored, backed up, or retained on our servers."
+        lede="GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time through our Multi-Trades™ MCP Server. Business data from your connected software is read in real time and passed through — never stored, backed up, or retained on our servers."
       />
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">

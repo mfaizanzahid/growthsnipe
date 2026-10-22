@@ -3,6 +3,7 @@ import { nowSec } from "../lib/time";
 import { withIdem, requestHashFor, type IdempotencyBackend } from "../lib/idempotency";
 import { computeSignupAmounts } from "../lib/billing-math";
 import { advanceBillingDate, utcMidnight } from "../lib/billing-dates";
+import { isPurchasablePlan } from "./access";
 import type { BillingStore } from "../repositories/billing";
 import { consumeRedemption, validateCoupon, CouponError } from "./coupons";
 import { syncWalletMethods } from "./methods";
@@ -54,6 +55,9 @@ export async function confirmSignup(
 ): Promise<{ cached: boolean; result: SignupResult }> {
   const plan = await store.getPlan(input.planId);
   if (!plan || plan.active !== 1) throw new BillingError("Plan is not available", 422);
+  if (!isPurchasablePlan(plan)) {
+    throw new BillingError("This plan is contact-only. Contact us for pricing", 422);
+  }
   if (input.interval !== "month" && input.interval !== "year") {
     throw new BillingError("Interval must be month or year", 422);
   }

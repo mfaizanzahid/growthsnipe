@@ -2,25 +2,29 @@ import { useState } from "react";
 import { cn } from "../lib/utils";
 
 /**
- * App brand: image logo when public/logo.png exists, portal-name text
- * otherwise. Never renders both — pass the name, not a sibling label.
+ * Brand wordmark. Renders text by default; pass `src` only when the operator
+ * supplies an approved logo asset. Never renders both.
  */
 export function BrandLogo({
   name,
   textClassName,
   className,
   imgClassName,
+  src,
 }: {
   name: string;
   textClassName?: string;
   className?: string;
   imgClassName?: string;
+  src?: string;
 }) {
   const [missing, setMissing] = useState(false);
-  if (missing) return <span className={textClassName}>{name}</span>;
+  if (!src || missing) {
+    return <span className={cn("font-bold tracking-tight", textClassName)}>{name}</span>;
+  }
   return (
     <img
-      src="/logo.png"
+      src={src}
       alt={name}
       onError={() => setMissing(true)}
       className={cn("h-6 w-auto", imgClassName, className)}

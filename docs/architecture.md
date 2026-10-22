@@ -1,4 +1,4 @@
-# Architecture — Tradesmatic (home-service business SaaS app)
+# Architecture: GrowthSnipe (home-service SaaS app)
 
 ```text
 PUBLIC SITE (unauthenticated, same SPA + Worker)
@@ -7,17 +7,19 @@ PUBLIC SITE (unauthenticated, same SPA + Worker)
         │ HTTPS (session cookie, orgId per tenant request)
         ▼
 APP DASHBOARD (authenticated, org-scoped via top-left switcher)
-  /dashboard Sidekick overview   /connections   /mcp-access
-  /employees   /briefings-schedules   /business-profile
+  /dashboard scorecard   /connections   /business-profile
   /billing (feature: invoices+PDF, pay/retry, methods, plan change, cancel)
   /settings (org)   /profile
   /superadmin (clients, invoices, usage charges, refunds, plans, coupons, settings)
+
+HIDDEN IN THIS RELEASE (code retained, routes unregistered)
+  /mcp-access   /employees   /briefings-schedules
         │
         ▼
 WORKER (Hono, one app)
   /auth/* (Better Auth)   /api/orgs   /api/plans (public, active only)
-  /api/billing/* (feature)   /api/superadmin/*   /api/sidekick/* (planned)
-  /mcp (Streamable HTTP, org-scoped bearer token, V1)
+  /api/billing/* (feature)   /api/superadmin/*   /api/sidekick/* (dormant)
+  /mcp (Streamable HTTP, org-scoped bearer token, dormant)
   Crons: daily billing renewals + hourly Sidekick briefing tick
         │ fetch (X-SFPY-MERCHANT-SECRET)          │ Resend
         ▼                                         ▼
@@ -37,17 +39,17 @@ D1 (Drizzle, authoritative)
 ```
 
 **Deployment:** production ships through GitHub auto-deploy — Cloudflare
-Workers Builds (git integration) builds and deploys `fieldvisory-production`
+Workers Builds (git integration) builds and deploys `growthsnipe-production`
 on every push to `main`; the CI workflow only runs checks. Schema changes are
 applied separately and must land before the push. See `docs/deployment.md`.
 
-## Sidekick MCP data flow
+## Sidekick MCP data flow (dormant, UI hidden)
 
 ```text
 Claude / ChatGPT / other MCP client
              │
              v
-         /mcp Tradesmatic
+         /mcp GrowthSnipe
              │
         tenant + auth (MCP principal → organizationId, never a tool argument)
              │
@@ -63,7 +65,7 @@ Claude / ChatGPT / other MCP client
 Canonical data → management playbooks → scheduler → briefing → Resend
 ```
 
-The provider adapter is replaceable; the Sidekick intelligence layer is not provider-specific. The public MCP surface remains data-oriented so AI employees can compose those primitives into analytics and decisions.
+The provider adapter is replaceable; the Sidekick intelligence layer is not provider-specific. The dormant MCP surface remains data-oriented so AI employees can compose those primitives into analytics and decisions if it is reintroduced.
 
 ## Billing feature flows (manual Safepay billing, no native subscriptions)
 

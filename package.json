@@ -1,5 +1,5 @@
 {
-  "name": "fieldvisory",
+  "name": "growthsnipe",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -14,9 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate:local": "wrangler d1 migrations apply fieldvisory --local",
-    "db:migrate:remote": "wrangler d1 migrations apply fieldvisory --remote",
-    "db:migrate:prod": "wrangler d1 migrations apply fieldvisory-db-prod --remote --env production",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:migrate:prod": "wrangler d1 migrations apply DB --remote --env production",
     "inline-docs": "node scripts/inline-knowledge.mjs",
     "deploy:prod": "npm run inline-docs && npm run build && wrangler deploy --config wrangler.jsonc --env production",
     "db:studio": "drizzle-kit studio"

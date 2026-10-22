@@ -15,7 +15,7 @@ export function NotFound() {
           This page wandered off the job site
         </h1>
         <p className="mt-3 max-w-md text-muted-foreground">
-          The address you followed doesn&apos;t lead anywhere — it may have moved, been renamed,
+          The address you followed doesn&apos;t lead anywhere: it may have moved, been renamed,
           or never existed.
         </p>
         <div className="mt-8 flex flex-col gap-2 sm:flex-row">

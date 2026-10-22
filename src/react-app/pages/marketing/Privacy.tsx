@@ -10,37 +10,36 @@ export function Privacy() {
         </p>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
           This Privacy Policy explains how <strong>Optasoft (Private) Limited</strong>{" "}
-          (&quot;Optasoft&quot;, &quot;Tradesmatic&quot;, &quot;we&quot;, &quot;us&quot;, or
+          (&quot;Optasoft&quot;, &quot;GrowthSnipe&quot;, &quot;we&quot;, &quot;us&quot;, or
           &quot;our&quot;) collects, uses, stores, and discloses information when you use the
-          Tradesmatic platform, website, and related services (collectively, the
+          GrowthSnipe platform, website, and related services (collectively, the
           &quot;Services&quot;).
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           We respect your privacy and do not sell your personal information.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          By using Tradesmatic, you acknowledge the practices described in this Privacy Policy.
+          By using GrowthSnipe, you acknowledge the practices described in this Privacy Policy.
         </p>
         <div className="mt-8 space-y-6 text-sm leading-relaxed">
           <section>
-            <h2 className="text-lg font-semibold">1. About Tradesmatic</h2>
+            <h2 className="text-lg font-semibold">1. About GrowthSnipe</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic is a decision-making platform for owner-operated home service businesses.
+              GrowthSnipe is a decision-making platform for owner-operated home service businesses.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Through the Multi-Trades™ MCP Server, Tradesmatic can connect compatible AI tools and
-              business systems with information relating to your business, including jobs, clients,
-              agents, and events.
+              GrowthSnipe connects to the booking, CRM, phone, and advertising systems you authorize
+              so it can report on jobs, calls, and spend. Those systems hold the underlying data.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic may use OAuth and other authorization technologies to connect to
+              GrowthSnipe may use OAuth and other authorization technologies to connect to
               third-party services that you choose to connect.
             </p>
           </section>
           <section>
             <h2 className="text-lg font-semibold">2. Information We Collect</h2>
             <p className="mt-2 text-muted-foreground">
-              Depending on how you use Tradesmatic, we may collect and process the following
+              Depending on how you use GrowthSnipe, we may collect and process the following
               categories of information.
             </p>
             <h3 className="mt-4 text-base font-semibold">Account Information</h3>
@@ -58,7 +57,7 @@ export function Privacy() {
             </ul>
             <h3 className="mt-4 text-base font-semibold">Business Information</h3>
             <p className="mt-2 text-muted-foreground">
-              You may provide information about your business through Tradesmatic, including
+              You may provide information about your business through GrowthSnipe, including
               information relating to:
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
@@ -71,12 +70,12 @@ export function Privacy() {
               <li>other information contained in connected business systems.</li>
             </ul>
             <p className="mt-2 text-muted-foreground">
-              The specific information available to Tradesmatic depends on the services and
+              The specific information available to GrowthSnipe depends on the services and
               permissions you authorize.
             </p>
             <h3 className="mt-4 text-base font-semibold">Integration and Authorization Information</h3>
             <p className="mt-2 text-muted-foreground">
-              When you connect a third-party service, Tradesmatic may process OAuth credentials,
+              When you connect a third-party service, GrowthSnipe may process OAuth credentials,
               authorization tokens, API tokens, identifiers, and related technical information
               necessary to establish and maintain the connection.
             </p>
@@ -146,7 +145,7 @@ export function Privacy() {
             <p className="mt-2 text-muted-foreground">We may use personal information to:</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
               <li>create and administer accounts;</li>
-              <li>provide Tradesmatic and its features;</li>
+              <li>provide GrowthSnipe and its features;</li>
               <li>provide customer support;</li>
               <li>operate and maintain integrations;</li>
               <li>authenticate users and connected services;</li>
@@ -214,28 +213,28 @@ export function Privacy() {
           <section>
             <h2 className="text-lg font-semibold">7. Third-Party AI and Business Integrations</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic may allow you to connect third-party AI tools and business applications.
+              GrowthSnipe may allow you to connect third-party AI tools and business applications.
             </p>
             <p className="mt-2 text-muted-foreground">
-              When you authorize an integration, information may be transmitted between Tradesmatic
+              When you authorize an integration, information may be transmitted between GrowthSnipe
               and the relevant third-party service according to the permissions you grant and the
               functionality of that integration.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Third-party services operate independently from Tradesmatic and have their own terms
+              Third-party services operate independently from GrowthSnipe and have their own terms
               and privacy policies.
             </p>
             <p className="mt-2 text-muted-foreground">
               We encourage you to review the privacy practices of any third-party service before
-              connecting it to Tradesmatic.
+              connecting it to GrowthSnipe.
             </p>
           </section>
           <section>
             <h2 className="text-lg font-semibold">8. Business Data and Customer Information</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic may process information about your customers, employees, agents, jobs,
+              GrowthSnipe may process information about your customers, employees, agents, jobs,
               appointments, or other individuals contained in a business system that you connect to
-              Tradesmatic.
+              GrowthSnipe.
             </p>
             <p className="mt-2 text-muted-foreground">
               If you provide us with information about other individuals, you are responsible for
@@ -243,14 +242,14 @@ export function Privacy() {
               information to us and to permit its processing through the Services.
             </p>
             <p className="mt-2 text-muted-foreground">
-              Where Tradesmatic processes business data on your behalf, we process that data to
+              Where GrowthSnipe processes business data on your behalf, we process that data to
               provide the functionality you have requested.
             </p>
           </section>
           <section>
             <h2 className="text-lg font-semibold">9. International Processing</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic operates using a distributed technology and infrastructure network that
+              GrowthSnipe operates using a distributed technology and infrastructure network that
               may involve systems and service providers located in different countries.
             </p>
             <p className="mt-2 text-muted-foreground">
@@ -309,8 +308,8 @@ export function Privacy() {
             </p>
             <p className="mt-2 text-muted-foreground">
               <strong>
-                <a className="underline" href="mailto:support@tradesmatic.com">
-                  support@tradesmatic.com
+                <a className="underline" href="mailto:support@GrowthSnipe.com">
+                  support@GrowthSnipe.com
                 </a>
               </strong>
             </p>
@@ -344,8 +343,8 @@ export function Privacy() {
             </ul>
             <p className="mt-2 text-muted-foreground">
               To exercise a privacy right, contact{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>
               .
             </p>
@@ -356,7 +355,7 @@ export function Privacy() {
           <section>
             <h2 className="text-lg font-semibold">14. Children&apos;s Privacy</h2>
             <p className="mt-2 text-muted-foreground">
-              Tradesmatic is intended for users who are <strong>18 years of age or older</strong>.
+              GrowthSnipe is intended for users who are <strong>18 years of age or older</strong>.
             </p>
             <p className="mt-2 text-muted-foreground">
               We do not knowingly provide accounts to individuals under 18.
@@ -364,8 +363,8 @@ export function Privacy() {
             <p className="mt-2 text-muted-foreground">
               If you believe that a person under 18 has provided personal information to us, please
               contact us at{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>{" "}
               so that we can investigate and take appropriate action.
             </p>
@@ -373,7 +372,7 @@ export function Privacy() {
           <section>
             <h2 className="text-lg font-semibold">15. Data Controller and Business Contact</h2>
             <p className="mt-2 text-muted-foreground">
-              For personal information collected directly by Tradesmatic in connection with your
+              For personal information collected directly by GrowthSnipe in connection with your
               account and use of the Services, the relevant entity is:
             </p>
             <p className="mt-2 text-muted-foreground">
@@ -385,8 +384,8 @@ export function Privacy() {
             </p>
             <p className="mt-2 text-muted-foreground">
               <strong>Email:</strong>{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>
               <br />
               <strong>Phone:</strong> +92-321-2260075
@@ -400,8 +399,8 @@ export function Privacy() {
             </p>
             <p className="mt-2 text-muted-foreground">
               <strong>Email:</strong>{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>
               <br />
               <strong>Phone:</strong> +92-321-2260075
@@ -453,15 +452,15 @@ export function Privacy() {
             </p>
             <p className="mt-2 text-muted-foreground">
               <strong>Email:</strong>{" "}
-              <a className="underline" href="mailto:support@tradesmatic.com">
-                support@tradesmatic.com
+              <a className="underline" href="mailto:support@GrowthSnipe.com">
+                support@GrowthSnipe.com
               </a>
               <br />
               <strong>Phone:</strong> +92-321-2260075
             </p>
             <p className="mt-2 text-muted-foreground">
               We welcome questions, requests, and concerns regarding the privacy and security of
-              information processed through Tradesmatic.
+              information processed through GrowthSnipe.
             </p>
           </section>
         </div>

@@ -76,7 +76,7 @@ export function Advisors() {
       <PageHero
         eyebrow="AI advisors"
         title="Meet your team."
-        lede="Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. A full specialist team working from your real-time data — inside the AI you already use, through our Multi-Trades™ MCP Server."
+        lede="GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. A full specialist team working from your real-time data — inside the AI you already use, through our Multi-Trades™ MCP Server."
       />
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">

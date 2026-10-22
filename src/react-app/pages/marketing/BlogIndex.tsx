@@ -18,7 +18,7 @@ export function BlogIndex() {
       <PageHero
         eyebrow="Blog"
         title="Straight talk for people who run home service businesses."
-        lede="No AI hype, no jargon — deep insights, decision-making habits, and data-backed actions drawn from 15 years inside this industry."
+        lede="No AI hype, no jargon: deep insights, decision-making habits, and data-backed actions drawn from 15 years inside this industry."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-6">
         <BlogArt />

@@ -24,20 +24,20 @@ export function Associations() {
       <PageHero
         eyebrow="Associations & groups"
         title="A member benefit your group can be proud of."
-        lede="Tradesmatic is a decision-making platform that gives your members deep insights and data-backed actions inside the AI they already use — Claude, ChatGPT, and Gemini — connected to their booking software in real time through our Multi-Trades™ MCP Server."
+        lede="GrowthSnipe is a decision-making platform that gives your members deep insights and data-backed actions inside the AI they already use — Claude, ChatGPT, and Gemini — connected to their booking software in real time through our Multi-Trades™ MCP Server."
       />
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <SectionHeading
           eyebrow="Partnership shape"
           title="Simple to offer, easy to explain"
-          body="Tradesmatic gives association members deep insights and data-backed actions from their own booking software, inside Claude, ChatGPT, and Gemini. Three parts, no admin burden on your team."
+          body="GrowthSnipe gives association members deep insights and data-backed actions from their own booking software, inside Claude, ChatGPT, and Gemini. Three parts, no admin burden on your team."
         />
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <IconTile
             icon={TagIcon}
             title="Preferred member pricing"
-            body="Members receive preferred pricing on Tradesmatic plans as a named benefit of belonging to your group — no codes to manage."
+            body="Members receive preferred pricing on GrowthSnipe plans as a named benefit of belonging to your group — no codes to manage."
           />
           <IconTile
             icon={UserGroupIcon}
@@ -47,7 +47,7 @@ export function Associations() {
           <IconTile
             icon={MegaphoneIcon}
             title="Co-branded materials"
-            body="Short explainers and webinar outlines written by the Tradesmatic team in plain language, carrying your group's name alongside ours."
+            body="Short explainers and webinar outlines written by the GrowthSnipe team in plain language, carrying your group's name alongside ours."
           />
         </div>
       </section>
@@ -57,7 +57,7 @@ export function Associations() {
           <SectionHeading
             eyebrow="Why it fits"
             title="Built by people who have sat in your members' offices"
-            body="The Tradesmatic team has spent 15 years inside this industry, watching owners guess at slow months with the answers sitting in their software. That is why every insight is specific, evidence-based, and respectful of a busy owner's time — the kind of benefit members renew for."
+            body="The GrowthSnipe team has spent 15 years inside this industry, watching owners guess at slow months with the answers sitting in their software. That is why every insight is specific, evidence-based, and respectful of a busy owner's time — the kind of benefit members renew for."
           />
           <div className="mx-auto mt-10 max-w-md text-left">
             <Testimonial
@@ -88,7 +88,7 @@ export function Associations() {
         </p>
         <div className="mt-6">
           <Button asChild>
-            <Link to="/contact">Contact the Tradesmatic team</Link>
+            <Link to="/contact">Contact the GrowthSnipe team</Link>
           </Button>
         </div>
       </section>

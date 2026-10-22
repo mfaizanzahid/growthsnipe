@@ -157,7 +157,7 @@ app.route("/", mcpApp);
 app.all("/api/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 app.all("/auth/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 app.all("/webhooks/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
-app.get("/health", (c) => c.json({ ok: true, service: "tradesmatic" }));
+  app.get("/health", (c) => c.json({ ok: true, service: "growthsnipe" }));
 app.all("*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 
 export default {

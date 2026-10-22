@@ -34,7 +34,7 @@ const RESOURCES: ResourceDef[] = [
   {
     name: 'core-instructions',
     uri: 'sidekick://instructions/core',
-    title: 'Tradesmatic Core Instructions',
+    title: 'GrowthSnipe Core Instructions',
     description: 'Operating model: mission, rules, KPI framework, briefing formats, activation.',
     text: coreInstructions,
     enabled: true,
@@ -42,7 +42,7 @@ const RESOURCES: ResourceDef[] = [
   {
     name: 'work-instructions',
     uri: 'sidekick://instructions/work',
-    title: 'Tradesmatic Project/Work Instructions',
+    title: 'GrowthSnipe Project/Work Instructions',
     description: 'Response shape and read/write discipline for owner work.',
     text: workInstructions,
     enabled: false,

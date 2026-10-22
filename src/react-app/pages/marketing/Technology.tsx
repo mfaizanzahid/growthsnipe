@@ -21,20 +21,20 @@ import {
 
 const FAQS = [
   {
-    q: "Is Tradesmatic itself an MCP server?",
-    a: "No. Tradesmatic is a decision-making platform that delivers deep insights and data-backed actions. The Multi-Trades™ MCP Server is the proprietary technology inside it that connects your software to Claude, ChatGPT, and Gemini in real time.",
+    q: "Is GrowthSnipe itself an MCP server?",
+    a: "No. GrowthSnipe is a decision-making platform that delivers deep insights and data-backed actions. The Multi-Trades™ MCP Server is the proprietary technology inside it that connects your software to Claude, ChatGPT, and Gemini in real time.",
   },
   {
     q: "Which business software does it connect to?",
-    a: "Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time, with answers shaped to each trade.",
+    a: "GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time, with answers shaped to each trade.",
   },
   {
     q: "Do I need a new AI subscription?",
-    a: "No. Tradesmatic works with the AI you already use — Claude, ChatGPT, and Gemini — so your existing subscription becomes business-aware with a short configuration.",
+    a: "No. GrowthSnipe works with the AI you already use — Claude, ChatGPT, and Gemini — so your existing subscription becomes business-aware with a short configuration.",
   },
   {
     q: "Where does my business data go?",
-    a: "Nowhere. Tradesmatic uses a real-time, pass-through design: it reads your software when you ask, answers with real data, and stores nothing about your business on its servers.",
+    a: "Nowhere. GrowthSnipe uses a real-time, pass-through design: it reads your software when you ask, answers with real data, and stores nothing about your business on its servers.",
   },
 ];
 
@@ -45,14 +45,14 @@ export function Technology() {
       <PageHero
         eyebrow="Technology"
         title="The engine behind every insight: our Multi-Trades™ MCP Server."
-        lede="Tradesmatic is a decision-making platform that delivers deep insights and data-backed actions inside the AI you already use — Claude, ChatGPT, and Gemini. The Multi-Trades™ MCP Server is the connective layer underneath that makes it possible, reading your business software in real time."
+        lede="GrowthSnipe is a decision-making platform that delivers deep insights and data-backed actions inside the AI you already use — Claude, ChatGPT, and Gemini. The Multi-Trades™ MCP Server is the connective layer underneath that makes it possible, reading your business software in real time."
       />
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <SectionHeading
           eyebrow="What it is"
           title="One layer between your software and your decisions"
-          body="Tradesmatic connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. The Multi-Trades MCP Server is proprietary technology purpose-built for the trades: it translates what your booking software already knows — jobs, clients, agents, events — into decision-ready answers, so you get better decisions without migrating software or learning a new tool."
+          body="GrowthSnipe connects Spectora, ISN, ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real time. The Multi-Trades MCP Server is proprietary technology purpose-built for the trades: it translates what your booking software already knows — jobs, clients, agents, events — into decision-ready answers, so you get better decisions without migrating software or learning a new tool."
         />
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <IconTile

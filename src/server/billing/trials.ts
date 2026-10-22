@@ -9,7 +9,7 @@ import { syncWalletMethods } from "./methods";
 import { sendChargeReceipt, sendSubscriptionNotice, sendTrialReminder } from "./mail";
 import { BillingError } from "./errors";
 import type { Gateway } from "./gateway";
-import { TRIAL_DAYS, TRIAL_PLAN_ID, isPrepaidTrial } from "./access";
+import { TRIAL_DAYS, TRIAL_PLAN_ID, isPrepaidTrial, isPurchasablePlan } from "./access";
 import { logEvent } from "../lib/app-logs";
 
 export { TRIAL_PLAN_ID };
@@ -111,6 +111,9 @@ export async function subscribe(
 }> {
   const plan = await store.getPlan(input.planId);
   if (!plan || plan.active !== 1) throw new BillingError("Plan is not available", 422);
+  if (!isPurchasablePlan(plan)) {
+    throw new BillingError("This plan is contact-only. Contact us for pricing", 422);
+  }
   if (input.interval !== "month" && input.interval !== "year") {
     throw new BillingError("Interval must be month or year", 422);
   }

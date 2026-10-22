@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Navigate, Outlet, useLocation } from "react-router-dom";
 import {
   Bars3Icon,
-  BellAlertIcon,
   BuildingOfficeIcon,
   ChartBarIcon,
   CircleStackIcon,
@@ -12,7 +11,6 @@ import {
   DocumentTextIcon,
   CubeIcon,
   HomeIcon,
-  KeyIcon,
   MoonIcon,
   ShieldCheckIcon,
   SunIcon,
@@ -36,12 +34,12 @@ import { BillingGate } from "./BillingGate";
 import { BrandLogo } from "../BrandLogo";
 import { EmbedScripts } from "../EmbedScripts";
 
+/** The dashboard product name (the marketing brand is GrowthSnipe). */
+const APP_BRAND = "SNIPE Intelligence™";
+
 const NAV = [
-  { to: "/dashboard", label: "Overview", icon: HomeIcon, end: true },
+  { to: "/dashboard", label: "Scorecard", icon: HomeIcon, end: true },
   { to: "/connections", label: "Connections", icon: CircleStackIcon, end: false },
-  { to: "/mcp-access", label: "AI access", icon: KeyIcon, end: false },
-  { to: "/employees", label: "AI Employees", icon: UsersIcon, end: false },
-  { to: "/briefings-schedules", label: "Briefings & Schedules", icon: BellAlertIcon, end: false },
   { to: "/business-profile", label: "Business profile", icon: BuildingOfficeIcon, end: false },
   { to: "/billing", label: "Billing", icon: CreditCardIcon, end: false },
   { to: "/audit", label: "Audit log", icon: ClockIcon, end: false },
@@ -107,7 +105,7 @@ function NavItems({ superadmin, onNavigate }: { superadmin: boolean; onNavigate?
 export function AppShell() {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
-  const [portalName, setPortalName] = useState("Tradesmatic");
+  const [portalName] = useState(APP_BRAND);
   const [drawer, setDrawer] = useState(false);
   const {
     orgs,
@@ -129,16 +127,6 @@ export function AppShell() {
     daysLeft?: number;
   } | null>(null);
   const billingRevision = useBillingRevision();
-
-  useEffect(() => {
-    fetch("/api/portal")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        const name = (d as { portal_name?: string } | null)?.portal_name;
-        if (name) setPortalName(name);
-      })
-      .catch(() => undefined);
-  }, []);
 
   // Trial / subscribe notice bar above every app page (org members only).
   useEffect(() => {
@@ -247,7 +235,7 @@ export function AppShell() {
             >
               {billingNotice.kind === "trial" && (
                 <span>
-                  Pro trial — {billingNotice.daysLeft} day{billingNotice.daysLeft === 1 ? "" : "s"} left. Subscribe to keep full access.
+                  SNIPE Intelligence™ trial: {billingNotice.daysLeft} day{billingNotice.daysLeft === 1 ? "" : "s"} left. Subscribe to keep full access.
                 </span>
               )}
               {billingNotice.kind === "prepaid" && (
@@ -257,10 +245,10 @@ export function AppShell() {
                 </span>
               )}
               {billingNotice.kind === "expired" && (
-                <span>Trial ended — subscribe to restore full access. Your data is retained.</span>
+                <span>Trial ended: subscribe to restore full access. Your data is retained.</span>
               )}
               {billingNotice.kind === "past_due" && (
-                <span>Subscription past due — pay now to restore full access.</span>
+                <span>Subscription past due: pay now to restore full access.</span>
               )}
               {billingNotice.kind !== "prepaid" && (
                 <Button size="xs" variant="secondary" asChild>

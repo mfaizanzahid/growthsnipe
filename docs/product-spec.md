@@ -1,3 +1,5 @@
+> **Superseded for the current release.** GrowthSnipe is a productized growth company and SNIPE Intelligence™ is the analytics product. See `docs/growthsnipe-context.md` and `AGENTS.md`. Sections below that describe Tradesmatic positioning, the MCP server, AI advisors, or briefings apply only to dormant, UI-hidden code.
+
 # Product spec — Tradesmatic (home-service business SaaS app)
 
 ## Positioning

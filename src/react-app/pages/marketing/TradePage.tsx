@@ -40,7 +40,7 @@ export function TradePage() {
 
   return (
     <MarketingLayout>
-      <PageHero eyebrow={page.eyebrow} title={`Tradesmatic for ${page.tradeName}`} lede={page.lede} />
+      <PageHero eyebrow={page.eyebrow} title={`GrowthSnipe for ${page.tradeName}`} lede={page.lede} />
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <SectionHeading eyebrow="The problem" title={page.problemTitle} body={page.problemBody} />

@@ -136,7 +136,7 @@ export async function sendEmail(
 }
 
 /**
- * Best-effort subscribe of a verified user to the "Tradesmatic New Signup"
+ * Best-effort subscribe of a verified user to the "GrowthSnipe New Signup"
  * Brevo list (default id 8, override via BREVO_NEW_SIGNUP_LIST_ID).
  * Never throws — signup/login must succeed even when Brevo is down.
  */

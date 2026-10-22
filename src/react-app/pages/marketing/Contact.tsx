@@ -27,7 +27,7 @@ export function Contact() {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) throw new Error(data?.error ?? "Could not send your message");
       setSent(true);
-      toast.success("Message sent — we'll get back to you.");
+      toast.success("Message sent: we'll get back to you.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not send your message");
     } finally {
@@ -39,8 +39,8 @@ export function Contact() {
     <MarketingLayout>
       <PageHero
         eyebrow="Contact"
-        title="Talk to a human"
-        lede="Software questions, advisor questions, fit questions — we read everything, reply within one business day."
+        title="Get your free Revenue Leak Scorecard"
+        lede="Tell us what you run and roughly how many inspections you do a month. We will reply within one business day with next steps or a discovery time."
       />
       <section className="mx-auto w-full max-w-xl px-4 pb-14">
         <Card>
@@ -50,7 +50,7 @@ export function Contact() {
           </CardHeader>
           <CardContent>
             {sent ? (
-              <p className="text-sm text-muted-foreground">Thanks — check your inbox for our reply.</p>
+              <p className="text-sm text-muted-foreground">Thanks. Check your inbox for our reply.</p>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">

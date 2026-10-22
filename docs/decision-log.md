@@ -522,7 +522,7 @@ Verified live against org Jalop (Spectora). Monthly review over real data: 103 o
 ## 2026-09-18 - Marketing site restructure: owner copy decisions
 
 - Landing rebuilt to the 11-section content-strategist order (problem, solution, features, advisors, how-it-works, trust, integrations, trades, pricing, about, CTA) reusing MarketingBits/MarketingLayout only; full sitemap build (technology, associations, 5 integration pages, who-we-help hub + 7 trade pages) in progress.
-- Owner decisions (standing rules, mirrored into .opencode/agents/content-strategist.md QA checklist, AGENTS.md, product-spec.md): (1) existing testimonials stay and new illustrative customer testimonials are permitted when owner-approved � vendor/association/partner endorsements still require a real partnership; (2) StatBand keeps '<5 min to connect' (never swap for a platform count � the integration list may grow); (3) 'records/data/evidence attached' phrasing retired everywhere in favor of 'real data' style.
+- Owner decisions (standing rules, mirrored into .opencode/agents/content-strategist.md QA checklist, AGENTS.md, product-spec.md): (1) existing testimonials stay and new illustrative customer testimonials are permitted when owner-approved - vendor/association/partner endorsements still require a real partnership; (2) StatBand keeps '<5 min to connect' (never swap for a platform count - the integration list may grow); (3) 'records/data/evidence attached' phrasing retired everywhere in favor of 'real data' style.
 
 ## 2026-09-27 - Billing & payments admin-only (owner decision)
 
@@ -545,7 +545,7 @@ Verified live against org Jalop (Spectora). Monthly review over real data: 103 o
 
 ## 2026-09-18 - Production deploys via git integration
 
-- Pushes to main auto-deploy fieldvisory-production (Workers Builds git integration; e.g. push 7bfbcff 18:07 local deployed 18:09 local). No separate wrangler deploy needed for normal work � manual deploy:prod is a fallback only.
+- Pushes to main auto-deploy fieldvisory-production (Workers Builds git integration; e.g. push 7bfbcff 18:07 local deployed 18:09 local). No separate wrangler deploy needed for normal work - manual deploy:prod is a fallback only.
 
 ## 2026-10-18 - ISN list endpoints return INDEX records only (live probe, Guardian)
 
@@ -813,3 +813,28 @@ Found while verifying the production deploy: the Zoho widget was live in the pub
 - **Verified with Vite's own loader**, not from memory: a temporary `.env` with `file.$zoho` resolved to `file.`, `file.\$zoho` resolved to `file.$zoho`, and a `process.env` value of `proc.$zoho` resolved to `proc.$zoho` unchanged.
 
 While checking the deploy path, also confirmed that the prepaid-trial commit reached production (the live bundle contains `trialPrepaid` and the new billing copy), that the production D1 has the `trial_prepaid` column, and that no errors were logged in the window where the code landed ahead of the migration.
+
+## 2026-10-22 - Rebrand to GrowthSnipe and SNIPE Intelligence™
+
+The product is now GrowthSnipe, a productized growth company for owner-operated home-service businesses. The authenticated analytics product is SNIPE Intelligence™ with a 30-day no-card trial. The trial plan is `snipe-intelligence`.
+
+Plans gain `contactOnly`. Only SNIPE Intelligence™ may display a price. Loop Library, Snipe Diagnostic, Snipe Blueprint, SNIPE Engine Core, and SNIPE Engine Command are contact-only: price fields are 0, they are excluded from the max-4 active self-serve count, and checkout, signup, and plan change refuse them with a 422 and `This plan is contact-only. Contact us for pricing`.
+
+The MCP connection, AI Employees, and briefing schedules remain in code and are hidden from the UI. Their routes (`/mcp-access`, `/employees`, `/briefings-schedules`) are no longer registered, so direct URLs 404 and the pages are not bundled. Public routes for advisors, technology, associations, security, integration detail, and trade detail were removed for this release.
+
+Production defaults now use `https://growthsnipe.com`; auth, billing, and briefing sender addresses use `growthsnipe.com`. The Worker health endpoint reports `service: "growthsnipe"`. At the time of this first pass, Worker, D1, and package names remained `fieldvisory`; they were changed in the rename entry below.
+
+Current docs were rebuilt around GrowthSnipe: README, architecture, API contract, deployment, agent architecture rules, and the shared agent context block. Historical migrations, superseded plans, and the old decision log entries remain unchanged on purpose. The unrouted legacy marketing files and the hidden MCP/AI Employees/Schedules pages remain on disk but are not registered or bundled.
+
+Verification: `npm run typecheck`, `npm run lint`, `npm test` (531 passing), and `npm run build` (16 prerendered routes) all pass. The local D1 has all migrations through `0030`; active plans are SNIPE Intelligence™ plus the five contact-only plans. `dist/client` contains no Tradesmatic, Fieldvisory, Multi-Trades, Business Sidekick, or tradesmatic.com strings.
+
+## 2026-10-22 - Rename package, Worker, and D1 bindings to GrowthSnipe
+
+The package name is now `growthsnipe` in `package.json` and `package-lock.json`. The Worker name is `growthsnipe`, the local D1 database name is `growthsnipe`, and the production D1 database name is `growthsnipe-db-prod`. The production D1 keeps its existing `database_id`, so the binding still points at the same data.
+
+Migration scripts now target the `DB` binding rather than a database display name. This keeps local and production migrations working while the Cloudflare resource name is changed outside the repo.
+
+Local D1 kept its schema and data after the rename; all migrations through `0030` are applied.
+
+External follow-up: the Cloudflare D1 resource is still named `fieldvisory-db-prod` until it is renamed in the Cloudflare dashboard/API or replaced by a new database and import. The next production deploy creates `growthsnipe-production`; the old `fieldvisory-production` Worker remains until it is deleted.
+

@@ -156,12 +156,12 @@ export function trialReminderContent(input: {
   const headline = input.ended ? "Trial ended" : `Trial ${when}`;
   return {
     subject: input.ended
-      ? "Your trial has ended — subscribe to restore access"
-      : `Your trial ${when} — subscribe to keep access`,
+      ? "Your trial has ended. Subscribe to restore access"
+      : `Your trial ${when}. Subscribe to keep access`,
     title: headline,
     html: input.ended
-      ? `<p>Your Pro trial ${when}. Dashboard, AI access, and briefings are paused until you subscribe to a paid plan. Your data is retained.</p>`
-      : `<p>Your Pro trial ${when}. Subscribe now to keep uninterrupted access to your dashboard, AI access, and briefings.</p>`,
+      ? `<p>Your SNIPE Intelligence™ trial ${when}. Dashboard access is paused until you subscribe to a paid plan. Your data is retained.</p>`
+      : `<p>Your SNIPE Intelligence™ trial ${when}. Subscribe now to keep uninterrupted access to your dashboard.</p>`,
   };
 }
 
@@ -265,7 +265,7 @@ export function briefingContent(input: {
   dashboardUrl: string;
 }): { subject: string; title: string; html: string } {
   const org = escapeHtml(input.orgName || "your workspace");
-  const brand = escapeHtml(input.portalName || "Tradesmatic");
+  const brand = escapeHtml(input.portalName || "GrowthSnipe");
   const support = escapeHtml(input.supportEmail || "");
   const paragraphs = input.briefingText
     .split(/\n{2,}/)
@@ -274,7 +274,7 @@ export function briefingContent(input: {
     .map((p) => `<p style="margin:0 0 12px 0">${escapeHtml(p).replace(/\n/g, "<br/>")}</p>`)
     .join("");
   return {
-    subject: `${input.portalName || "Tradesmatic"} ${escapeHtml(input.periodLabel)} briefing for ${org}`,
+    subject: `${input.portalName || "GrowthSnipe"} ${escapeHtml(input.periodLabel)} briefing for ${org}`,
     title: `${escapeHtml(input.periodLabel)} briefing`,
     html:
       `<p style="margin:0 0 12px 0">Here is your ${escapeHtml(input.periodLabel)} briefing for ${org}.</p>` +
@@ -300,10 +300,10 @@ export function renewalReminderContent(
   const date = longDate(input.nextChargeSec);
   const amount = money(input.amountMinor, input.currency);
   const greeting = escapeHtml(firstNameOf(recipient.name));
-  const brand = escapeHtml(input.portalName || "Tradesmatic");
+  const brand = escapeHtml(input.portalName || "GrowthSnipe");
   const support = escapeHtml(input.supportEmail || "");
   return {
-    subject: `${input.portalName || "Tradesmatic"} Subscription - Payment Renewal Ahead!`,
+    subject: `${input.portalName || "GrowthSnipe"} Subscription - Payment Renewal Ahead!`,
     html:
       `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#111827;max-width:600px">` +
       `<p>Hi ${greeting},</p>` +

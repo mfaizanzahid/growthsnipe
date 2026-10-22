@@ -6,7 +6,7 @@
  * crawlers and AI readers see full content without running JavaScript.
  *
  * Data policy (matches docs/agent-rules + portal rules):
- * - Portal brand uses static fallbacks (Tradesmatic, no support email row);
+ * - Portal brand uses static fallbacks (GrowthSnipe, no support email row);
  *   the client hydrates and patches from GET /api/portal within milliseconds.
  * - Pricing emits its static shell copy only — plans always render live from
  *   GET /api/plans after hydration. Never bake prices/names here.
@@ -30,7 +30,7 @@ import { POSTS, getPost } from "../src/react-app/pages/marketing/blog-posts";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-const HOST = (process.env.PRERENDER_HOST ?? "https://tradesmatic.com").replace(/\/$/, "");
+const HOST = (process.env.PRERENDER_HOST ?? "https://growthsnipe.com").replace(/\/$/, "");
 const OUT_DIR = path.resolve(process.env.PRERENDER_DIR ?? "dist/client");
 const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
@@ -90,7 +90,7 @@ function targets(): PageTarget[] {
         list.push({
           url: `/blog/${post.slug}`,
           Component: componentFor(path),
-          title: `${found.title} | Tradesmatic Blog`,
+          title: `${found.title} | GrowthSnipe Blog`,
           description: found.metaDescription,
           priority: "0.6",
         });
@@ -140,10 +140,10 @@ function withHead(template: string, target: PageTarget, body: string): string {
     '<div id="root"></div>',
     `<div id="root" data-prerender-path="${esc(target.url)}">${body}</div>`,
   );
-  if (!html.includes("<title>Tradesmatic</title>")) {
+  if (!html.includes("<title>GrowthSnipe</title>")) {
     throw new Error("template title tag not found — rebuild the client first");
   }
-  html = html.replace("<title>Tradesmatic</title>", `<title>${esc(target.title)}</title>`);
+  html = html.replace("<title>GrowthSnipe</title>", `<title>${esc(target.title)}</title>`);
   const tags = [
     `<meta name="description" content="${esc(target.description)}" />`,
     `<link rel="canonical" href="${esc(canonical)}" />`,

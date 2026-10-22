@@ -175,7 +175,7 @@ export function isnStrategy(_maxPages: number = DEFAULT_BRIEFING_MAX_PAGES): Bri
         truncated,
         peopleNamesUsable: true,
         providerLimits: [
-          `ISN windowed reads return the whole window in one call; Tradesmatic retains it with a ${DEFAULT_ISN_SAFETY_LIMIT}-item memory backstop that does not bind for real windows.`,
+          `ISN windowed reads return the whole window in one call; GrowthSnipe retains it with a ${DEFAULT_ISN_SAFETY_LIMIT}-item memory backstop that does not bind for real windows.`,
           'ISN date filters accept whole days only, so consecutive comparison windows share a boundary day and that day is counted in both.',
           'ISN exposes no completion flag on windowed reads: a non-cancelled order scheduled in the past is treated as completed, and deleted (hidden) orders are excluded.',
         ],

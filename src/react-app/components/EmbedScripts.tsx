@@ -26,8 +26,8 @@ export function EmbedScripts({ surface }: { surface: EmbedSurface }) {
     if (skip || typeof window === "undefined") return;
     const html = embedSnippetFor(surface);
     if (!html) return;
-    if (window.__tradesmaticEmbeds?.[surface]) return;
-    window.__tradesmaticEmbeds = { ...(window.__tradesmaticEmbeds ?? {}), [surface]: true };
+    if (window.__growthsnipeEmbeds?.[surface]) return;
+    window.__growthsnipeEmbeds = { ...(window.__growthsnipeEmbeds ?? {}), [surface]: true };
     const container = ensureEmbedContainer(surface, document);
     applyEmbedHtml(html, document, container);
 

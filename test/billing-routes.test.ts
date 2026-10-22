@@ -250,6 +250,7 @@ describe("trial start + subscribe routes", () => {
   it("starts a trial for a first workspace, rejects repeats and second workspaces", async () => {
     const store = memoryStore();
     store.seed.plan({ id: "pro", name: "Pro" });
+    store.seed.plan({ id: "snipe-intelligence", name: "SNIPE Intelligence", monthlyMinor: 19900, maxUsers: null, allowBriefings: 1 });
     const app = buildApp(store);
     const first = await req(app, "/api/billing/trial/start", { orgId: "o1" });
     expect(first.status).toBe(201);
@@ -257,6 +258,20 @@ describe("trial start + subscribe routes", () => {
     expect(repeat.status).toBe(409);
     const second = buildApp(store, [{ id: "o1" }, { id: "o2" }]);
     expect((await req(second, "/api/billing/trial/start", { orgId: "o2" })).status).toBe(409);
+  });
+
+  it("refuses to subscribe to a contact-only plan", async () => {
+    const store = memoryStore();
+    store.seed.plan({ id: "engine-core", name: "SNIPE Engine Core", contactOnly: 1, monthlyMinor: 0, annualMinor: 0 });
+    const app = buildApp(store);
+    const res = await req(app, "/api/billing/subscribe", {
+      orgId: "o1",
+      planId: "engine-core",
+      interval: "month",
+      tracker: "track_core",
+    });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: string }).error).toMatch(/contact-only/i);
   });
 
   it("subscribes with first-period charge and caches repeats", async () => {
@@ -277,6 +292,7 @@ describe("trial start + subscribe routes", () => {
     const store = memoryStore();
     store.seed.plan({ id: "starter", name: "Starter", monthlyMinor: 1900 });
     store.seed.plan({ id: "pro", name: "Pro", monthlyMinor: 2900, maxUsers: null, allowBriefings: 1 });
+    store.seed.plan({ id: "snipe-intelligence", name: "SNIPE Intelligence", monthlyMinor: 19900, maxUsers: null, allowBriefings: 1 });
     const { encryptSecret } = await import("../src/server/lib/crypto");
     store.seed.customer("o1", await encryptSecret("cus_1", KEY));
     store.seed.session({ tracker: "track_sub", orgId: "o1", amountMinor: 1900 });

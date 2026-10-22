@@ -434,6 +434,19 @@ describe("signup confirm", () => {
     expect(sub?.nextCharge).toBeGreaterThan(NOW);
   });
 
+  it("refuses a contact-only plan", async () => {
+    const store = memoryStore();
+    store.seed.plan({ id: "engine-core", name: "SNIPE Engine Core", contactOnly: 1, monthlyMinor: 0, annualMinor: 0 });
+    await expect(
+      confirmSignup(
+        ENV, store, store, fakeGateway(), {
+          orgId: "o1", userId: "u1", planId: "engine-core", interval: "month" as const,
+          tracker: "track_core", recipientEmails: [],
+        }, NOW,
+      ),
+    ).rejects.toMatchObject({ status: 422 });
+  });
+
   it("rejects amount mismatches (no underpay)", async () => {
     const store = memoryStore();
     await seedOrg(store);
@@ -494,6 +507,22 @@ describe("plan changes", () => {
     expect(r.proratedMinor).toBe(5000);
     expect(r.invoiceId).toBeTruthy();
     expect((await store.getSubscription("s1"))?.recurringAmountMinor).toBe(29900);
+  });
+
+  it("refuses a contact-only plan change", async () => {
+    const store = memoryStore();
+    store.seed.plan({ id: "snipe-intelligence", name: "SNIPE Intelligence", monthlyMinor: 19900, annualMinor: 199000 });
+    store.seed.plan({ id: "engine-core", name: "SNIPE Engine Core", contactOnly: 1, monthlyMinor: 0, annualMinor: 0 });
+    store.seed.subscription({
+      id: "s1", orgId: "o1", planId: "snipe-intelligence", interval: "month",
+      startDate: NOW - 15 * 86400, nextCharge: NOW + 15 * 86400, recurringAmountMinor: 19900,
+    });
+    await expect(
+      changePlan(
+        ENV, store, fakeGateway(),
+        { orgId: "o1", userId: "u1", newPlanId: "engine-core", newInterval: "month", recipientEmails: [] }, NOW,
+      ),
+    ).rejects.toMatchObject({ status: 422 });
   });
 
   it("schedules downgrades for next cycle with no charge", async () => {
@@ -571,11 +600,11 @@ describe("renewal reminders", () => {
     const { sendRenewalReminders } = await import("../src/server/billing/renewals");
     expect(await sendRenewalReminders(ENV, store, NOW)).toBe(1);
     expect(outbox).toHaveLength(1);
-    expect(outbox[0]?.subject).toBe("Tradesmatic Subscription - Payment Renewal Ahead!");
+    expect(outbox[0]?.subject).toBe("GrowthSnipe Subscription - Payment Renewal Ahead!");
     expect(outbox[0]?.html).toContain("Hi Boss,");
     expect(outbox[0]?.html).toContain("monthly subscription");
     expect(outbox[0]?.html).toContain("$199.00");
-    expect(outbox[0]?.html).toContain("Tradesmatic");
+    expect(outbox[0]?.html).toContain("GrowthSnipe");
     expect(outbox[0]?.html).toContain("help@test.com");
     expect(outbox[0]?.html).toContain("click here");
     expect((await store.getSubscription("s1"))?.renewalReminderFor).toBe(NOW + 86400);

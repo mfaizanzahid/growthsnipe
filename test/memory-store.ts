@@ -376,7 +376,8 @@ export function memoryStore(): BillingStore & IdempotencyBackend & {
     },
     countSubscriptionsForPlan: async (planId) =>
       [...subs.values()].filter((s) => s.planId === planId).length,
-    countActivePlans: async () => [...plans.values()].filter((p) => p.active === 1).length,
+    countActivePlans: async () =>
+      [...plans.values()].filter((p) => p.active === 1 && (p.contactOnly ?? 0) === 0).length,
     insertPlan: async (row) => {
       const full: PlanRow = { ...row, createdAt: nowMs(), updatedAt: nowMs() };
       plans.set(full.id, full);
@@ -433,9 +434,10 @@ export function memoryStore(): BillingStore & IdempotencyBackend & {
           sortOrder: 0,
           currency: "USD",
           active: 1,
-          maxUsers: null,
-          allowBriefings: 1,
-          features: null,
+            maxUsers: null,
+            allowBriefings: 1,
+            contactOnly: 0,
+            features: null,
           createdAt: nowMs(),
           updatedAt: nowMs(),
           name: "Plan",

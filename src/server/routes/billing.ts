@@ -24,6 +24,7 @@ import { ensureCustomer, decryptCustomerToken } from "../billing/customers";
 import { removeMethod, setPrimary, syncWalletMethods, MethodError } from "../billing/methods";
 import { confirmSignup } from "../billing/signup";
 import { startTrial, subscribe } from "../billing/trials";
+import { isPurchasablePlan } from "../billing/access";
 import { enforcePlanLimits } from "../billing/access-limits";
 import { drizzleSidekickStore } from "../sidekick/store";
 import { payInvoice } from "../billing/payments";
@@ -136,6 +137,9 @@ export function createBillingRoutes(deps: BillingDeps = {}) {
         if (!planId || !interval) return c.json({ error: "planId and interval are required" }, 422);
         const plan = await store.getPlan(planId);
         if (!plan || plan.active !== 1) return c.json({ error: "Plan is not available" }, 422);
+        if (!isPurchasablePlan(plan)) {
+          return c.json({ error: "This plan is contact-only. Contact us for pricing" }, 422);
+        }
         let terms = null;
         if (couponCode) {
           try {

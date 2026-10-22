@@ -201,7 +201,7 @@ export function createAuth(env: Env, db: Db) {
               throw new APIError("CONFLICT", { message: "An organization with this name already exists" });
             }
           },
-          // Starter plans cap membership: block invites at the limit.
+          // Plan limits cap membership: block invites at the limit.
           beforeCreateInvitation: async ({ invitation }) => {
             const orgId = invitation.organizationId as string | undefined;
             if (!orgId) return;
@@ -211,7 +211,7 @@ export function createAuth(env: Env, db: Db) {
             const count = await activeMemberCount(store, orgId);
             if (count >= access.maxUsers) {
               throw new APIError("FORBIDDEN", {
-                message: "This workspace is on Starter (1 user) — upgrade to Pro to invite more members",
+                message: `This workspace is limited to ${access.maxUsers} user${access.maxUsers === 1 ? "" : "s"}. Contact us to add more.`,
               });
             }
           },
@@ -229,7 +229,7 @@ export function createAuth(env: Env, db: Db) {
           },
         },
         sendInvitationEmail: async (data) => {
-          const support = (await getSetting(db, "support_email")) ?? "support@tradesmatic.com";
+          const support = (await getSetting(db, "support_email")) ?? "support@growthsnipe.com";
           const link = `${env.APP_BASE_URL}/accept-invitation/${data.id}`;
           // Auth emails send via Resend (Brevo is billing-only + signup list).
           await sendEmail(
@@ -247,7 +247,7 @@ export function createAuth(env: Env, db: Db) {
     ],
     databaseHooks: {
       user: {
-        // Brevo "Tradesmatic New Signup" list: subscribe only after the email
+        // Brevo "GrowthSnipe New Signup" list: subscribe only after the email
         // is verified (per product decision). Best-effort — never blocks auth.
         create: {
           after: async (user: unknown) => {

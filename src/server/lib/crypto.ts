@@ -154,7 +154,7 @@ function unbundle(bundleB64: string): {
   return { iv, body, tag, signature };
 }
 
-// --- Tradesmatic helpers (V1 market test) ---
+// --- GrowthSnipe helpers (V1 market test) ---
 // JSON credential envelope encrypted with MCP_ENCRYPTION_KEY.
 // Kept alongside the billing AEAD helpers; billing paths keep using
 // encryptSecret/decryptSecret with TOKEN_ENCRYPTION_KEY.

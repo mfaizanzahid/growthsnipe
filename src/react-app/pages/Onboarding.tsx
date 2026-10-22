@@ -35,6 +35,7 @@ interface Plan {
   trialPeriodDays: number;
   description: string | null;
   currency: string;
+  contactOnly?: number;
 }
 
 type Step = "org" | "profile" | "connect" | "plan" | "review";
@@ -91,7 +92,12 @@ export function Onboarding() {
   useEffect(() => {
     fetch("/api/plans")
       .then(async (r) => ((await r.json()) as { plans?: Plan[] }))
-      .then((data) => setPlans(data.plans ?? []))
+      .then((data) => {
+        const loaded = data.plans ?? [];
+        setPlans(loaded);
+        const first = loaded.find((p) => (p.contactOnly ?? 0) === 0);
+        if (first) setPlanId(first.id);
+      })
       .catch(() => toast.error("Could not load plans"))
       .finally(() => setPlansLoading(false));
   }, []);
@@ -239,7 +245,7 @@ export function Onboarding() {
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Subscription failed");
       setStep("connect");
-      toast.success("Subscription active — now connect your platform!");
+      toast.success("Subscription active: now connect your platform!");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Subscription failed");
       setSession(null);
@@ -338,7 +344,7 @@ export function Onboarding() {
         throw new Error(data?.error ?? "Could not start trial");
       }
       setTrialEndsAt(data?.trialEndsAt ?? null);
-      toast.success("Pro trial started — welcome aboard!");
+      toast.success("SNIPE Intelligence™ trial started: welcome aboard!");
       return true;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start trial");
@@ -461,7 +467,7 @@ export function Onboarding() {
         <Card>
           <CardHeader>
             <CardTitle>Pick a plan</CardTitle>
-            <CardDescription>No trial on additional workspaces — the first period is charged today.</CardDescription>
+            <CardDescription>No trial on additional workspaces: the first period is charged today.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {existingOrgs.length > 0 && (
@@ -499,7 +505,7 @@ export function Onboarding() {
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
-                {plans.map((p) => (
+                {plans.filter((p) => (p.contactOnly ?? 0) === 0).map((p) => (
                   <button
                     key={p.id}
                     onClick={() => setPlanId(p.id)}
@@ -661,7 +667,7 @@ export function Onboarding() {
           <CardContent className="space-y-3 pt-6 text-center">
             <CheckCircleIcon className="mx-auto size-12 text-green-600" />
             <p className="font-medium">
-              Pro trial active{trialEndsAt ? ` — ends ${new Date(trialEndsAt * 1000).toLocaleDateString()}` : ""}!
+              SNIPE Intelligence™ trial active{trialEndsAt ? `: ends ${new Date(trialEndsAt * 1000).toLocaleDateString()}` : ""}!
             </p>
             <p className="text-sm text-muted-foreground">Full access for 30 days, no card required. Subscribe anytime from billing.</p>
             <Button className="w-full" onClick={() => navigate("/dashboard")}>
@@ -675,7 +681,7 @@ export function Onboarding() {
         <Card>
           <CardContent className="space-y-3 pt-6 text-center">
             <CheckCircleIcon className="mx-auto size-12 text-green-600" />
-            <p className="font-medium">Payment complete — welcome aboard!</p>
+            <p className="font-medium">Payment complete: welcome aboard!</p>
             <p className="text-sm text-muted-foreground">Your workspace is subscribed and ready.</p>
             <Button className="w-full" onClick={() => navigate("/dashboard")}>
               Go to dashboard

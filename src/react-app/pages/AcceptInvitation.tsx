@@ -50,7 +50,7 @@ export function AcceptInvitation() {
             </div>
           ) : state === "done" ? (
             <p className="flex items-center gap-2 text-sm text-green-700">
-              <CheckCircleIcon className="size-5" /> Joined — taking you to the dashboard…
+              <CheckCircleIcon className="size-5" /> Joined. Taking you to the dashboard…
             </p>
           ) : (
             <p className="flex items-center gap-2 text-sm text-red-600">

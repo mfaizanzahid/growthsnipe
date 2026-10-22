@@ -36,7 +36,7 @@ export function Signup() {
       }).catch(() => null);
       const found = (await check?.json().catch(() => null)) as { exists?: boolean } | null;
       if (check?.ok && found?.exists) {
-        toast.error("An account with this email already exists — please sign in.");
+        toast.error("An account with this email already exists. Please sign in.");
         navigate("/login");
         return;
       }

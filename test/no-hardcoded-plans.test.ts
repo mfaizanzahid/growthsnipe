@@ -43,8 +43,7 @@ export function findPlanPriceViolations(content: string, file: string): string[]
 }
 
 const FORBIDDEN = [
-  /\bLaunch\b/, // seed plan name (dev data, not product copy)
-  /\bGrowth\b/, // seed plan name (dev data, not product copy)
+  /\bStarter\b/, // retired seed plan name (dev data, not product copy)
 ];
 
 function collectFiles(dir: string): string[] {

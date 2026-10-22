@@ -197,7 +197,7 @@ export function OrgSettings() {
                 <CardTitle>Invite member</CardTitle>
                 <CardDescription>
                   {memberLimit !== null
-                    ? `Starter workspaces are limited to ${memberLimit} user${memberLimit === 1 ? "" : "s"} — upgrade to Pro to invite more.`
+                    ? `This workspace is limited to ${memberLimit} user${memberLimit === 1 ? "" : "s"}. Contact us to add more.`
                     : "They join with the selected role after accepting."}
                 </CardDescription>
               </CardHeader>

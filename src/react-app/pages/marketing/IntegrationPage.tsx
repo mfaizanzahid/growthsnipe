@@ -41,7 +41,7 @@ export function IntegrationPage() {
     <MarketingLayout>
       <PageHero
         eyebrow={`Integrations / ${page.platformName}`}
-        title={`Tradesmatic for ${page.platformName}`}
+        title={`GrowthSnipe for ${page.platformName}`}
         lede={page.lede}
       />
 

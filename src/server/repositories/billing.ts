@@ -785,11 +785,12 @@ export async function countSubscriptionsForPlan(db: Db, planId: string): Promise
   return rows.length;
 }
 
+/** Active self-serve plans count toward the cap; contact-only plans never do. */
 export async function countActivePlans(db: Db): Promise<number> {
   const rows = await db
     .select({ id: plans.id })
     .from(plans)
-    .where(eq(plans.active, 1));
+    .where(and(eq(plans.active, 1), eq(plans.contactOnly, 0)));
   return rows.length;
 }
 

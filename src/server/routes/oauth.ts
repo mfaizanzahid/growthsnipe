@@ -248,7 +248,7 @@ export function createOAuthRoutes(deps: {
       pageShell(
         `Authorize ${client.name}`,
         `<h1>Authorize ${esc(client.name)}?</h1>` +
-          `<p class="desc"><strong>${esc(client.name)}</strong> is requesting AI access to your <strong>Tradesmatic</strong> workspace (signed in as ${esc(user.email)}). Tokens are scoped to the chosen organization only.</p>` +
+          `<p class="desc"><strong>${esc(client.name)}</strong> is requesting AI access to your <strong>GrowthSnipe</strong> workspace (signed in as ${esc(user.email)}). Tokens are scoped to the chosen organization only.</p>` +
           `<form method="post" action="/oauth/authorize">` +
           fields.map(([k, v]) => `<input type="hidden" name="${k}" value="${esc(v)}">`).join("") +
           `<label>Workspace<select name="orgId" required>${options}</select></label>` +

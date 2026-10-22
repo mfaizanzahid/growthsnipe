@@ -88,7 +88,7 @@ export function applyEmbedHtml(html: string, doc: Document, target: HTMLElement)
 
 declare global {
   interface Window {
-    __tradesmaticEmbeds?: Record<string, boolean>;
+    __growthsnipeEmbeds?: Record<string, boolean>;
   }
 }
 
@@ -108,8 +108,8 @@ export function ensureEmbedContainer(surface: EmbedSurface, doc: Document): HTML
 /** Remove a surface's container and clear its once-per-page guard. */
 export function clearEmbedContainer(surface: EmbedSurface, doc: Document): void {
   doc.getElementById(containerId(surface))?.remove();
-  if (typeof window !== "undefined" && window.__tradesmaticEmbeds) {
-    delete window.__tradesmaticEmbeds[surface];
+  if (typeof window !== "undefined" && window.__growthsnipeEmbeds) {
+    delete window.__growthsnipeEmbeds[surface];
   }
 }
 

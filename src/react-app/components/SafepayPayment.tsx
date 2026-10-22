@@ -71,10 +71,10 @@ export function SafepayPayment({ tracker, clientToken, environment, billingAddre
       if (valid) {
         await cardRef.current?.submit();
       } else {
-        failSoft("Please check your card details — a field is incomplete or invalid.");
+        failSoft("Please check your card details. A field is incomplete or invalid.");
       }
     } catch {
-      failSoft("Card capture failed — please try again.");
+      failSoft("Card capture failed. Please try again.");
     }
   }, [failSoft]);
 
@@ -140,9 +140,9 @@ export function SafepayPayment({ tracker, clientToken, environment, billingAddre
             imperativeRef={{ current: null }}
             onPayerAuthenticationFrictionless={() => finish(true)}
             onPayerAuthenticationSuccess={() => finish(true)}
-            onPayerAuthenticationFailure={() => failSoft("Card authentication failed — check the details and try again.")}
-            onPayerAuthenticationUnavailable={() => failSoft("Card authentication is unavailable for this card — try another card.")}
-            onSafepayError={() => failSoft("Payment gateway error — please try again.")}
+            onPayerAuthenticationFailure={() => failSoft("Card authentication failed. Check the details and try again.")}
+            onPayerAuthenticationUnavailable={() => failSoft("Card authentication is unavailable for this card. Try another card.")}
+            onSafepayError={() => failSoft("Payment gateway error. Please try again.")}
           />
         )}
       </Suspense>

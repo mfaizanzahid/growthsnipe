@@ -365,7 +365,7 @@ export function BriefingMockup() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex gap-2">
                 <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-amber-500" />
-                Realtor flow down 40% — call Prather, 2nd St listing.
+                Realtor flow down 40%: call Prather, 2nd St listing.
               </li>
               <li className="flex gap-2">
                 <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
@@ -379,7 +379,7 @@ export function BriefingMockup() {
           </div>
         </div>
         <p className="text-center text-xs text-muted-foreground">
-          Illustrative briefing — shown with sample figures.
+          Illustrative briefing: shown with sample figures.
         </p>
       </CardContent>
     </Card>
@@ -400,19 +400,19 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
   );
 }
 
-/** Trust strip: the no-storage differentiator, reused across pages. */
+/** Trust strip: account ownership and data handling, reused across pages. */
 export function TrustCallout() {
   return (
     <section className="border-t bg-muted/40">
       <div className="mx-auto flex w-full max-w-4xl flex-col items-center gap-3 px-4 py-12 text-center">
         <ShieldCheckIcon className="size-8 text-primary" aria-hidden />
-        <h2 className="text-2xl font-bold tracking-tight">Nothing stored. Nothing exported.</h2>
+        <h2 className="text-2xl font-bold tracking-tight">Your accounts stay yours.</h2>
         <p className="max-w-2xl text-muted-foreground">
-          Tradesmatic reads your data live from your own software. Nothing sits on our servers.
-          Disconnect any time — access ends with it.
+          You own every ad account, phone number, and data source. GrowthSnipe works inside the
+          tools you already pay for, and you can disconnect any time.
         </p>
         <Button variant="outline" asChild>
-          <Link to="/security">How we handle your data</Link>
+          <Link to="/privacy">How we handle your data</Link>
         </Button>
       </div>
     </section>

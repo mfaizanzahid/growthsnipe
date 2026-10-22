@@ -50,13 +50,13 @@ describe("briefing email content", () => {
     orgName: "Jalop",
     periodLabel: "Morning briefing",
     briefingText: "Two inspections booked today.\n\nOne unpaid invoice from Monday.",
-    portalName: "Tradesmatic",
+    portalName: "GrowthSnipe",
     supportEmail: "support@example.com",
     dashboardUrl: "https://example.com/schedules",
   };
 
   it("subjects the email with the portal, cadence and workspace", () => {
-    expect(briefingContent(base).subject).toBe("Tradesmatic Morning briefing briefing for Jalop");
+    expect(briefingContent(base).subject).toBe("GrowthSnipe Morning briefing briefing for Jalop");
   });
 
   it("splits the briefing into paragraphs and escapes provider text", () => {

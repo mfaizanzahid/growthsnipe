@@ -65,7 +65,7 @@ export function BillingGate({
               </p>
             )}
             <p className="text-xs text-muted-foreground">
-              Nothing was deleted — your workspace and its connections are kept as-is.
+              Nothing was deleted. Your workspace and its connections are kept as-is.
             </p>
           </CardContent>
         </Card>

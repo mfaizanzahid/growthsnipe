@@ -13,14 +13,14 @@ afterEach(() => {
 
 describe("brevo sender parsing", () => {
   it("parses Name <email> senders", () => {
-    expect(parseSenderAddress("Tradesmatic <hello@tradesmatic.com>")).toEqual({
-      email: "hello@tradesmatic.com",
-      name: "Tradesmatic",
+    expect(parseSenderAddress("GrowthSnipe <hello@growthsnipe.com>")).toEqual({
+      email: "hello@growthsnipe.com",
+      name: "GrowthSnipe",
     });
   });
 
   it("parses plain emails and rejects garbage", () => {
-    expect(parseSenderAddress("hello@tradesmatic.com")).toEqual({ email: "hello@tradesmatic.com" });
+    expect(parseSenderAddress("hello@growthsnipe.com")).toEqual({ email: "hello@growthsnipe.com" });
     expect(parseSenderAddress("not-an-email")).toBeUndefined();
     expect(parseSenderAddress(undefined)).toBeUndefined();
   });
@@ -28,11 +28,11 @@ describe("brevo sender parsing", () => {
   it("prefers explicit BREVO_SENDER_* over the legacy from", () => {
     expect(
       resolveBrevoSender({
-        brevoEmail: "news@tradesmatic.com",
-        brevoName: "Tradesmatic",
+        brevoEmail: "news@growthsnipe.com",
+        brevoName: "GrowthSnipe",
         fallbackFrom: "Old <old@x.com>",
       }),
-    ).toEqual({ email: "news@tradesmatic.com", name: "Tradesmatic" });
+    ).toEqual({ email: "news@growthsnipe.com", name: "GrowthSnipe" });
     expect(resolveBrevoSender({ fallbackFrom: "Old <old@x.com>" })).toEqual({
       email: "old@x.com",
       name: "Old",
@@ -53,7 +53,7 @@ describe("brevo api calls", () => {
     vi.stubGlobal("fetch", fetchMock);
     await sendBrevoEmail(
       "brevo-key",
-      { email: "hello@tradesmatic.com", name: "Tradesmatic" },
+      { email: "hello@growthsnipe.com", name: "GrowthSnipe" },
       { to: "user@x.com", bcc: ["boss@x.com", "USER@x.com"], subject: "Hi", html: "<p>Hi</p>" },
     );
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -61,7 +61,7 @@ describe("brevo api calls", () => {
     expect(url).toBe("https://api.brevo.com/v3/smtp/email");
     expect((init.headers as Record<string, string>)["api-key"]).toBe("brevo-key");
     const body = JSON.parse(init.body as string);
-    expect(body.sender).toEqual({ email: "hello@tradesmatic.com", name: "Tradesmatic" });
+    expect(body.sender).toEqual({ email: "hello@growthsnipe.com", name: "GrowthSnipe" });
     expect(body.to).toEqual([{ email: "user@x.com" }]);
     // Self-address excluded from bcc, superadmin copy kept.
     expect(body.bcc).toEqual([{ email: "boss@x.com" }]);

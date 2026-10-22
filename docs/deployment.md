@@ -1,14 +1,16 @@
-# Deployment checklist — production (Tradesmatic)
+# Deployment checklist: production (GrowthSnipe)
 
 ## 1. Cloudflare resources
 
 ```bash
 npx wrangler login
-npx wrangler d1 create saas-billing-portal-prod
+npx wrangler d1 create growthsnipe-db-prod
 ```
 
 Put the returned `database_id` into `wrangler.jsonc`
 (`env.production.d1_databases[0].database_id`).
+
+The production D1 resource is still named `fieldvisory-db-prod` in Cloudflare. Rename it in the dashboard/API, or create `growthsnipe-db-prod` and import the existing data before switching the `database_id`. Migration scripts use the `DB` binding, so they work with either resource name.
 
 ```bash
 npm run db:migrate:prod
@@ -33,7 +35,7 @@ npx wrangler secret put OPENAI_API_KEY
 Generate a FRESH `MCP_ENCRYPTION_KEY` per environment (provider credentials encrypted with the dev key cannot be decrypted in prod). Same rule applies to `TOKEN_ENCRYPTION_KEY` below.
 
 Non-secret vars in `wrangler.jsonc` (`vars`): `SAFEPAY_ENV=live`,
-`SAFEPAY_API_BASE=https://api.getsafepay.com`, `APP_BASE_URL=https://<your-domain>`,
+`SAFEPAY_API_BASE=https://api.getsafepay.com`, `APP_BASE_URL=https://growthsnipe.com`,
 `GOOGLE_CLIENT_ID`, `SUPERADMIN_EMAILS`, `SAFEPAY_DEFAULT_COUNTRY` (optional).
 
 Generate a FRESH `TOKEN_ENCRYPTION_KEY` (32 random bytes, base64) — gateway
@@ -41,12 +43,14 @@ tokens encrypted with the dev key cannot be decrypted in prod.
 
 ## 3. External services
 
-- **Resend**: verify `alerts.ostive.com` (SPF/DKIM), keep `RESEND_FROM_EMAIL` as a
-  verified sender identity.
-- **Google OAuth**: add `https://<your-domain>/api/auth/callback/google` to the
+- **Resend**: verify `growthsnipe.com` (SPF/DKIM); `RESEND_FROM_EMAIL` must use a
+  verified sender identity such as `noreply@growthsnipe.com`.
+- **Brevo**: verify `growthsnipe.com` and keep `BREVO_SENDER_EMAIL` on the same
+  verified domain.
+- **Google OAuth**: add `https://growthsnipe.com/api/auth/callback/google` to the
   OAuth client's authorized redirect URIs.
 - **Safepay**: switch to live merchant keys; set the webhook endpoint to
-  `https://<your-domain>/webhooks/safepay` in the Safepay dashboard and use the
+  `https://growthsnipe.com/webhooks/safepay` in the Safepay dashboard and use the
   dashboard shared secret for `SAFEPAY_WEBHOOK_SECRET`.
 
 ## 4. Deploy + verify
@@ -68,7 +72,7 @@ or you need to ship without pushing.
   (section 1 / the `migrate-prod` workflow), then push. A push that ships
   code expecting a new column before the migration lands breaks every query
   against that table.
-- `GET https://<your-domain>/health` → `{"ok":true,...,"environment":"live"}`
+- `GET https://growthsnipe.com/health` → `{"ok":true,"service":"growthsnipe",...}`
 - Sign up → verify → onboard → test-card payment in live mode with a small
   amount first; refund it from `/superadmin` to prove the money loop.
 - Confirm both Cron triggers show in the Cloudflare dashboard
@@ -87,10 +91,10 @@ or you need to ship without pushing.
 
 **This is how production is deployed.** Cloudflare's Workers Builds git
 integration watches the repo; a push to `main` builds and deploys
-`fieldvisory-production` automatically. In the Cloudflare dashboard
+`growthsnipe-production` automatically. In the Cloudflare dashboard
 (Worker → Settings → Build):
 
-- **Build command:** `npm run build` (includes the marketing prerender step — 33 static route files + robots.txt + sitemap.xml are emitted into `dist/client` automatically)
+- **Build command:** `npm run build` (includes the marketing prerender step: 16 static route files + robots.txt + sitemap.xml are emitted into `dist/client` automatically)
 - **Build environment** (Worker → Settings → Build → Build variables): the
   `VITE_*` values are inlined into the client bundle by Vite, so they must be
   set **in the build environment**, not in the Worker runtime:

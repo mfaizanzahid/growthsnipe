@@ -83,7 +83,12 @@ interface Plan {
   currency: string;
   maxUsers: number | null;
   allowBriefings: number | null;
+  contactOnly?: number;
   features: string | null;
+}
+
+function selfServePlans(plans: Plan[]): Plan[] {
+  return plans.filter((p) => (p.contactOnly ?? 0) === 0);
 }
 
 function statusBadge(status: string) {
@@ -288,7 +293,7 @@ export function Billing() {
       })) as { kind: string; proratedMinor: number };
       toast.success(
         data.kind === "upgrade"
-          ? `Upgraded — prorated charge ${formatMoney(data.proratedMinor)}`
+          ? `Upgraded: prorated charge ${formatMoney(data.proratedMinor)}`
           : data.kind === "downgrade"
             ? "Downgrade scheduled for next cycle"
             : "No change",
@@ -304,7 +309,7 @@ export function Billing() {
   async function cancel() {
     try {
       await post("/api/billing/subscription/cancel", { orgId });
-      toast.success("Subscription canceled — access continues until period end");
+      toast.success("Subscription canceled: access continues until period end");
       setCancelOpen(false);
       await refresh();
       notifyBillingChanged();
@@ -394,7 +399,7 @@ export function Billing() {
             <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
               <span>
                 Your subscription is past due and suspended. Retry with your primary card or update
-                your payment method — your data is retained.
+                your payment method: your data is retained.
               </span>
               {overdue && (
                 <Button size="sm" disabled={paying === overdue.id} onClick={() => pay(overdue.id)}>
@@ -419,7 +424,7 @@ export function Billing() {
               </>
             ) : (
               <>
-                Pro trial — {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left. Subscribe below
+                SNIPE Intelligence™ trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left. Subscribe below
                 to keep uninterrupted access; no card is on file.
               </>
             )}
@@ -429,8 +434,8 @@ export function Billing() {
       {trialExpired && (
         <Alert variant="destructive">
           <AlertDescription>
-            Your trial has ended and features are paused. Subscribe below to restore full access —
-            your data is retained.
+            Your trial has ended and features are paused. Subscribe below to restore full access.
+            Your data is retained.
           </AlertDescription>
         </Alert>
       )}
@@ -704,7 +709,7 @@ export function Billing() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Invoice {preview?.invoice.number ?? ""}</DialogTitle>
-            <DialogDescription>HTML preview — use PDF for the downloadable copy.</DialogDescription>
+            <DialogDescription>HTML preview: use PDF for the downloadable copy.</DialogDescription>
           </DialogHeader>
           {previewLoading || !preview ? (
             <div className="space-y-2 py-4">
@@ -778,7 +783,7 @@ export function Billing() {
                     <SelectValue placeholder="Choose a plan…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {plans.map((p) => {
+                    {selfServePlans(plans).map((p) => {
                       const isCurrent =
                         subscription.planId === p.id && subscription.interval === changeInterval;
                       return (
@@ -822,11 +827,11 @@ export function Billing() {
                     {target.name} ({changeInterval === "month" ? "monthly" : "yearly"}):{" "}
                     {formatWholeMoney(targetPrice, target.currency)}
                     {changeInterval === "year" && hasAnnualDeal(target) && (
-                      <span className="font-semibold text-primary"> — Get 2 months free!</span>
+                      <span className="font-semibold text-primary">, get 2 months free!</span>
                     )}
-                    {kind === "upgrade" && " — charged immediately, prorated for the remaining cycle."}
-                    {kind === "downgrade" && " — takes effect from the next billing cycle."}
-                    {kind === "same price" && " — no change."}
+                    {kind === "upgrade" && ". Charged immediately, prorated for the remaining cycle."}
+                    {kind === "downgrade" && ". Takes effect from the next billing cycle."}
+                    {kind === "same price" && ". No change."}
                   </p>
                 );
               })()}
@@ -848,7 +853,7 @@ export function Billing() {
           <DialogHeader>
             <DialogTitle>Remove this card?</DialogTitle>
             <DialogDescription>
-              The primary card cannot be removed — promote another card first. At least one valid
+              The primary card cannot be removed: promote another card first. At least one valid
               card must remain.
             </DialogDescription>
           </DialogHeader>
@@ -874,6 +879,7 @@ interface SubscribePlan {
   currency: string;
   maxUsers: number | null;
   allowBriefings: number | null;
+  contactOnly?: number;
   features: string | null;
 }
 
@@ -960,7 +966,7 @@ function SubscribeCard({ orgId, plans, onDone }: { orgId: string; plans: Subscri
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Subscription failed");
-      toast.success("Subscription active — welcome aboard!");
+      toast.success("Subscription active: welcome aboard!");
       setSession(null);
       onDone();
       notifyBillingChanged();
@@ -974,7 +980,7 @@ function SubscribeCard({ orgId, plans, onDone }: { orgId: string; plans: Subscri
     <Card>
       <CardHeader>
         <CardTitle>Subscribe</CardTitle>
-        <CardDescription>Pick a plan and pay the first period — access restores immediately.</CardDescription>
+        <CardDescription>Pick a plan and pay the first period: access restores immediately.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <Tabs value={interval} onValueChange={(v) => setInterval(v as "month" | "year")}>
@@ -986,10 +992,10 @@ function SubscribeCard({ orgId, plans, onDone }: { orgId: string; plans: Subscri
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">
             <div className="grid gap-3 sm:grid-cols-2">
-              {plans.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPlanId(p.id)}
+              {selfServePlans(plans).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setPlanId(p.id)}
                   className={`flex flex-col items-start rounded-lg border p-4 text-left transition-colors hover:border-primary ${planId === p.id ? "border-primary ring-1 ring-primary" : ""}`}
                 >
                   <div className="font-semibold">{p.name}</div>
@@ -1068,7 +1074,7 @@ function SubscribeCard({ orgId, plans, onDone }: { orgId: string; plans: Subscri
                 </label>
                 <div className="flex justify-between text-sm font-semibold">
                   <span>Due today</span>
-                  <span>{plan ? formatMoney(price, plan.currency) : "—"}</span>
+                  <span>{plan ? formatMoney(price, plan.currency) : "-"}</span>
                 </div>
                 <Button type="submit" className="w-full" disabled={pending || !plan || !agreed || !billingAddressValid(billingAddress, countryCode)}>
                   {pending ? "Starting payment…" : "Continue to payment"}

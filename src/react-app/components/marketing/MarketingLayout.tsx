@@ -44,18 +44,16 @@ const NAV_MENUS = [
     links: [
       { to: "/how-it-works", label: "How it works" },
       { to: "/features", label: "Features" },
-      { to: "/advisors", label: "Advisors" },
       { to: "/integrations", label: "Integrations" },
-      { to: "/technology", label: "Technology" },
       { to: "/who-we-help", label: "Who we help" },
+      { to: "/pricing", label: "Pricing" },
     ],
   },
   {
     label: "Resources",
     links: [
       { to: "/blog", label: "Blog" },
-      { to: "/associations", label: "Associations" },
-      { to: "/security", label: "Security" },
+      { to: "/case-studies", label: "Case studies" },
     ],
   },
   {
@@ -70,9 +68,7 @@ const NAV_MENUS = [
 const PRODUCT_LINKS = [
   { to: "/how-it-works", label: "How it works" },
   { to: "/features", label: "Features" },
-  { to: "/advisors", label: "Advisors" },
   { to: "/integrations", label: "Integrations" },
-  { to: "/technology", label: "Technology" },
   { to: "/who-we-help", label: "Who we help" },
   { to: "/pricing", label: "Pricing" },
 ];
@@ -81,13 +77,12 @@ const COMPANY_LINKS = [
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
   { to: "/login", label: "Sign in" },
-  { to: "/signup", label: "Get started" },
+  { to: "/signup", label: "Start free trial" },
 ];
 
 const RESOURCE_LINKS = [
   { to: "/blog", label: "Blog" },
-  { to: "/associations", label: "Associations" },
-  { to: "/security", label: "Security" },
+  { to: "/case-studies", label: "Case studies" },
   { to: "/privacy", label: "Privacy" },
   { to: "/terms", label: "Terms" },
 ];

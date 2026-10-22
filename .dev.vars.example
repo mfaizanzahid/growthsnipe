@@ -24,14 +24,14 @@ RESEND_FROM_EMAIL=
 BREVO_API_KEY=
 # Verified Brevo sender identity (Sender must be verified in Brevo)
 BREVO_SENDER_EMAIL=
-BREVO_SENDER_NAME=Tradesmatic
-# Brevo contacts list for verified new signups ("Tradesmatic New Signup")
+BREVO_SENDER_NAME=GrowthSnipe
+# Brevo contacts list for verified new signups ("GrowthSnipe New Signup")
 BREVO_NEW_SIGNUP_LIST_ID=8
 APP_BASE_URL=http://localhost:5173
 # Comma-separated owner emails seeded as superadmin on first login.
 SUPERADMIN_EMAILS=
 
-# Tradesmatic MCP (V1 market test; server-only, never expose to React)
+# GrowthSnipe MCP (V1 market test; server-only, never expose to React)
 MCP_BASE_URL=http://localhost:8787
 MCP_TOKEN_PEPPER=
 MCP_ENCRYPTION_KEY=

@@ -1,61 +1,61 @@
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
+import { usePageMeta } from "../../hooks/usePageMeta";
+import { PAGE_META } from "../../components/marketing/page-meta";
 
 const BELIEFS = [
   {
-    title: "Answers, not information",
-    body: "No solo owner at 10 p.m. needs another chart. Three clear priorities with real data behind them — that is the job.",
+    title: "Show the math",
+    body: "Every recommendation starts with a number: missed calls, average ticket, cost per booked job. If we cannot size it, we do not lead with it.",
   },
   {
     title: "Respect the owner's intelligence",
     body: "Real businesses, real payrolls. Plain words, shown work, admitted uncertainty. Never a dressed-up number.",
   },
   {
-    title: "Your data stays yours",
-    body: "Real-time pass-through, nothing stored. The architecture the Tradesmatic team would demand as customers — these owners were our customers for fifteen years.",
+    title: "Own the outcome, not the activity",
+    body: "Clicks and impressions are not the job. A booked inspection on the calendar is the job.",
   },
   {
-    title: "Built for every trade",
-    body: "Home inspectors first — we know their software and their seasons. HVAC, plumbing, electrical, roofing, and general contracting run on the same platform, each on its own terms.",
+    title: "Build systems that survive us",
+    body: "The plan, the scorecard, and the process should keep working when a manager leaves or a platform changes.",
   },
 ];
 
 export function About() {
+  usePageMeta(PAGE_META["/about"]);
   return (
     <MarketingLayout>
       <PageHero
         eyebrow="About"
-        title="We've spent 15 years in the room with owners like you."
-        lede="Fifteen years running a digital agency for home service businesses. The Tradesmatic team kept seeing one disconnect — and built our Multi-Trades™ MCP Server to solve it."
+        title="A growth company built like an operating team."
+        lede="GrowthSnipe exists because most home-service owners are sold marketing and handed reports. We size the leak, build the system, then stay to run it."
       />
 
       <section className="mx-auto w-full max-w-3xl px-4 pb-14">
         <div className="space-y-6 text-muted-foreground">
           <section>
-            <h2 className="text-lg font-semibold text-foreground">The disconnect we kept seeing</h2>
+            <h2 className="text-lg font-semibold text-foreground">The pattern we kept seeing</h2>
             <p className="mt-2 text-sm leading-relaxed">
-              Every engagement surfaced the same pattern: owners sitting on complete data while
-              making the week's hardest calls on gut feel. Data in the software. Context in the
-              owner's head. The two never met — so slow months got explained by mood instead of
-              mix, tickets, and referral drift.
+              Owners had the data and still made the week's hardest calls on gut feel. Calls were
+              missed during inspections, add-ons were offered when someone remembered, and paid
+              media was judged on leads instead of booked jobs.
             </p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">Then AI arrived — and missed</h2>
+            <h2 className="text-lg font-semibold text-foreground">Why we start with the leak</h2>
             <p className="mt-2 text-sm leading-relaxed">
-              Owners paid for Claude, ChatGPT, and Gemini subscriptions and pasted numbers in by
-              hand. Fluent, generic advice — because the AI knew nothing about the business
-              asking, and the software holding every answer connected to none of it.
+              Before we sell a campaign, we put a dollar figure on what is already leaking. That
+              number decides whether the fix is capture, ticket, pipeline, or capacity. Selling ads
+              into a leaky phone is how owners end up paying twice.
             </p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">So we connected them</h2>
+            <h2 className="text-lg font-semibold text-foreground">Plan plus operator</h2>
             <p className="mt-2 text-sm leading-relaxed">
-              Business software, joined in real time to the AI owners already use, read by
-              advisors who know what to look for. Tradesmatic connects Spectora, ISN,
-              ServiceTitan, Housecall Pro, and Jobber to Claude, ChatGPT, and Gemini in real
-              time. Not a dashboard to check — deep insights, better decisions, and
-              data-backed actions every morning, backed by real data.
+              Engine Core and Engine Command pair a written plan with the people who build and run
+              it. SNIPE Intelligence™ and SNIPE VoiceIQ™ make the work visible every week, so the
+              scorecard is the same whether you run the system or we do.
             </p>
           </section>
         </div>
@@ -76,8 +76,8 @@ export function About() {
       </section>
 
       <CtaBand
-        title="Work with people who know your trade"
-        body="Start your free 30-day trial. Fifteen years of pattern recognition, reading your numbers every morning."
+        title="Bring us the numbers"
+        body="Book a discovery call. We will show you the leak before we ask for a card."
       />
     </MarketingLayout>
   );

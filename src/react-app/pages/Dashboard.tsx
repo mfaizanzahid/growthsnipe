@@ -3,32 +3,27 @@ import { Link, Navigate } from "react-router-dom";
 import {
   ArrowPathIcon,
   ArrowRightIcon,
-  BellAlertIcon,
   CheckCircleIcon,
   ChevronDownIcon,
   CircleStackIcon,
   CreditCardIcon,
   ExclamationTriangleIcon,
-  KeyIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { authClient } from "../lib/auth-client";
 import { useActiveOrg } from "../hooks/useActiveOrg";
-import { api, type Briefing, type ManagementSnapshot, type McpToken, type SidekickConnection } from "../lib/sidekick";
+import { api, type ManagementSnapshot, type SidekickConnection } from "../lib/sidekick";
 import { formatMoney } from "../lib/money";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 
-/** Sidekick overview: latest briefing, live business snapshot, connection status. */
+/** SNIPE Intelligence overview: live business snapshot, connection status, scorecard. */
 export function Dashboard() {
   const { data: activeOrg } = authClient.useActiveOrganization();
   const { superadmin, loading: orgLoading } = useActiveOrg();
-  const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [connections, setConnections] = useState<SidekickConnection[]>([]);
-  const [activeTokens, setActiveTokens] = useState<McpToken[]>([]);
-  const [oauthConnected, setOAuthConnected] = useState(false);
   const [businessProfile, setBusinessProfile] = useState<{ businessName: string | null; trade: string | null } | null>(null);
   const [subscription, setSubscription] = useState<{ status: string; trialEndsAt?: number | null } | null>(null);
   const [snapshot, setSnapshot] = useState<ManagementSnapshot | null>(null);
@@ -55,7 +50,7 @@ export function Dashboard() {
         setSnapshot(data.snapshot);
         setSnapshotState("idle");
         setSnapshotError(null);
-        if (!quiet) toast.success("Snapshot refreshed — last 30 days");
+        if (!quiet) toast.success("Snapshot refreshed: last 30 days");
       } catch (err) {
         const message = err instanceof Error && err.message ? err.message : "Snapshot unavailable";
         if (/no .* connection configured/i.test(message)) {
@@ -89,7 +84,7 @@ export function Dashboard() {
     setSnapshotState("idle");
     setSnapshotError(null);
     Promise.all([
-      api<{ overview: { connections: SidekickConnection[]; activeTokens: McpToken[]; oauthConnected: boolean; latestBriefing: Briefing | null } }>(
+      api<{ overview: { connections: SidekickConnection[] } }>(
         `/api/sidekick/overview?orgId=${orgId}`,
       ).catch(() => null),
       fetch(`/api/billing/subscription?orgId=${orgId}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
@@ -99,9 +94,6 @@ export function Dashboard() {
     ])
       .then(([overview, sub, bp]) => {
         setConnections(overview?.overview.connections ?? []);
-        setActiveTokens(overview?.overview.activeTokens ?? []);
-        setOAuthConnected(overview?.overview.oauthConnected ?? false);
-        setBriefing(overview?.overview.latestBriefing ?? null);
         setSubscription((sub as { subscription?: { status: string; trialEndsAt?: number | null } | null })?.subscription ?? null);
         setBusinessProfile(bp?.profile ?? null);
         // Load the snapshot after the overview so the server-side fallback
@@ -132,7 +124,7 @@ export function Dashboard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Welcome to Tradesmatic</CardTitle>
+          <CardTitle>Welcome to SNIPE Intelligence™</CardTitle>
           <CardDescription>Create a workspace to connect your business platform.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,7 +140,7 @@ export function Dashboard() {
   const unusual: string[] = [];
   if (facts) {
     if (facts.openOrders > 0) unusual.push(`${facts.openOrders} open order${facts.openOrders === 1 ? "" : "s"} need attention.`);
-    if (facts.recentOrders === 0) unusual.push("No recent orders returned — check the provider connection and date window.");
+    if (facts.recentOrders === 0) unusual.push("No recent orders returned: check the provider connection and date window.");
   }
   const trialDaysLeft =
     subscription?.status === "trialing" && subscription.trialEndsAt
@@ -178,12 +170,6 @@ export function Dashboard() {
       done: connections.length > 0,
       to: "/connections",
       action: "Connect",
-    },
-    {
-      label: "Connect your AI",
-      done: activeTokens.length > 0 || oauthConnected,
-      to: "/mcp-access",
-      action: "Connect AI",
     },
   ];
   const pendingSteps = checklist.filter((s) => !s.done);
@@ -240,10 +226,13 @@ export function Dashboard() {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">SNIPE Intelligence™</h1>
+          <p className="text-sm text-muted-foreground">Your weekly scorecard, forecasting, and leak math.</p>
+        </div>
         <Button variant="outline" size="sm" asChild>
-          <Link to="/briefings-schedules">
-            <BellAlertIcon className="size-4" /> Briefings &amp; schedules
+          <Link to="/connections">
+            <CircleStackIcon className="size-4" /> Manage data sources
           </Link>
         </Button>
       </div>
@@ -253,7 +242,7 @@ export function Dashboard() {
           <ExclamationTriangleIcon className="size-4" />
           <AlertTitle>No provider connected</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
-            Connect your business platform to unlock briefings, snapshots, and AI answers.
+            Connect Spectora, ISN, or another source to unlock your scorecard, forecasting, and reports.
             <Button variant="outline" size="sm" asChild>
               <Link to="/connections">
                 Connect <ArrowRightIcon className="size-4" />
@@ -265,7 +254,7 @@ export function Dashboard() {
 
       {trialDaysLeft !== null && (
         <Alert>
-          <AlertTitle>Pro trial — {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left</AlertTitle>
+          <AlertTitle>SNIPE Intelligence™ trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
             Full access until the trial ends. No card required yet.
             <Button variant="outline" size="sm" asChild>
@@ -280,9 +269,9 @@ export function Dashboard() {
       {trialExpired ? (
         <Card>
           <CardHeader>
-            <CardTitle>Trial ended — subscribe to restore access</CardTitle>
+            <CardTitle>Trial ended: subscribe to restore access</CardTitle>
             <CardDescription>
-              Dashboard, AI access, and briefings are paused. Your data is retained.
+              Your scorecard, forecasting, and reports are paused. Your data is retained.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -295,21 +284,22 @@ export function Dashboard() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Latest briefing</CardTitle>
-            <CardDescription>
-              {briefing ? `From ${new Date(briefing.createdAt).toLocaleString()} (${briefing.status})` : "No briefings delivered yet"}
-            </CardDescription>
+            <CardTitle>This week's scorecard</CardTitle>
+            <CardDescription>Booked jobs, average ticket, and lead source in one view.</CardDescription>
           </CardHeader>
-          <CardContent>
-            {briefing?.briefingText ? (
-              <p className="text-sm whitespace-pre-wrap">{briefing.briefingText}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                {briefing
-                  ? `Latest run ${briefing.status}. ${briefing.errorText ?? ""}`
-                  : "Enable a briefing schedule to receive owner briefings by email."}
-              </p>
-            )}
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              SNIPE Intelligence™ reads your booking software, CRM, phones, and ad accounts and turns
+              them into one weekly scorecard with the leaks sized in dollars.
+            </p>
+            <ul className="list-disc space-y-1 pl-5 text-sm">
+              <li>Speed to lead under 5 minutes</li>
+              <li>90%+ answer rate</li>
+              <li>Revenue within ±10% of plan</li>
+            </ul>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/connections">Add a data source</Link>
+            </Button>
           </CardContent>
         </Card>
 
@@ -399,7 +389,7 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Anything unusual</CardTitle>
-            <CardDescription>Callouts derived from the latest snapshot — verify against source records.</CardDescription>
+            <CardDescription>Callouts derived from the latest snapshot: verify against source records.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="list-disc space-y-1 pl-5 text-sm">
@@ -411,11 +401,11 @@ export function Dashboard() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <CircleStackIcon className="size-5 text-primary" /> Connections
+              <CircleStackIcon className="size-5 text-primary" /> Data sources
             </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
@@ -424,19 +414,6 @@ export function Dashboard() {
             </span>
             <Button variant="outline" size="sm" asChild>
               <Link to="/connections">Manage</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <KeyIcon className="size-5 text-primary" /> AI access
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Via Tradesmatic MCP Server</span>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/mcp-access">Manage</Link>
             </Button>
           </CardContent>
         </Card>
