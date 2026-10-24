@@ -274,6 +274,10 @@ export function Dashboard() {
   // period changes (or a double-invoked mount effect) never stack stale data.
   const overviewReq = useRef(0);
   const hasOverview = useRef(false);
+  // The range effect must wait until the saved period resolves: otherwise the
+  // first overview fires with the default 30d and refires once the period
+  // lands, doubling the heaviest request on every visit.
+  const [periodReady, setPeriodReady] = useState(false);
 
   const loadStatus = useCallback(async (id: string) => {
     try {
@@ -347,6 +351,7 @@ export function Dashboard() {
         } else if (layout?.layout.defaultRange && PRESET_OPTIONS.some((o) => o.value === layout.layout.defaultRange)) {
           setPreset(layout.layout.defaultRange as Preset);
         }
+        setPeriodReady(true);
         void loadStatus(orgId);
         void loadTargets(orgId);
       })
@@ -354,9 +359,9 @@ export function Dashboard() {
   }, [orgId, loadStatus, loadTargets]);
 
   useEffect(() => {
-    if (!orgId) return;
+    if (!orgId || !periodReady) return;
     void loadOverview(orgId, range.from, range.to);
-  }, [orgId, range.from, range.to, loadOverview]);
+  }, [orgId, periodReady, range.from, range.to, loadOverview]);
 
   // While backfilling, the open tab itself carries the seed home: every poll
   // that finds no other worker active fires one refresh (2 chunks plus up to
