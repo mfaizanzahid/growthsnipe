@@ -76,13 +76,20 @@ function basicAuthHeader(accessKey: string, secretKey: string): string {
 function cleanHost(host: string | undefined): string {
   // Host is compulsory: white-label customers live on their own domain, so
   // silently defaulting would point credentials at the wrong tenant.
+  // Accepts pasted URLs too ("https://<host>/...") — only the hostname and
+  // optional port are kept. The host itself is not secret material (unlike
+  // the keys), so it may appear in error messages to help spot typos.
   const cleaned = (host ?? '')
     .trim()
     .replace(/^https?:\/\//i, '')
-    .replace(/\/+$/g, '')
+    .split(/[/?#]/, 1)[0]!
+    .replace(/:+$/g, '')
     .trim();
   if (!cleaned) {
     throw new IsnApiError('ISN connection needs a host (e.g. inspectionsupport.com or your white-label domain).');
+  }
+  if (!/^[a-z0-9.-]+(:\d+)?$/i.test(cleaned) || !cleaned.includes('.')) {
+    throw new IsnApiError(`ISN host "${cleaned}" does not look like a domain (e.g. inspectionsupport.com). Check for typos.`);
   }
   return cleaned;
 }
@@ -149,10 +156,13 @@ export class IsnClient {
     try {
       res = await globalThis.fetch(url, { method, headers, body });
     } catch (err) {
-      // Never include keys, host credentials, or the query string.
+      // No response at all: DNS, TLS, or connection failure reaching the
+      // host — almost always a mistyped host, not wrong keys (those answer
+      // 401/403). The host is named so the typo is visible; keys, the
+      // company key, and the query string stay redacted.
       throw new IsnApiError(
         redactSecrets(
-          `ISN request to ${path} failed before a response (${truncate(err instanceof Error ? err.message : String(err), 120)})`,
+          `ISN host "${this.host}" could not be reached for ${path} (${truncate(err instanceof Error ? err.message : String(err), 120)}). Check the host for typos.`,
           this.secrets(),
         ),
       );

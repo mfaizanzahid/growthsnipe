@@ -34,6 +34,8 @@ import {
   writeAppLog,
 } from "../src/server/lib/app-logs";
 import { planCron } from "../src/server/lib/cron-plan";
+import { runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
+import { orgSyncState } from "../src/server/db/schema";
 
 const billingApp = createApp();
 const mcpApp = new Hono<{ Bindings: Env }>();
@@ -167,9 +169,10 @@ export default {
      * - Daily billing renewals (Safepay unscheduled_cof, manual schedule only).
      * - Daily trial ownership (reminders at -5/-3/0/+3/+5, expiry flip).
      * - 5-min Sidekick briefing tick (due D1 schedules → briefing jobs).
+     * - Quarter-hour analytics warehouse tick (backfill + enrichment).
      * - Daily platform-log retention purge.
      *
-     * The two triggers are distinguished by controller.cron, so billing runs
+     * The three triggers are distinguished by controller.cron, so billing runs
      * once a day and the hourly tick only advances briefings. Billing
      * operations are day-granular (reminder offsets, dunning windows, 24h
      * auto-retry gaps), so running them every tick was wasted work.
@@ -299,6 +302,36 @@ export default {
             });
           },
         ),
+      );
+    }
+
+    // Analytics warehouse sync on every non-daily tick (hourly + quarter
+    // hour): backfill chunks for new connections, then incrementals plus
+    // service enrichment once live. Live workspaces stay throttled to hourly
+    // incrementals by their own last-synced check below.
+    if (plan.runAnalytics) {
+      jobs.push(
+        (async () => {
+          try {
+            const states = await db.select().from(orgSyncState).limit(20);
+            const hourAgo = Math.floor(now / 1000) - 3600;
+            let synced = 0;
+            for (const s of states) {
+              if (s.status === "backfilling" || s.status === "error") {
+                await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 4, nowMs: now });
+                synced += 1;
+              } else if (s.status === "live" && (s.lastSyncedAt ?? 0) < hourAgo) {
+                await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 1, nowMs: now });
+                synced += 1;
+              }
+              if (synced >= 5) break;
+            }
+            await writeAppLog(db, { level: "info", event: "cron.analytics", surface: "cron", message: `Analytics tick: ${synced} orgs synced`, detail: { synced } });
+          } catch (err) {
+            console.error("[cron] analytics failed", err);
+            await writeAppLog(db, { level: "error", event: "cron.analytics_failed", surface: "cron", message: err instanceof Error ? err.message : "Analytics tick failed", detail: err });
+          }
+        })(),
       );
     }
 

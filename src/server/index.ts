@@ -12,6 +12,7 @@ import { createContactRoutes } from "./routes/contact";
 import { createPendingEmailRoutes } from "./routes/pending-email";
 import { createBillingRoutes } from "./routes/billing";
 import { createSidekickRoutes } from "./routes/sidekick";
+import { createAnalyticsRoutes } from "./routes/analytics";
 import { createOAuthRoutes } from "./routes/oauth";
 import { createWebhookRoutes } from "./routes/webhooks";
 import type { AuthedVariables } from "./middleware";
@@ -133,6 +134,7 @@ export function createApp() {
   app.route("/", createPendingEmailRoutes());
   app.route("/", createBillingRoutes());
   app.route("/", createSidekickRoutes());
+  app.route("/", createAnalyticsRoutes());
   app.route("/", createOAuthRoutes());
   app.route("/", createWebhookRoutes());
 

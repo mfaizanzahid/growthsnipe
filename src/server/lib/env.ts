@@ -24,6 +24,17 @@ export interface Env extends BaseEnv {
    * paging, so this caps what a single read retains; see lib/retrieval-limits.ts.
    */
   ISN_SAFETY_LIMIT?: string;
+  /**
+   * Per-order detail reads per sync run for ISN service enrichment
+   * (no bulk endpoint exists). Default 500; raise to fill histories faster
+   * at the cost of more vendor requests per run, lower to be gentler.
+   */
+  ANALYTICS_ENRICH_PER_RUN?: string;
+  /**
+   * Concurrent detail reads during enrichment. Default 8 (capped at 16);
+   * ISN is not rate limited but asks for considerate polling.
+   */
+  ANALYTICS_ENRICH_CONCURRENCY?: string;
 }
 
 const envSchema = z.object({

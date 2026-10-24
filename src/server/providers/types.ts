@@ -138,6 +138,12 @@ export interface SearchOrdersInput {
 export interface BusinessProviderAdapter {
   key: ProviderKey;
   capabilities(): Promise<ProviderCapabilities>;
+  /**
+   * Best-effort grand total for seeding progress (ETA math), or null when the
+   * platform has no cheap count. Must never throw: callers treat failure as
+   * "unknown total" and show indeterminate progress instead.
+   */
+  estimateTotal?(): Promise<number | null>;
   searchClients(input: SearchClientsInput): Promise<Page<ClientRecord>>;
   getClient(id: string): Promise<ClientRecord | null>;
   searchOrders(input: SearchOrdersInput): Promise<Page<OrderRecord>>;

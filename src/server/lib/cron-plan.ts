@@ -1,14 +1,18 @@
 /**
  * Which Cron jobs a given invocation should run.
  *
- * The Worker has two triggers: a daily billing trigger ("0 3 * * *") and an
- * hourly Sidekick tick ("0 * * * *"). Cloudflare invokes the same
- * `scheduled()` handler for both, so the jobs have to be told apart by
- * `controller.cron` - otherwise billing runs 288 times a day.
+ * The Worker has three triggers: a daily billing trigger ("0 3 * * *"), an
+ * hourly tick ("0 * * * *"), and a quarter-hour analytics tick
+ * ("*\/15 * * * *"). Cloudflare invokes the same `scheduled()` handler for
+ * all three, so the jobs have to be told apart by `controller.cron` -
+ * otherwise billing runs 384 times a day.
  *
  * Billing work is day-granular (reminder offsets, dunning windows, 24h
  * auto-retry gaps), so it belongs on the daily trigger. The hourly tick exists
- * to advance briefings, which are themselves whole-hour schedules.
+ * to advance briefings, which are themselves whole-hour schedules. Analytics
+ * runs on every non-daily tick: backfills and enrichment progress every
+ * 15 minutes, while live workspaces stay throttled to hourly incrementals
+ * by their own last-synced check in the worker.
  */
 export interface CronPlanInput {
   /** The exact cron expression that fired (`controller.cron`). */
@@ -26,6 +30,8 @@ export interface CronPlan {
   runBilling: boolean;
   /** Sidekick briefing tick. */
   runBriefings: boolean;
+  /** Analytics warehouse sync (backfill + enrichment). */
+  runAnalytics: boolean;
   /** Platform-log retention purge. */
   runRetentionPurge: boolean;
 }
@@ -41,6 +47,10 @@ export function planCron(input: CronPlanInput): CronPlan {
     // The daily trigger skips briefings so a briefing is never scheduled
     // twice in the same minute (both triggers fire at 03:00).
     runBriefings: !isDaily,
+    // Analytics rides every non-daily tick (hourly + quarter-hour). The
+    // worker throttles live workspaces to hourly incrementals itself, so the
+    // extra ticks only accelerate backfills and enrichment.
+    runAnalytics: !isDaily,
     // Retention is a once-a-day sweep.
     runRetentionPurge: isDaily,
   };

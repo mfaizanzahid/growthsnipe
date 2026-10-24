@@ -21,6 +21,20 @@ export class SpectoraAdapter implements BusinessProviderAdapter {
   private readonly client: SpectoraClient;
   constructor(_env: unknown, connection: Connection) { this.client = new SpectoraClient(connection.credentials); }
   async capabilities(): Promise<ProviderCapabilities> { return { provider: 'spectora', read: ['clients','orders','agents','events'], write: [], lastCheckedAt: new Date().toISOString() }; }
+  /**
+   * Grand total from one unfiltered listing: the response carries
+   * `meta.pagination.records` even with `page[size]` 1, so this costs a
+   * single tiny call. Note it excludes cancelled inspections (disjoint
+   * population), so seeds legitimately finish slightly above 100%.
+   */
+  async estimateTotal(): Promise<number | null> {
+    try {
+      const page = await this.searchOrders({ limit: 1 });
+      return typeof page.totalEstimate === 'number' ? page.totalEstimate : null;
+    } catch {
+      return null;
+    }
+  }
   private async list<T>(path: string, query: Record<string, unknown>, map: (item: JsonApiResource) => T): Promise<Page<T>> {
     const { data, meta } = listPayload(await this.client.get(path, query));
     const pagination = (meta ?? {}) as { pagination?: { records?: unknown } };

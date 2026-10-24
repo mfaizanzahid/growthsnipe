@@ -150,6 +150,31 @@ describe("IsnAdapter.searchOrders", () => {
     expect(page.items[0].currency).toBe("USD");
     expect(page.items[0].status).toBe("completed");
   });
+
+  it("estimateTotal counts live index rows without mapping them", async () => {
+    // Live 2026-10-24: unfiltered `/rest/orders` index rows carry only
+    // id/modified/show, so soft-deleted rows are excludable up front and the
+    // estimate matches what a seed actually stores.
+    stubFetch({
+      status: "ok",
+      count: 5,
+      orders: [
+        { id: "a", modified: "2026-01-01", show: "yes" },
+        { id: "b", modified: "2026-01-02", show: "no" },
+        { id: "c", modified: "2026-01-03", show: "YES" },
+        { id: "d", modified: "2026-01-04", show: "0" },
+        { id: "e", modified: "2026-01-05" },
+      ],
+    });
+    await expect(adapter().estimateTotal()).resolves.toBe(3);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toContain("/guardian/rest/orders");
+  });
+
+  it("estimateTotal is null when the shape is unusable", async () => {
+    stubFetch({ status: "ok", count: 0, orders: [] });
+    await expect(adapter().estimateTotal()).resolves.toBeNull();
+  });
 });
 
 describe("IsnAdapter.searchOrders windowed (/json)", () => {
@@ -262,6 +287,39 @@ describe("IsnAdapter configuration guards", () => {
     expect(() => new IsnAdapter({}, { provider: "isn", credentials: { ...CREDS, host: "" } })).toThrow(
       IsnApiError,
     );
+  });
+
+  it("normalizes pasted URLs down to hostname", async () => {
+    stubFetch(ordersPayload(1, 1));
+    const withUrl = new IsnAdapter(
+      {},
+      { provider: "isn", credentials: { ...CREDS, host: "https://goisn.example.com/some/path/?x=1" } },
+    );
+    await withUrl.searchOrders({ limit: 1 });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatch(/^https:\/\/goisn\.example\.com\/guardian\/rest\/orders/);
+  });
+
+  it("rejects a host that does not look like a domain", () => {
+    expect(
+      () => new IsnAdapter({}, { provider: "isn", credentials: { ...CREDS, host: "not a host!!" } }),
+    ).toThrow(/does not look like a domain/);
+  });
+
+  it("names the unreachable host so typos are visible, without leaking keys", async () => {
+    vi.stubGlobal("fetch", async () => {
+      throw new TypeError("fetch failed");
+    });
+    let message = "";
+    try {
+      await adapter().searchOrders({ limit: 5 });
+    } catch (err) {
+      message = err instanceof Error ? err.message : String(err);
+    }
+    expect(message).toContain("goisn.example.com");
+    expect(message).toContain("could not be reached");
+    expect(message).not.toContain("secret");
+    expect(message).not.toContain("accessKey");
   });
 
   it("sends the verified path shape and basic auth, and never leaks keys on failure", async () => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowRightIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { authClient } from "../lib/auth-client";
 import { useActiveOrg } from "../hooks/useActiveOrg";
@@ -102,49 +102,64 @@ export function Onboarding() {
       .finally(() => setPlansLoading(false));
   }, []);
 
-  // Returning users who already own a workspace continue to the profile step
-  // (prefilled when a profile exists) instead of skipping straight to plans.
+  // Returning users pick up where they left off instead of restarting.
+  // Billing already resolved (trialing/active subscription) never shows Pay
+  // again: with no platform connected they land on Connect, and with one
+  // they leave onboarding for the dashboard entirely.
   const [orgStepSeen, setOrgStepSeen] = useState(false);
-  // True when going "Back" from plan selection should return to workspace creation
-  // (fresh users, or users who explicitly tapped "New"), not the dashboard.
-  const [orgBackAllowed, setOrgBackAllowed] = useState(false);
+  interface ResumeSubscription {
+    status?: string;
+    trialEndsAt?: number | null;
+  }
+  async function resumeOrg(id: string, firstWorkspace: boolean) {
+    setOrgId(id);
+    let sub: ResumeSubscription | null = null;
+    try {
+      const r = await fetch(`/api/billing/subscription?orgId=${id}`);
+      // Non-admin members can't read billing (or start trials).
+      if (!r.ok) throw new Error("no billing access");
+      const body = (await r.json()) as { subscription?: ResumeSubscription | null };
+      sub = body.subscription ?? null;
+    } catch {
+      sub = null;
+    }
+    const billed = sub !== null && (sub.status === "trialing" || sub.status === "active" || sub.status === "canceled");
+    if (!billed || sub === null) {
+      // No usable subscription: first workspaces trial, further ones pay.
+      // (Abandoned single workspaces still get the promised free trial here.)
+      setFlow(firstWorkspace ? "trial" : "paid");
+      setStep("profile");
+      return;
+    }
+    const conns = await fetch(`/api/sidekick/connections?orgId=${id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    const list = (conns as { connections?: unknown[] } | null)?.connections ?? [];
+    if (list.length > 0) {
+      navigate("/dashboard");
+      return;
+    }
+    if (sub.status === "trialing") {
+      setFlow("trial");
+      if (typeof sub.trialEndsAt === "number") setTrialEndsAt(sub.trialEndsAt);
+    } else {
+      setFlow("paid");
+    }
+    setStep("connect");
+  }
   useEffect(() => {
     if (orgsLoading || orgStepSeen || step !== "org" || orgId) return;
     if (existingOrgs.length === 0) {
       setFlow("trial");
-      setOrgBackAllowed(true);
       setOrgStepSeen(true);
       return;
     }
-    const first = existingOrgs[0]!;
-    if (existingOrgs.length === 1) {
-      // A single workspace that never started any subscription (abandoned
-      // onboarding) still gets its free trial — the paid flow would trap
-      // users who never received the trial they were promised.
-      setOrgStepSeen(true);
-      fetch(`/api/billing/subscription?orgId=${first.id}`)
-        .then((r) => {
-          // Non-admin members can't read billing (or start trials): paid flow.
-          if (!r.ok) throw new Error("paid flow");
-          return r.json();
-        })
-        .then((d) => {
-          const sub = (d as { subscription?: object | null } | null)?.subscription;
-          setOrgId(activeOrgId ?? first.id);
-          setFlow(sub ? "paid" : "trial");
-          setStep("profile");
-        })
-        .catch(() => {
-          setOrgId(activeOrgId ?? first.id);
-          setFlow("paid");
-          setStep("profile");
-        });
-      return;
-    }
-    setOrgId(activeOrgId ?? first.id);
-    setFlow("paid");
-    setStep("profile");
     setOrgStepSeen(true);
+    if (existingOrgs.length === 1) {
+      void resumeOrg(activeOrgId ?? existingOrgs[0]!.id, true);
+      return;
+    }
+    void resumeOrg(activeOrgId ?? existingOrgs[0]!.id, false);
   }, [orgsLoading, orgStepSeen, step, orgId, existingOrgs, activeOrgId]);
 
   async function createOrg(e: React.FormEvent) {
@@ -159,7 +174,6 @@ export function Onboarding() {
       await authClient.organization.setActive({ organizationId: data.id });
       setOrgId(data.id);
       toast.success(`Workspace "${data.name}" created`);
-      setOrgBackAllowed(false);
       setFlow(existingOrgs.length > 0 ? "paid" : "trial");
       setStep("profile");
     } catch (err) {
@@ -410,10 +424,7 @@ export function Onboarding() {
           <CardContent>
             <form onSubmit={saveProfile} className="space-y-4">
               <BusinessProfileForm value={profile} onChange={setProfile} idPrefix="ob" />
-              <div className="flex justify-between">
-                <Button variant="ghost" onClick={() => (orgBackAllowed ? setStep("org") : navigate("/dashboard"))}>
-                  <ArrowLeftIcon className="size-4" /> Back
-                </Button>
+              <div className="flex justify-end">
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -451,10 +462,7 @@ export function Onboarding() {
           </CardHeader>
           <CardContent className="space-y-4">
             <ConnectPlatformForm orgId={orgId} submitLabel="Connect platform" onConnected={() => finishConnect()} />
-            <div className="flex justify-between">
-              <Button variant="ghost" onClick={() => setStep(activeFlow === "trial" ? "profile" : "review")}>
-                <ArrowLeftIcon className="size-4" /> Back
-              </Button>
+            <div className="flex justify-end">
               <Button variant="ghost" onClick={() => finishConnect()}>
                 Skip for now
               </Button>
@@ -486,7 +494,7 @@ export function Onboarding() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button type="button" variant="outline" onClick={() => { setOrgBackAllowed(true); setStep("org"); }}>
+                  <Button type="button" variant="outline" onClick={() => setStep("org")}>
                     New
                   </Button>
                 </div>
@@ -534,10 +542,7 @@ export function Onboarding() {
               <Label htmlFor="coupon">Discount code (optional)</Label>
               <Input id="coupon" placeholder="SAVE20" value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} />
             </div>
-            <div className="flex justify-between">
-              <Button variant="ghost" onClick={() => setStep("profile")}>
-                <ArrowLeftIcon className="size-4" /> Back
-              </Button>
+            <div className="flex justify-end">
               <Button disabled={!plan || !orgId} onClick={() => setStep("review")}>
                 Review order <ArrowRightIcon className="size-4" />
               </Button>

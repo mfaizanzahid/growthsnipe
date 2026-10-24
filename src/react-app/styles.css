@@ -192,3 +192,10 @@ html[data-select-open] body {
 .safepay-atoms-root .iframeWrapper {
   height: 50px !important;
 }
+
+/* Indeterminate seeding progress: a third-width bar gliding across the track
+   (seed totals are unknowable up front, so no determinate fill is honest). */
+@keyframes seed-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}

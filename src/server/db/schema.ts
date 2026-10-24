@@ -21,3 +21,26 @@ export const sidekickBusinessProfiles = sqliteTable('sidekick_business_profiles'
 export const sidekickEmployeeStates = sqliteTable('sidekick_employee_states', {
   organizationId: text('organization_id').notNull(), employee: text('employee').notNull(), active: integer('active', { mode: 'boolean' }).notNull().default(true), updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 }, t => ({ pk: primaryKey({ columns: [t.organizationId, t.employee] }), orgIdx: index('sidekick_employee_states_org_idx').on(t.organizationId) }));
+/* Analytics warehouse: local copy of provider orders for fast dashboards. */
+export const orgSyncState = sqliteTable('org_sync_state', {
+  organizationId: text('organization_id').primaryKey(), provider: text('provider').notNull(), status: text('status').notNull().default('backfilling'), cursorDate: text('cursor_date'), lastSyncedAt: integer('last_synced_at'), totalFetched: integer('total_fetched').notNull().default(0), errorText: text('error_text'), updatedAt: integer('updated_at').notNull(), seedStartedAt: integer('seed_started_at'), totalEstimate: integer('total_estimate'),
+});
+export const orgOrders = sqliteTable('org_orders', {
+  id: text('id').primaryKey(), organizationId: text('organization_id').notNull(), provider: text('provider').notNull(), providerOrderId: text('provider_order_id').notNull(), status: text('status').notNull().default('scheduled'), scheduledAt: text('scheduled_at'), completedAt: text('completed_at'), totalMinor: integer('total_minor'), currency: text('currency').notNull().default('USD'), inspectorNames: text('inspector_names').notNull().default('[]'), buyerName: text('buyer_name'), buyerEmail: text('buyer_email'), buyerPhone: text('buyer_phone'), buyingAgentName: text('buying_agent_name'), buyingAgentEmail: text('buying_agent_email'), buyingAgentPhone: text('buying_agent_phone'), sellingAgentName: text('selling_agent_name'), serviceType: text('service_type'), referralSource: text('referral_source'), address: text('address'), providerUpdatedAt: text('provider_updated_at'), syncedAt: integer('synced_at').notNull(), rawJson: text('raw_json'),
+}, t => ({ orgProviderOrder: uniqueIndex('org_orders_org_provider_order_idx').on(t.organizationId, t.provider, t.providerOrderId), orgScheduled: index('org_orders_org_scheduled_idx').on(t.organizationId, t.scheduledAt), orgStatus: index('org_orders_org_status_idx').on(t.organizationId, t.status) }));
+export const orgOrderServices = sqliteTable('org_order_services', {
+  id: text('id').primaryKey(), organizationId: text('organization_id').notNull(), orderId: text('order_id').notNull(), name: text('name').notNull(), kind: text('kind').notNull().default('base'), amountMinor: integer('amount_minor'),
+}, t => ({ orgOrder: index('org_order_services_org_order_idx').on(t.organizationId, t.orderId) }));
+export const orgAgents = sqliteTable('org_agents', {
+  id: text('id').primaryKey(), organizationId: text('organization_id').notNull(), name: text('name'), email: text('email'), phone: text('phone'), firstSeenAt: text('first_seen_at'), lastSeenAt: text('last_seen_at'), orderCount: integer('order_count').notNull().default(0),
+}, t => ({ orgIdx: index('org_agents_org_idx').on(t.organizationId), orgEmail: index('org_agents_org_email_idx').on(t.organizationId, t.email), orgPhone: index('org_agents_org_phone_idx').on(t.organizationId, t.phone) }));
+export const orgInspectorTargets = sqliteTable('org_inspector_targets', {
+  organizationId: text('organization_id').notNull(), inspectorName: text('inspector_name').notNull(), jobsPerDay: integer('jobs_per_day').notNull().default(2), updatedAt: integer('updated_at').notNull(),
+}, t => ({ pk: primaryKey({ columns: [t.organizationId, t.inspectorName] }) }));
+export const orgDashboardLayouts = sqliteTable('org_dashboard_layouts', {
+  organizationId: text('organization_id').primaryKey(), widgetsJson: text('widgets_json').notNull().default('[]'), defaultRange: text('default_range').notNull().default('last_12m'), updatedAt: integer('updated_at').notNull(),
+});
+/* Per-user dashboard period preference (preset + custom dates per workspace). */
+export const userDashboardPrefs = sqliteTable('user_dashboard_prefs', {
+  userId: text('user_id').notNull(), organizationId: text('organization_id').notNull(), preset: text('preset').notNull().default('last_12m'), customFrom: text('custom_from'), customTo: text('custom_to'), updatedAt: integer('updated_at').notNull(),
+}, t => ({ pk: primaryKey({ columns: [t.userId, t.organizationId] }) }));

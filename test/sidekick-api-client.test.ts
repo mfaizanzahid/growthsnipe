@@ -45,4 +45,17 @@ describe("api client error surfacing", () => {
     mockFetch(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     await expect(api<{ ok: boolean }>("/x")).resolves.toEqual({ ok: true });
   });
+
+  it("bypasses the HTTP cache so polling never renders frozen counts", async () => {
+    const seen: RequestInit[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_input: unknown, init?: RequestInit) => {
+        seen.push(init ?? {});
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }),
+    );
+    await api("/x");
+    expect(seen[0]?.cache).toBe("no-store");
+  });
 });

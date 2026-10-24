@@ -5,6 +5,7 @@ import { planCron } from "../src/server/lib/cron-plan";
 
 const DAILY = "0 3 * * *";
 const TICK = "0 * * * *";
+const QUARTER = "*/15 * * * *";
 const TODAY = "2026-10-20";
 
 describe("planCron", () => {
@@ -17,7 +18,21 @@ describe("planCron", () => {
     });
     expect(plan.runBilling).toBe(true);
     expect(plan.runBriefings).toBe(false);
+    expect(plan.runAnalytics).toBe(false);
     expect(plan.runRetentionPurge).toBe(true);
+  });
+
+  it("runs analytics on the quarter-hour tick without briefings-only limits", () => {
+    const plan = planCron({
+      cron: QUARTER,
+      dailyCron: DAILY,
+      lastBillingDay: TODAY,
+      today: TODAY,
+    });
+    expect(plan.runBilling).toBe(false);
+    expect(plan.runBriefings).toBe(true);
+    expect(plan.runAnalytics).toBe(true);
+    expect(plan.runRetentionPurge).toBe(false);
   });
 
   it("runs only briefings on the hourly tick once the day is handled", () => {
@@ -105,6 +120,7 @@ describe("planCron", () => {
     for (const list of cronLists) {
       expect(list).toContain(`"${DAILY}"`);
       expect(list).toContain(`"${TICK}"`);
+      expect(list).toContain(`"${QUARTER}"`);
     }
   });
 });

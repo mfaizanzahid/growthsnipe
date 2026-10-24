@@ -147,6 +147,32 @@ export class IsnAdapter implements BusinessProviderAdapter {
     };
   }
 
+  /**
+   * Grand total from one unfiltered `/rest/orders` read. Index rows carry
+   * only `id`/`modified`/`show` (live-probed 2026-10-24), so soft-deleted
+   * rows (`show: "no"`) are excluded up front and the number matches what a
+   * seed actually stores. Rows are counted, never mapped or retained, so the
+   * multi-megabyte download stays a transient parse. Callers invoke this once
+   * per seed at most.
+   */
+  async estimateTotal(): Promise<number | null> {
+    try {
+      const raw = await this.client.get('/orders', {});
+      const rows = (raw as { orders?: unknown }).orders;
+      if (!Array.isArray(rows)) return null;
+      let live = 0;
+      for (const row of rows) {
+        if (!row || typeof row !== 'object') continue;
+        const show = (row as { show?: unknown }).show;
+        if (typeof show === 'string' && (show.toLowerCase() === 'no' || show === '0')) continue;
+        live += 1;
+      }
+      return live > 0 ? live : null;
+    } catch {
+      return null;
+    }
+  }
+
   async searchOrders(input: SearchOrdersInput): Promise<Page<OrderRecord>> {
     // Windowed reads use `/json/orders`, the only order endpoint that returns
     // money (`total_fee`) and inspector/agent/client display names. It ignores

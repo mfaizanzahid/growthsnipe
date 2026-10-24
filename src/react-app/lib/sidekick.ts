@@ -69,7 +69,11 @@ export interface ManagementSnapshot {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  // Live data backing 15s dashboard polls must never come from the browser
+  // HTTP cache: identical URLs would otherwise freeze counts mid-seed while
+  // the warehouse keeps moving underneath. Callers may still override.
   const res = await fetch(path, {
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     ...init,
   });

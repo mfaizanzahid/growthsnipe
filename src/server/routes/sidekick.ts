@@ -24,6 +24,8 @@ import { SpectoraAdapter } from "../providers/spectora/adapter";
 import { IsnAdapter } from "../providers/isn/adapter";
 import { IsnClient } from "../providers/isn/client";
 import { buildManagementSnapshot, type ManagementSnapshot } from "../sidekick/management";
+import { orgSyncState } from "../db/schema";
+import { runFullBackfill } from "../analytics/sync";
 import {
   HOURLY_LOCAL_TIME_RE,
   isValidTimeZone,
@@ -330,6 +332,24 @@ export function createSidekickRoutes(deps: {
         capabilitiesJson,
         externalAccountId: externalAccountId ?? null,
       });
+      // Seed analytics immediately in one continuous run (not spread over
+      // cron ticks): the dashboard polls status and shows a seeding banner
+      // meanwhile. Best effort: the hourly cron resumes if this run is cut
+      // short, and unit-test harnesses without an execution context simply
+      // leave the backfill to the cron.
+      try {
+        const db = c.get("db") as Db;
+        const now = Math.floor(Date.now() / 1000);
+        await db.insert(orgSyncState).values({ organizationId: orgId, provider, status: "backfilling", updatedAt: now }).onConflictDoNothing();
+        const task = runFullBackfill(env, db, orgId).then(
+          (s) => console.log(`[analytics] seed-on-connect org=${orgId} status=${s.status} chunks=${s.chunksSynced} rows=${s.rowsUpserted}`),
+          (err) => console.error(`[analytics] seed-on-connect failed org=${orgId}`, err),
+        );
+        const ex = c.executionCtx as unknown as { waitUntil?: (p: Promise<unknown>) => void } | undefined;
+        if (ex && typeof ex.waitUntil === "function") ex.waitUntil(task);
+      } catch {
+        // Seeding marker is best effort; the hourly cron also picks up new connections.
+      }
       return c.json({ connection });
     } catch (err) {
       if (err instanceof Error && err.message.includes("MCP_ENCRYPTION_KEY")) {

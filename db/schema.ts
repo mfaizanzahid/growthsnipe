@@ -382,6 +382,13 @@ export {
   sidekickMcpTokens,
   sidekickPolicies,
   sidekickSchedules,
+  orgSyncState,
+  orgOrders,
+  orgOrderServices,
+  orgAgents,
+  orgInspectorTargets,
+  orgDashboardLayouts,
+  userDashboardPrefs,
 } from "../src/server/db/schema";
 
 /** MCP OAuth authorization server (opaque tokens, hashes only). */
