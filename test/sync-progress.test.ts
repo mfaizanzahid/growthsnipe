@@ -38,6 +38,26 @@ describe("seedingStats", () => {
     const { line } = seedingStats({ totalFetched: 44800, seedStartedAt: NOW - 600, totalEstimate: 45000 }, NOW);
     expect(line).toContain("less than a minute left");
   });
+
+  it("prefers chunk walk position over the vendor all-time total", () => {
+    // 10 of 21 chunks with a vendor total the 5-year scope can never reach:
+    // percent follows the walk (48%), with no misleading ETA.
+    const { line, pct } = seedingStats(
+      { totalFetched: 20000, seedStartedAt: NOW - 600, totalEstimate: 45000, backfillChunksDone: 10, backfillChunksTotal: 21 },
+      NOW,
+    );
+    expect(pct).toBe(48);
+    expect(line).toBe("20,000 orders synced · 10 min so far");
+  });
+
+  it("clamps chunk position into range", () => {
+    expect(
+      seedingStats({ totalFetched: 1, backfillChunksDone: 99, backfillChunksTotal: 21 }, NOW).pct,
+    ).toBe(100);
+    expect(
+      seedingStats({ totalFetched: 1, backfillChunksDone: -3, backfillChunksTotal: 21 }, NOW).pct,
+    ).toBe(0);
+  });
 });
 
 describe("formatCount", () => {

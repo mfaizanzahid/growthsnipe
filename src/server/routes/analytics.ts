@@ -19,7 +19,7 @@ import type { Db } from "../repositories/db";
 import { drizzleStore } from "../repositories/billing";
 import { orgAccess, type OrgAccess } from "../billing/access";
 import { orgDashboardLayouts, orgInspectorTargets, orgOrders, orgOrderServices, orgSyncState, userDashboardPrefs } from "../db/schema";
-import { runAnalyticsSyncForOrg } from "../analytics/sync";
+import { backfillProgress, runAnalyticsSyncForOrg } from "../analytics/sync";
 import {
   decodeCursor,
   getAgentLeaderboard,
@@ -102,8 +102,12 @@ export function createAnalyticsRoutes(deps: {
     const db = c.get("db") as Db;
     const rows = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
     const s = rows[0];
-    if (!s) return c.json({ status: { state: "idle", provider: null, totalFetched: 0, cursorDate: null, lastSyncedAt: null, seedStartedAt: null, totalEstimate: null } });
-    return c.json({ status: { state: s.status, provider: s.provider, totalFetched: s.totalFetched, cursorDate: s.cursorDate, lastSyncedAt: s.lastSyncedAt, error: s.errorText, seedStartedAt: s.seedStartedAt, totalEstimate: s.totalEstimate } });
+    if (!s) {
+      const idle = backfillProgress(null, "idle", Date.now());
+      return c.json({ status: { state: "idle", provider: null, totalFetched: 0, cursorDate: null, lastSyncedAt: null, seedStartedAt: null, totalEstimate: null, backfillChunksDone: idle.done, backfillChunksTotal: idle.total } });
+    }
+    const progress = backfillProgress(s.cursorDate, s.status, Date.now());
+    return c.json({ status: { state: s.status, provider: s.provider, totalFetched: s.totalFetched, cursorDate: s.cursorDate, lastSyncedAt: s.lastSyncedAt, error: s.errorText, seedStartedAt: s.seedStartedAt, totalEstimate: s.totalEstimate, backfillChunksDone: progress.done, backfillChunksTotal: progress.total } });
   });
 
   // History bounds for the All-time preset: single indexed scan, no rows.

@@ -415,6 +415,23 @@ describe("route hardening", () => {
     expect(await r2.json()).toEqual({ range: { minScheduledAt: null, maxScheduledAt: null } });
   });
 
+  it("status reports cap-aware chunk walk position", async () => {
+    const { db, sqlite } = routeDb();
+    const nowSec = Math.floor(Date.now() / 1000);
+    sqlite.exec(`
+      INSERT INTO org_sync_state (organization_id, provider, status, cursor_date, last_synced_at, total_fetched, updated_at)
+      VALUES ('o1', 'spectora', 'backfilling', '2021-11-27T12:00:00.000Z', ${nowSec}, 20000, ${nowSec});
+    `);
+    const app = buildApp(db);
+    const res = await app.request("/api/analytics/status?orgId=o1", {}, ENV);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { status: { backfillChunksDone: number; backfillChunksTotal: number } };
+    // Same cursor math as the unit test, evaluated at runtime now.
+    const expected = Math.max(0, Math.min(21, Math.round((Date.now() - Date.parse("2021-11-27T12:00:00.000Z")) / 86400000 / 90)));
+    expect(body.status.backfillChunksTotal).toBe(21);
+    expect(body.status.backfillChunksDone).toBe(expected);
+  });
+
   it("basket never counts another org's service rows for this org's order", async () => {
     const { db, sqlite } = routeDb();
     sqlite.exec(`

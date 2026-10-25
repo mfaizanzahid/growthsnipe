@@ -4,6 +4,9 @@ export interface SeedProgressInput {
   totalFetched?: number | null;
   seedStartedAt?: number | null;
   totalEstimate?: number | null;
+  /** Cap-aware walk position: chunks done of the fixed backfill walk. */
+  backfillChunksDone?: number | null;
+  backfillChunksTotal?: number | null;
 }
 
 /** Compact whole-number formatting for sync counters (12,400 not 12,400.0). */
@@ -42,9 +45,11 @@ export function isSyncDisabled(input: {
 }
 
 /**
- * Seeding progress line: elapsed, current rate, and an ETA only when the
- * vendor total is known. Rates and ETAs are approximate by nature (vendor
- * windows vary in size); the wording says "about" and never promises.
+ * Seeding progress line: elapsed plus a determinate percent. The percent
+ * comes from backfill walk position (chunks done of the fixed 5-year walk),
+ * never from rows over the vendor all-time total: the warehouse only pulls
+ * 5 years, so a rows-based percent stalls below 100% on deep histories.
+ * Chunk sizes vary wildly, so there is deliberately no time-left ETA.
  */
 export function seedingStats(
   sync: SeedProgressInput,
@@ -56,18 +61,28 @@ export function seedingStats(
   const elapsedText = elapsedMin === null ? null : elapsedMin < 1 ? "just started" : `${elapsedMin} min so far`;
   const rate = elapsedSec === null || elapsedSec <= 0 ? null : fetched / (elapsedSec / 60);
   const rateText = rate === null || !Number.isFinite(rate) ? null : `about ${formatCount(rate)}/min`;
-  const total = typeof sync.totalEstimate === "number" && sync.totalEstimate > 0 ? sync.totalEstimate : null;
   const bits = [`${formatCount(fetched)} orders synced`];
   if (elapsedText) bits.push(elapsedText);
   let pct: number | null = null;
-  if (total !== null) {
-    pct = Math.min(100, Math.round((fetched / total) * 100));
-    if (rate !== null && rate > 0 && fetched < total) {
-      const leftMin = Math.ceil((total - fetched) / rate);
-      bits.push(leftMin <= 1 ? "less than a minute left" : `about ${leftMin} min left`);
+  const chunksTotal =
+    typeof sync.backfillChunksTotal === "number" && sync.backfillChunksTotal > 0 ? sync.backfillChunksTotal : null;
+  const chunksDone =
+    chunksTotal !== null && typeof sync.backfillChunksDone === "number"
+      ? Math.max(0, Math.min(chunksTotal, sync.backfillChunksDone))
+      : null;
+  if (chunksTotal !== null && chunksDone !== null) {
+    pct = Math.round((chunksDone / chunksTotal) * 100);
+  } else {
+    const total = typeof sync.totalEstimate === "number" && sync.totalEstimate > 0 ? sync.totalEstimate : null;
+    if (total !== null) {
+      pct = Math.min(100, Math.round((fetched / total) * 100));
+      if (rate !== null && rate > 0 && fetched < total) {
+        const leftMin = Math.ceil((total - fetched) / rate);
+        bits.push(leftMin <= 1 ? "less than a minute left" : `about ${leftMin} min left`);
+      }
+    } else if (rateText) {
+      bits.push(rateText);
     }
-  } else if (rateText) {
-    bits.push(rateText);
   }
   return { line: bits.join(" · "), pct };
 }

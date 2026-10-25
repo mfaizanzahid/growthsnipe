@@ -27,6 +27,21 @@ const EMPTY_CHUNKS_TO_FINISH = 2;
 /** Safety floor: 90-day chunks covering the 5-year history plus headroom.
  * The exact bound is the calendar cutoff enforced in the walk below. */
 const MAX_BACKFILL_CHUNKS = 21;
+
+/**
+ * Cap-aware backfill progress for the status endpoint. The vendor grand
+ * total covers all-time history while we only pull 5 years, so rows-over-
+ * estimate can never reach 100%; chunk position over the fixed walk can.
+ * A live seed reports complete; an unknown cursor reports zero.
+ */
+export function backfillProgress(cursorDate: string | null, status: string, nowMs: number): { done: number; total: number } {
+  const total = MAX_BACKFILL_CHUNKS;
+  if (status === "live") return { done: total, total };
+  if (!cursorDate) return { done: 0, total };
+  const cursorMs = new Date(cursorDate).getTime();
+  if (!Number.isFinite(cursorMs)) return { done: 0, total };
+  return { done: Math.max(0, Math.min(total, Math.round((nowMs - cursorMs) / (SYNC_CHUNK_DAYS * 86400000)))), total };
+}
 /** One-go seed budget: a full backfill runs to completion in a single task. */
 export const FULL_BACKFILL_CHUNKS = MAX_BACKFILL_CHUNKS;
 /** Chunk fetch attempts before giving up on one window (transient vendor hiccups). */
@@ -665,7 +680,6 @@ async function upsertOrders(
           address: typeof o.address === "string" ? o.address : null,
           providerUpdatedAt: typeof o.updatedAt === "string" ? o.updatedAt : null,
           syncedAt: nowSec,
-          rawJson: o.details ? JSON.stringify(o.details).slice(0, 20000) : null,
         })
         .onConflictDoUpdate({
           target: [orgOrders.organizationId, orgOrders.provider, orgOrders.providerOrderId],

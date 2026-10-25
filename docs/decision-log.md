@@ -1,5 +1,21 @@
 # Decision log SaaS Billing Portal (fresh project, GHL removed)
 
+## 2026-10-26 - Monthly overlay hides the partial starting year (owner decision)
+
+Owner asked to hide the initial partial year on the month-wise season overlay as well: its line started mid-axis with null-bridged months, implying a full-year shape. The year chips and lines now follow the growth series, which starts at the first full year, instead of deriving years from the raw monthly buckets. Typecheck and lint clean; HMR picks it up with no restart.
+
+## 2026-10-26 - Previous-year deltas hidden past one year (owner decision)
+
+Owner asked to hide vs Previous year on durations over a year: the shifted comparison window overlaps the selected range almost entirely there, so the delta reads near zero against itself. The Revenue and Jobs KPI cards now render the YoY badge only when the selected span is up to 365 days; the per-year growth table (already full-year based) carries the long view. Typecheck and lint clean; HMR picks it up with no restart.
+
+## 2026-10-26 - Cap-aware seed progress plus one reload on finish (owner decision)
+
+Owner asked whether seed progress accounts for the 5-year scope (it did not: percent divided 5-year rows by the vendor all-time total, so it stalled below 100% with a bogus ETA) and for one automatic overview refresh when feeding finishes. Progress is now walk-based: new `backfillProgress` in `sync.ts` reports chunks done of the fixed 21-chunk walk from the cursor (live is complete), served on the status endpoint; `seedingStats` prefers it and drops the time-left ETA, keeping the rows line plus elapsed. The driver watches the last-seen sync state and forces one cache-bypassing overview reload on the backfilling-to-live flip only (mount-live and error states excluded, ref reset per org). Pinned by progress-unit, status-endpoint, and seeding-math tests. Typecheck, lint, and suites green; HMR picks it up with no restart.
+
+## 2026-10-26 - Raw vendor payload column dropped (owner decision)
+
+Owner approved removing `org_orders.raw_json` after the pass-through review showed it was the dominant share of warehouse storage (up to 20KB per order) with zero readers anywhere in the codebase. Migration `0038_drop_org_orders_raw_json.sql` drops the column; the sync no longer serializes vendor details per order and the Drizzle schema drops the field. Canonical columns plus live detail re-reads cover every current use; per-service fee amounts stay out until a vendor exposes them with verified units. Applied to local D1 with no restart. Typecheck, lint, and analytics suites green.
+
 ## 2026-10-25 - Stuck backfill cursor at the 5-year clamp plus preset overlap fix (owner decision)
 
 Owner reported the ISN seed re-fetching one window forever (same 1,815 rows and frozen `cursorDate` every 15s) and the dropdown check overlapping the long All-time label. Root cause of the loop: the 5-year clamp rewrote the boundary chunk's start to the cutoff, and the stored cursor (exactly the cutoff) recomputed to the same chunk index on the next run, so the seed fetched `[cutoff, boundary]` endlessly, never flipped live, and inflated `totalFetched` past the estimate with duplicates. Fix: a run whose start cursor already reaches the cutoff finishes immediately, and a successfully stored clamped chunk finishes the seed in the same run (empty clamped chunks too). Pre-cap seeds parked at 2014 also finish on the next run instead of re-walking. Pinned by two regression tests (aged cursor, clamped boundary with no refetch on the follow-up run). Enrichment itself was never stuck: 500 per run through a 21k backlog is the designed rate. Label fix: dropdown items reserve right padding for the check indicator and the preset trigger widened for the long All-time text. Typecheck, lint, and sync suites green; HMR picks it up with no restart.

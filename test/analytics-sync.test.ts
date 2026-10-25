@@ -6,7 +6,7 @@ import type { Db } from "../src/server/repositories/db";
 import type { Env } from "../src/server/lib/env";
 import type { BusinessProviderAdapter, OrderRecord } from "../src/server/providers/types";
 import { encryptJson } from "../src/server/lib/crypto";
-import { extractBasket, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
+import { backfillProgress, extractBasket, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
 import { extractAgentContact } from "../src/server/analytics/sync";
 
 const KEY = "test-sync-key-must-be-long-enough-1234";
@@ -114,6 +114,19 @@ function fakeAdapter(impl: Partial<BusinessProviderAdapter> & { calls?: Array<{ 
     ...impl,
   } as unknown as BusinessProviderAdapter;
 }
+
+describe("backfill progress", () => {
+  // NOW is 2026-10-23T12:00Z: position is whole 90-day chunks from the
+  // cursor, clamped to the 21-chunk walk; live is always complete.
+  it("derives walk position from the cursor, complete when live", () => {
+    expect(backfillProgress(null, "backfilling", NOW)).toEqual({ done: 0, total: 21 });
+    expect(backfillProgress("2026-10-01T00:00:00.000Z", "backfilling", NOW)).toEqual({ done: 0, total: 21 });
+    expect(backfillProgress("2021-11-27T12:00:00.000Z", "backfilling", NOW)).toEqual({ done: 20, total: 21 });
+    expect(backfillProgress("2014-06-30T12:00:00.000Z", "backfilling", NOW)).toEqual({ done: 21, total: 21 });
+    expect(backfillProgress(null, "live", NOW)).toEqual({ done: 21, total: 21 });
+    expect(backfillProgress("garbage", "backfilling", NOW)).toEqual({ done: 0, total: 21 });
+  });
+});
 
 describe("agent contact extraction", () => {
   it("reads Spectora camelCase keys", () => {

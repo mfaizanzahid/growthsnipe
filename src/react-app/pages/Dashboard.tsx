@@ -98,6 +98,8 @@ interface SyncStatus {
   error?: string | null;
   seedStartedAt?: number | null;
   totalEstimate?: number | null;
+  backfillChunksDone?: number | null;
+  backfillChunksTotal?: number | null;
 }
 
 type TrendMonth = Overview["months"][number];
@@ -250,10 +252,9 @@ export function Dashboard() {
   const range = useMemo(() => presetRange(preset, customFrom, customTo, new Date(), historyStart), [preset, customFrom, customTo, historyStart]);
 
   // Year-over-year overlay: one full Jan to Dec axis, one line per year.
-  const trendYears = useMemo(() => {
-    const set = new Set((overview?.months ?? []).map((m) => Number(m.month.slice(0, 4))));
-    return [...set].filter((y) => Number.isFinite(y)).sort((a, b) => a - b);
-  }, [overview]);
+  // Lines follow the growth series, which starts at the first full year, so
+  // a partial starting year never draws a misleading bridged line.
+  const trendYears = useMemo(() => (overview?.growth ?? []).map((g) => g.year), [overview]);
   const visibleYears = yearsOn ?? trendYears;
   const trendRows = useMemo(() => {
     const byMonth = new Map((overview?.months ?? []).map((m) => [m.month, m]));
@@ -349,6 +350,7 @@ export function Dashboard() {
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     setLoading(true);
+    prevSyncState.current = null;
     Promise.all([
       api<{ overview: { connections: SidekickConnection[] } }>(`/api/sidekick/overview?orgId=${orgId}`).catch(() => null),
       fetch(`/api/billing/subscription?orgId=${orgId}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
@@ -395,7 +397,9 @@ export function Dashboard() {
   // (idempotent upserts) and rare: a fresh heartbeat means cron or another
   // tab just worked, so this tab stands down — except when chaining its own
   // runs, which keeps dev seeds moving instead of idling 90s between cycles.
-  // Only visible tabs drive, and the driver never reloads the charts: it only
+  // Only visible tabs drive, and the driver never reloads the charts except
+  // once: on the backfilling-to-live flip it forces one overview reload so
+  // the completed numbers show without a manual refresh. Otherwise it only
   // advances sync state plus the seeding banner. Charts render from the
   // session cache (one entry per org and range, so reloads are instant) and
   // refetch only on explicit user actions (Refresh button, Sync click,
@@ -410,12 +414,23 @@ export function Dashboard() {
     !!overview.serviceCoverage &&
     overview.serviceCoverage.orders > overview.serviceCoverage.withServices;
   const lastAutoRef = useRef(0);
+  // Last sync state seen by the driver: detects the backfilling-to-live
+  // flip so the charts reload exactly once when a seed finishes.
+  const prevSyncState = useRef<string | null>(null);
   useEffect(() => {
     const driving = !!orgId && (sync?.state === "backfilling" || basketNeedsData);
     if (!driving) return;
     const t = setInterval(() => {
       void loadStatus(orgId!).then((s) => {
         if (!s) return;
+        const prev = prevSyncState.current;
+        prevSyncState.current = s.state;
+        // Seed just finished: one forced overview reload so the completed
+        // numbers show without a manual refresh. Forced past the session
+        // cache, which still holds the mid-seed figures.
+        if (prev === "backfilling" && s.state === "live") {
+          void loadOverview(orgId!, range.from, range.to, { force: true });
+        }
         // Never drive on terminal states (bad credentials): the error alert
         // owns that surface, and retries would only hammer a dead connection.
         if (s.state !== "backfilling" && !(s.state === "live" && basketNeedsData)) return;
@@ -548,6 +563,9 @@ export function Dashboard() {
   const t = overview?.totals;
   // Whole calendar months covered by the selected range, for monthly averages.
   const rangeSpanMs = new Date(range.to).getTime() - new Date(range.from).getTime();
+  // Year-over-year deltas only read honestly on windows up to a year: longer
+  // ranges overlap their own shifted comparison almost entirely.
+  const showYoY = Number.isFinite(rangeSpanMs) && rangeSpanMs > 0 && rangeSpanMs <= 365 * 86400000;
   const rangeMonths = !Number.isFinite(rangeSpanMs) || rangeSpanMs <= 0 ? 1 : Math.max(1, Math.round(rangeSpanMs / 86400000 / 30.44));
   const repeatTotal = (overview?.repeat.repeatAgentJobs ?? 0) + (overview?.repeat.oneOffAgentJobs ?? 0);
   const repeatPct = repeatTotal > 0 ? Math.round(((overview?.repeat.repeatAgentJobs ?? 0) / repeatTotal) * 100) : null;
@@ -732,8 +750,8 @@ export function Dashboard() {
             <div aria-busy={overviewLoading} className={overviewLoading ? "pointer-events-none space-y-4 opacity-60 transition-opacity" : "space-y-4"}>
               {visible.includes("kpis") && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Revenue, period</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{formatWholeMoney(t.revenueMinor, "USD")}</span><span className="text-xs text-muted-foreground">avg {formatWholeMoney(Math.round(t.revenueMinor / rangeMonths), "USD")}/mo</span></div><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.yoyRevenuePct} label="Previous year" /><DeltaBadge value={overview.deltas.revenuePct} label="Prior period" /></div></CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Jobs</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{t.jobs}</span><span className="text-xs text-muted-foreground">avg {Math.round(t.jobs / rangeMonths)}/mo</span></div><p className="text-xs text-muted-foreground">{t.completed} completed : {t.pending} pending : {t.cancelled} cancelled</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.yoyJobsPct} label="Previous year" /><DeltaBadge value={overview.deltas.jobsPct} label="Prior period" /></div></CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Revenue, period</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{formatWholeMoney(t.revenueMinor, "USD")}</span><span className="text-xs text-muted-foreground">avg {formatWholeMoney(Math.round(t.revenueMinor / rangeMonths), "USD")}/mo</span></div><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">{showYoY && <DeltaBadge value={overview.deltas.yoyRevenuePct} label="Previous year" />}<DeltaBadge value={overview.deltas.revenuePct} label="Prior period" /></div></CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Jobs</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{t.jobs}</span><span className="text-xs text-muted-foreground">avg {Math.round(t.jobs / rangeMonths)}/mo</span></div><p className="text-xs text-muted-foreground">{t.completed} completed : {t.pending} pending : {t.cancelled} cancelled</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">{showYoY && <DeltaBadge value={overview.deltas.yoyJobsPct} label="Previous year" />}<DeltaBadge value={overview.deltas.jobsPct} label="Prior period" /></div></CardContent></Card>
                   <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Average ticket</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{t.avgTicketMinor === null ? "n/a" : formatWholeMoney(t.avgTicketMinor, "USD")}</div><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.avgTicketPct} label="Prior period" /></div></CardContent></Card>
                   <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Repeat vs one off</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{overview.repeat.repeatAgentJobs} <span className="text-sm font-normal text-muted-foreground">repeat{repeatPct === null ? "" : ` (${repeatPct}%)`}</span></div><p className="text-xs text-muted-foreground">{overview.repeat.oneOffAgentJobs} one off{oneOffPct === null ? "" : ` (${oneOffPct}%)`} in period</p></CardContent></Card>
                 </div>

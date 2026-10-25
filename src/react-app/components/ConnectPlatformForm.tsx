@@ -5,6 +5,7 @@ import { PLATFORM_OPTIONS } from "../lib/platforms";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { PasswordInput } from "./PasswordInput";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 /**
@@ -90,7 +91,7 @@ export function ConnectPlatformForm({
       {provider === "spectora" ? (
         <div className="space-y-2">
           <Label htmlFor="platform-api-key">API key</Label>
-          <Input id="platform-api-key" type="password" autoComplete="off" placeholder="Spectora API key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+          <PasswordInput id="platform-api-key" autoComplete="off" placeholder="Spectora API key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
         </div>
       ) : (
         <>
@@ -104,11 +105,11 @@ export function ConnectPlatformForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="platform-isn-access">Access key</Label>
-            <Input id="platform-isn-access" autoComplete="off" placeholder="ISN access key (Basic-auth username)" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} />
+            <PasswordInput id="platform-isn-access" autoComplete="off" placeholder="ISN access key (Basic-auth username)" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="platform-isn-secret">Secret key</Label>
-            <Input id="platform-isn-secret" type="password" autoComplete="off" placeholder="ISN secret access key (never shown again)" value={secretKey} onChange={(e) => setSecretKey(e.target.value)} />
+            <PasswordInput id="platform-isn-secret" autoComplete="off" placeholder="ISN secret access key (never shown again)" value={secretKey} onChange={(e) => setSecretKey(e.target.value)} />
           </div>
         </>
       )}
