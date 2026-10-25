@@ -21,8 +21,13 @@ function memoryDb(): { db: Db; sqlite: DatabaseSync } {
       currency TEXT NOT NULL DEFAULT 'USD', inspector_names TEXT NOT NULL DEFAULT '[]',
       buyer_name TEXT, buyer_email TEXT, buyer_phone TEXT,
       buying_agent_name TEXT, buying_agent_email TEXT, buying_agent_phone TEXT,
+      agent_key TEXT,
       selling_agent_name TEXT, service_type TEXT, referral_source TEXT, address TEXT,
       provider_updated_at TEXT, synced_at INTEGER NOT NULL, raw_json TEXT
+    );
+    CREATE TABLE IF NOT EXISTS org_order_inspectors (
+      organization_id TEXT NOT NULL, order_id TEXT NOT NULL, inspector_name TEXT NOT NULL,
+      PRIMARY KEY (organization_id, order_id, inspector_name)
     );
     CREATE TABLE org_order_services (
       id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, order_id TEXT NOT NULL,
@@ -92,5 +97,43 @@ describe("overview service coverage", () => {
       { name: "General Home Inspection", jobs: 1, revenueMinor: 50000 },
       { name: "Radon", jobs: 1, revenueMinor: 50000 },
     ]);
+  });
+
+  it("counts distinct orders per service so penetration divides by period orders", async () => {
+    const { db, sqlite } = memoryDb();
+    // 3 non-cancelled orders: e1 carries Big + S1..S9, e2 and e3 carry Big.
+    // Big is on all 3 orders (100% penetration); each single is on 1 of 3.
+    sqlite.exec(`
+      INSERT INTO org_orders (id, organization_id, provider, provider_order_id, status, scheduled_at, total_minor, synced_at) VALUES
+        ('o1:isn:e1', 'o1', 'isn', 'e1', 'completed', '2026-03-10T10:00:00Z', 10000, 1),
+        ('o1:isn:e2', 'o1', 'isn', 'e2', 'completed', '2026-03-11T10:00:00Z', 10000, 1),
+        ('o1:isn:e3', 'o1', 'isn', 'e3', 'completed', '2026-03-12T10:00:00Z', 10000, 1);
+    `);
+    const svcValues = [
+      "('o1:isn:e1:svc:big', 'o1', 'o1:isn:e1', 'Big', 'base')",
+      "('o1:isn:e1:svc:big2', 'o1', 'o1:isn:e1', 'Big', 'base')",
+      ...Array.from({ length: 9 }, (_, i) => `('o1:isn:e1:svc:s${i + 1}', 'o1', 'o1:isn:e1', 'S${i + 1}', 'base')`),
+      "('o1:isn:e2:svc:big', 'o1', 'o1:isn:e2', 'Big', 'base')",
+      "('o1:isn:e3:svc:big', 'o1', 'o1:isn:e3', 'Big', 'base')",
+    ].join(",");
+    sqlite.exec(`INSERT INTO org_order_services (id, organization_id, order_id, name, kind) VALUES ${svcValues}`);
+    const app = buildApp(db);
+    const res = await app.request(
+      "/api/analytics/overview?orgId=o1&from=2026-01-01T00:00:00.000Z&to=2026-12-31T00:00:00.000Z",
+      {},
+      ENV,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      overview: {
+        basket: Array<{ name: string; jobs: number }>;
+        serviceCoverage: { orders: number; withServices: number };
+      };
+    };
+    // Big's duplicate row on e1 still counts one order: 3/3 orders = 100%.
+    expect(body.overview.basket[0]).toMatchObject({ name: "Big", jobs: 3 });
+    // 10 of 11 distinct services displayed; denominator covers all 3 orders.
+    expect(body.overview.basket).toHaveLength(10);
+    expect(body.overview.serviceCoverage.orders).toBe(3);
   });
 });

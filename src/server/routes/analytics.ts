@@ -21,6 +21,14 @@ import { orgAccess, type OrgAccess } from "../billing/access";
 import { orgDashboardLayouts, orgInspectorTargets, orgOrders, orgOrderServices, orgSyncState, userDashboardPrefs } from "../db/schema";
 import { runAnalyticsSyncForOrg } from "../analytics/sync";
 import {
+  decodeCursor,
+  getAgentLeaderboard,
+  getInspectorStats,
+  getRangeTotals,
+  listOrdersKeyset,
+  type SqlTotals,
+} from "../analytics/queries";
+import {
   agentLeaderboard,
   annualGrowthRate,
   basketMix,
@@ -100,19 +108,22 @@ export function createAnalyticsRoutes(deps: {
   routes.post("/api/analytics/refresh", guard, mem("user"), gated(), async (c) => {
     const orgId = c.get("orgId") as string;
     const db = c.get("db") as Db;
-    // Short cooldown: last manual refresh within 2 minutes returns current state.
+    // Short cooldown: a sync within the last 2 minutes returns current state
+    // instead of hammering the provider and D1 again. 200 (not 429) so the
+    // dashboard's silent auto-driver keeps reloading status/overview normally.
     const rows = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
     const last = rows[0]?.lastSyncedAt ?? 0;
+    if (Math.floor(Date.now() / 1000) - last < 120) return c.json({ summary: null, cooledDown: true });
     const summary = await runAnalyticsSyncForOrg(c.env as Env, db, orgId, { maxChunks: 2 });
-    void last;
     return c.json({ summary });
   });
 
   routes.get("/api/analytics/overview", guard, mem("viewer", true), gated(), async (c) => {
     const orgId = c.get("orgId") as string;
     const db = c.get("db") as Db;
-    const from = c.req.query("from") ?? new Date(Date.now() - 365 * 86400000).toISOString();
-    const to = c.req.query("to") ?? new Date().toISOString();
+    const range = parseRange(c.req.query("from"), c.req.query("to"));
+    if (!range) return c.json({ error: "Invalid date range" }, 422);
+    const { from, to } = range;
     const fromMs = new Date(from).getTime();
     const rangeMs = new Date(to).getTime() - fromMs;
     const prevFrom = new Date(fromMs - rangeMs).toISOString();
@@ -123,139 +134,37 @@ export function createAnalyticsRoutes(deps: {
     const yoyTo = new Date(to);
     yoyTo.setUTCFullYear(yoyTo.getUTCFullYear() - 1);
 
-    // Bounded read: newest 60k rows is enough for 5-year inspector analytics;
-    // all-history backfills beyond that still aggregate correctly per chunk over time.
-    const rows = await db
-      .select({
-        status: orgOrders.status,
-        scheduledAt: orgOrders.scheduledAt,
-        totalMinor: orgOrders.totalMinor,
-        inspectorNames: orgOrders.inspectorNames,
-        buyingAgentName: orgOrders.buyingAgentName,
-        buyingAgentEmail: orgOrders.buyingAgentEmail,
-        buyingAgentPhone: orgOrders.buyingAgentPhone,
-        serviceType: orgOrders.serviceType,
-        referralSource: orgOrders.referralSource,
-      })
-      .from(orgOrders)
-      .where(eq(orgOrders.organizationId, orgId))
-      .orderBy(desc(orgOrders.scheduledAt))
-      .limit(60000);
+    try {
+      const overview = await buildOverviewSql(db, orgId, { from, to, prevFrom, prevTo, yoyFrom: yoyFrom.toISOString(), yoyTo: yoyTo.toISOString() });
+      return c.json({ overview });
+    } catch (err) {
+      // Warehouses that predate migrations 0035/0036 have no agent_key or
+      // inspector junction yet: fall back to the legacy scan instead of 500.
+      if (!isWarehouseMissingColumn(err)) throw err;
+      const overview = await buildOverviewLegacy(db, orgId, { from, to, prevFrom, prevTo, yoyFrom: yoyFrom.toISOString(), yoyTo: yoyTo.toISOString() });
+      return c.json({ overview });
+    }
+  });
 
-    const orders: StoredOrder[] = rows.map((r) => ({
-      id: "",
-      status: r.status ?? "scheduled",
-      scheduledAt: r.scheduledAt,
-      totalMinor: r.totalMinor,
-      inspectorNames: toStoredRow({ status: "", scheduledAt: null, totalMinor: null, inspectorNamesJson: r.inspectorNames ?? "[]", buyingAgentName: null, serviceType: null }).inspectorNames,
-      buyingAgentName: r.buyingAgentName,
-      buyingAgentEmail: r.buyingAgentEmail,
-      buyingAgentPhone: r.buyingAgentPhone,
-      serviceNames: toStoredRow({ status: "", scheduledAt: null, totalMinor: null, inspectorNamesJson: "[]", buyingAgentName: null, serviceType: r.serviceType }).serviceNames,
-      referralSource: r.referralSource,
-    }));
-
-    const targets = await db.select().from(orgInspectorTargets).where(eq(orgInspectorTargets.organizationId, orgId)).limit(100);
-    const targetMap = new Map(targets.map((t) => [t.inspectorName, Number(t.jobsPerDay) || 2]));
-    // Synced service rows, so the basket card can show live fill progress.
-    const serviceCountRow = await db
-      .select({ n: sql<number>`count(*)` })
-      .from(orgOrderServices)
-      .where(eq(orgOrderServices.organizationId, orgId))
-      .limit(1);
-    const serviceCount = Number(serviceCountRow[0]?.n ?? 0);
-    // Service coverage for the selected range: distinct non-cancelled orders
-    // versus those already carrying service rows. This is the basket card's
-    // own progress signal — overall order counts can't describe enrichment,
-    // which trails behind (ISN) or rides along (Spectora) per provider.
-    const coverageRows = await db
-      .select({
-        orders: sql<number>`count(distinct ${orgOrders.id})`,
-        withServices: sql<number>`count(distinct case when ${orgOrderServices.orderId} is not null then ${orgOrders.id} end)`,
-      })
-      .from(orgOrders)
-      .leftJoin(
-        orgOrderServices,
-        and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
-      )
-      .where(
-        and(
-          eq(orgOrders.organizationId, orgId),
-          ne(orgOrders.status, "cancelled"),
-          gte(orgOrders.scheduledAt, from),
-          lt(orgOrders.scheduledAt, to),
-        ),
-      )
-      .limit(1);
-    const serviceCoverage = {
-      orders: Number(coverageRows[0]?.orders ?? 0),
-      withServices: Number(coverageRows[0]?.withServices ?? 0),
-    };
-
-    const totals = rangeTotals(orders, from, to);
-    const prev = rangeTotals(orders, prevFrom, prevTo);
-    const yoy = rangeTotals(orders, yoyFrom.toISOString(), yoyTo.toISOString());
-    const months = monthlySeries(orders, 5);
-    const quarters = quarterlySeries(months);
-    const growth = annualGrowthRate(months);
-    const agents = agentLeaderboard(orders, from, to);
-    const dropped = droppedAgents(orders, from, to, prevFrom, prevTo);
-    const repeat = repeatSplit(orders, from, to);
-    const inspectors = inspectorPerformance(orders, from, to, targetMap);
-    // Basket mix reads the services table (per-order service detail), not the
-    // listing-level serviceType string: ISN listings carry no services at all,
-    // and Spectora's base/addon split lives there too. Aggregated in SQL so
-    // large histories don't ship tens of thousands of rows to the worker.
-    // Falls back to serviceType splits while a workspace is still seeding.
-    const basketRows = await db
-      .select({
-        name: orgOrderServices.name,
-        jobs: sql<number>`count(*)`,
-        revenueMinor: sql<number>`coalesce(sum(case when ${orgOrders.status} = 'completed' then ${orgOrders.totalMinor} else 0 end), 0)`,
-      })
-      .from(orgOrderServices)
-      .innerJoin(orgOrders, eq(orgOrderServices.orderId, orgOrders.id))
-      .where(
-        and(
-          eq(orgOrderServices.organizationId, orgId),
-          ne(orgOrders.status, "cancelled"),
-          gte(orgOrders.scheduledAt, from),
-          lt(orgOrders.scheduledAt, to),
-        ),
-      )
-      .groupBy(orgOrderServices.name)
-      .orderBy(desc(sql`count(*)`))
-      .limit(10);
-    const basket =
-      basketRows.length > 0
-        ? basketRows.map((r) => ({ name: r.name, jobs: Number(r.jobs), revenueMinor: Number(r.revenueMinor) }))
-        : basketMix(orders, from, to);
-
-    return c.json({
-      overview: {
-        range: { from, to },
-        totals,
-        deltas: {
-          revenuePct: pctChange(totals.revenueMinor, prev.revenueMinor),
-          jobsPct: pctChange(totals.jobs, prev.completed || prev.jobs),
-          avgTicketPct: pctChange(totals.avgTicketMinor, prev.avgTicketMinor),
-          yoyRevenuePct: pctChange(totals.revenueMinor, yoy.revenueMinor),
-          yoyJobsPct: pctChange(totals.jobs, yoy.jobs),
-        },
-        yoy,
-        months,
-        quarters,
-        growth,
-        agents,
-        droppedAgents: dropped,
-        repeat,
-        inspectors,
-        basket,
-        serviceCount,
-        serviceCoverage,
-        dataQuality: dataQualityNotes(rows.length),
-      },
-    });
+  // Keyset-paginated order list. Cursor is opaque (base64url of the last
+  // row's scheduled_at + id); never OFFSET, so deep pages stay indexed.
+  routes.get("/api/analytics/orders", guard, mem("viewer", true), gated(), async (c) => {
+    const orgId = c.get("orgId") as string;
+    const db = c.get("db") as Db;
+    const range = parseRange(c.req.query("from"), c.req.query("to"));
+    if (!range) return c.json({ error: "Invalid date range" }, 422);
+    const { from, to } = range;
+    const limit = Math.max(1, Math.min(100, Number(c.req.query("limit")) || 50));
+    const rawCursor = c.req.query("cursor");
+    const cursor = rawCursor ? decodeCursor(rawCursor) : null;
+    if (rawCursor && !cursor) return c.json({ error: "Invalid cursor" }, 422);
+    try {
+      const { rows, nextCursor } = await listOrdersKeyset(db, orgId, from, to, limit, cursor);
+      return c.json({ orders: rows, nextCursor });
+    } catch (err) {
+      if (!isWarehouseMissingColumn(err)) throw err;
+      return c.json({ error: "Order history is still upgrading; retry shortly." }, 503);
+    }
   });
 
   routes.get("/api/analytics/layout", guard, mem("viewer", true), gated(), async (c) => {
@@ -268,11 +177,15 @@ export function createAnalyticsRoutes(deps: {
   routes.put("/api/analytics/layout", guard, mem("admin"), gated(), async (c) => {
     const parsed = LayoutBody.safeParse(await c.req.json().catch(() => undefined));
     if (!parsed.success) return c.json({ error: "Invalid layout" }, 422);
+    // Writes follow the authorized org, never a body-supplied id: a member of
+    // org A must not land writes in org B via a mismatched body orgId.
+    const orgId = c.get("orgId") as string;
+    if (parsed.data.orgId !== orgId) return c.json({ error: "Organization mismatch" }, 403);
     const db = c.get("db") as Db;
     const now = Math.floor(Date.now() / 1000);
     await db
       .insert(orgDashboardLayouts)
-      .values({ organizationId: parsed.data.orgId, widgetsJson: parsed.data.widgetsJson, defaultRange: parsed.data.defaultRange, updatedAt: now })
+      .values({ organizationId: orgId, widgetsJson: parsed.data.widgetsJson, defaultRange: parsed.data.defaultRange, updatedAt: now })
       .onConflictDoUpdate({ target: orgDashboardLayouts.organizationId, set: { widgetsJson: parsed.data.widgetsJson, defaultRange: parsed.data.defaultRange, updatedAt: now } });
     return c.json({ ok: true });
   });
@@ -298,13 +211,15 @@ export function createAnalyticsRoutes(deps: {
     const parsed = PeriodBody.safeParse(await c.req.json().catch(() => undefined));
     if (!parsed.success) return c.json({ error: "Invalid period" }, 422);
     const user = c.get("user") as SessionUser;
+    const orgId = c.get("orgId") as string;
+    if (parsed.data.orgId !== orgId) return c.json({ error: "Organization mismatch" }, 403);
     const db = c.get("db") as Db;
     const now = Math.floor(Date.now() / 1000);
     await db
       .insert(userDashboardPrefs)
       .values({
         userId: user.id,
-        organizationId: parsed.data.orgId,
+        organizationId: orgId,
         preset: parsed.data.preset,
         customFrom: parsed.data.customFrom ?? null,
         customTo: parsed.data.customTo ?? null,
@@ -326,11 +241,13 @@ export function createAnalyticsRoutes(deps: {
   routes.put("/api/analytics/targets", guard, mem("admin"), gated(), async (c) => {
     const parsed = TargetBody.safeParse(await c.req.json().catch(() => undefined));
     if (!parsed.success) return c.json({ error: "Invalid target" }, 422);
+    const orgId = c.get("orgId") as string;
+    if (parsed.data.orgId !== orgId) return c.json({ error: "Organization mismatch" }, 403);
     const db = c.get("db") as Db;
     const now = Math.floor(Date.now() / 1000);
     await db
       .insert(orgInspectorTargets)
-      .values({ organizationId: parsed.data.orgId, inspectorName: parsed.data.inspectorName, jobsPerDay: Math.round(parsed.data.jobsPerDay), updatedAt: now })
+      .values({ organizationId: orgId, inspectorName: parsed.data.inspectorName, jobsPerDay: Math.round(parsed.data.jobsPerDay), updatedAt: now })
       .onConflictDoUpdate({ target: [orgInspectorTargets.organizationId, orgInspectorTargets.inspectorName], set: { jobsPerDay: Math.round(parsed.data.jobsPerDay), updatedAt: now } });
     return c.json({ ok: true });
   });
@@ -338,9 +255,350 @@ export function createAnalyticsRoutes(deps: {
   return routes;
 }
 
-function dataQualityNotes(rowCount: number): string[] {
+interface OverviewWindow {
+  from: string;
+  to: string;
+  prevFrom: string;
+  prevTo: string;
+  yoyFrom: string;
+  yoyTo: string;
+}
+
+function sqlTotalsToRange(t: SqlTotals): import("../analytics/metrics").RangeTotals {
+  return {
+    jobs: t.jobs,
+    completed: t.completed,
+    pending: t.pending,
+    cancelled: t.cancelled,
+    revenueMinor: t.revenueMinor,
+    avgTicketMinor: t.completed > 0 ? Math.round(t.revenueMinor / t.completed) : null,
+  };
+}
+
+function isWarehouseMissingColumn(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /no such (table|column)/i.test(msg);
+}
+
+/**
+ * Validate an ISO date range for warehouse reads. Bound values go into
+ * indexed comparisons, so garbage in still executes queries; reject it with
+ * 422 instead. The 40-year cap is generous (the All-time preset spans ~26y)
+ * and only blocks absurd or swapped windows.
+ */
+function parseRange(fromRaw: string | undefined, toRaw: string | undefined): { from: string; to: string } | null {
+  const from = fromRaw ?? new Date(Date.now() - 365 * 86400000).toISOString();
+  const to = toRaw ?? new Date().toISOString();
+  const fromMs = new Date(from).getTime();
+  const toMs = new Date(to).getTime();
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs)) return null;
+  if (fromMs >= toMs) return null;
+  if (toMs - fromMs > 40 * 365 * 86400000) return null;
+  return { from, to };
+}
+
+/**
+ * SQL overview: every aggregate is a ranged, org-scoped query over the
+ * composite indexes. Row-level reads are limited to a narrow monthly-trend
+ * window (indexed range scan, projection only) that feeds the pure-JS
+ * monthly/repeat helpers; KPIs, leaderboard, inspectors, and basket never
+ * ship full order rows to the worker.
+ */
+async function buildOverviewSql(db: Db, orgId: string, w: OverviewWindow) {
+  // Monthly trend + repeat need row-level timestamps: fetch a narrow
+  // projection over an indexed range (6y back), not the whole org history.
+  const toMs = new Date(w.to).getTime();
+  const trendFrom = new Date(toMs - 6 * 365 * 86400000).toISOString();
+  // Every read below is independent: fire them concurrently so overview
+  // latency is the slowest single query, not the sum of eleven sequential
+  // D1 round trips (each aggregate still scans its own range server-side).
+  const [
+    totalsSql,
+    prevSql,
+    yoySql,
+    trendRows,
+    agentsFull,
+    prevAgents,
+    targets,
+    insp,
+    serviceCountRow,
+    coverageRows,
+    basketRows,
+  ] = await Promise.all([
+    getRangeTotals(db, orgId, w.from, w.to),
+    getRangeTotals(db, orgId, w.prevFrom, w.prevTo),
+    getRangeTotals(db, orgId, w.yoyFrom, w.yoyTo),
+    db
+      .select({
+        status: orgOrders.status,
+        scheduledAt: orgOrders.scheduledAt,
+        totalMinor: orgOrders.totalMinor,
+        agentKey: orgOrders.agentKey,
+        serviceType: orgOrders.serviceType,
+        inspectorNames: orgOrders.inspectorNames,
+      })
+      .from(orgOrders)
+      .where(and(eq(orgOrders.organizationId, orgId), gte(orgOrders.scheduledAt, trendFrom), lt(orgOrders.scheduledAt, w.to)))
+      .orderBy(desc(orgOrders.scheduledAt))
+      .limit(60000),
+    getAgentLeaderboard(db, orgId, w.from, w.to, 1000),
+    getAgentLeaderboard(db, orgId, w.prevFrom, w.prevTo, 1000),
+    db.select().from(orgInspectorTargets).where(eq(orgInspectorTargets.organizationId, orgId)).limit(100),
+    getInspectorStats(db, orgId, w.from, w.to),
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(orgOrderServices)
+      .where(eq(orgOrderServices.organizationId, orgId))
+      .limit(1),
+    db
+      .select({
+        orders: sql<number>`count(distinct ${orgOrders.id})`,
+        withServices: sql<number>`count(distinct case when ${orgOrderServices.orderId} is not null then ${orgOrders.id} end)`,
+      })
+      .from(orgOrders)
+      .leftJoin(
+        orgOrderServices,
+        and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
+      )
+      .where(
+        and(
+          eq(orgOrders.organizationId, orgId),
+          ne(orgOrders.status, "cancelled"),
+          gte(orgOrders.scheduledAt, w.from),
+          lt(orgOrders.scheduledAt, w.to),
+        ),
+      )
+      .limit(1),
+    db
+      .select({
+        name: orgOrderServices.name,
+        jobs: sql<number>`count(distinct ${orgOrderServices.orderId})`,
+        revenueMinor: sql<number>`coalesce(sum(case when ${orgOrders.status} = 'completed' then ${orgOrders.totalMinor} else 0 end), 0)`,
+      })
+      .from(orgOrderServices)
+      .innerJoin(orgOrders, and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrders.organizationId, orgId)))
+      .where(
+        and(
+          eq(orgOrderServices.organizationId, orgId),
+          ne(orgOrders.status, "cancelled"),
+          gte(orgOrders.scheduledAt, w.from),
+          lt(orgOrders.scheduledAt, w.to),
+        ),
+      )
+      .groupBy(orgOrderServices.name)
+      .orderBy(desc(sql`count(distinct ${orgOrderServices.orderId})`))
+      .limit(10),
+  ]);
+  const totals = sqlTotalsToRange(totalsSql);
+  const prev = sqlTotalsToRange(prevSql);
+  const yoy = sqlTotalsToRange(yoySql);
+  const truncated = trendRows.length >= 60000;
+  const trend: StoredOrder[] = trendRows.map((r) => {
+    const key = typeof r.agentKey === "string" ? r.agentKey : null;
+    return {
+      id: "",
+      status: r.status ?? "scheduled",
+      scheduledAt: r.scheduledAt,
+      totalMinor: r.totalMinor,
+      inspectorNames: toStoredRow({ status: "", scheduledAt: null, totalMinor: null, inspectorNamesJson: r.inspectorNames ?? "[]", buyingAgentName: null, serviceType: null }).inspectorNames,
+      buyingAgentName: null,
+      buyingAgentEmail: key?.startsWith("e:") ? key.slice(2) : null,
+      buyingAgentPhone: key?.startsWith("p:") ? key.slice(2) : null,
+      serviceNames: toStoredRow({ status: "", scheduledAt: null, totalMinor: null, inspectorNamesJson: "[]", buyingAgentName: null, serviceType: r.serviceType }).serviceNames,
+      referralSource: null,
+    };
+  });
+
+  const months = monthlySeries(trend, 5);
+  const quarters = quarterlySeries(months);
+  const growth = annualGrowthRate(months);
+
+  const agents = agentsFull.slice(0, 20);
+  const curKeys = new Set(agentsFull.map((a) => a.key));
+  const dropped = prevAgents.filter((a) => !curKeys.has(a.key));
+  const repeat = repeatSplit(trend, w.from, w.to);
+
+  const targetMap = new Map(targets.map((t) => [t.inspectorName, Number(t.jobsPerDay) || 2]));
+  let inspectors = insp.rows.map((r) => {
+    const target = targetMap.get(r.name);
+    const days = Math.max(1, insp.activeDays);
+    return {
+      name: r.name,
+      jobs: r.jobs,
+      revenueMinor: r.revenueMinor,
+      avgTicketMinor: r.jobs > 0 ? Math.round(r.revenueMinor / r.jobs) : null,
+      utilizationPct: target && target > 0 ? Math.round((r.jobs / (days * target)) * 1000) / 10 : null,
+    };
+  });
+  if (inspectors.length === 0) {
+    // Junction still backfilling (pre-0036 history): fall back to JS splits.
+    inspectors = inspectorPerformance(trend, w.from, w.to, targetMap);
+  }
+
+  const serviceCount = Number(serviceCountRow[0]?.n ?? 0);
+  const serviceCoverage = {
+    orders: Number(coverageRows[0]?.orders ?? 0),
+    withServices: Number(coverageRows[0]?.withServices ?? 0),
+  };
+
+  // jobs counts DISTINCT orders containing the service, so the card can
+  // show penetration (share of period orders). Display stops at the top 10.
+  const basket =
+    basketRows.length > 0
+      ? basketRows.map((r) => ({ name: r.name, jobs: Number(r.jobs), revenueMinor: Number(r.revenueMinor) }))
+      : basketMix(trend, w.from, w.to);
+
+  return {
+    range: { from: w.from, to: w.to },
+    totals,
+    deltas: {
+      revenuePct: pctChange(totals.revenueMinor, prev.revenueMinor),
+      jobsPct: pctChange(totals.jobs, prev.completed || prev.jobs),
+      avgTicketPct: pctChange(totals.avgTicketMinor, prev.avgTicketMinor),
+      yoyRevenuePct: pctChange(totals.revenueMinor, yoy.revenueMinor),
+      yoyJobsPct: pctChange(totals.jobs, yoy.jobs),
+    },
+    yoy,
+    months,
+    quarters,
+    growth,
+    agents,
+    droppedAgents: dropped,
+    repeat,
+    inspectors,
+    basket,
+    serviceCount,
+    serviceCoverage,
+    dataQuality: dataQualityNotes(truncated),
+  };
+}
+
+/** Legacy overview for warehouses predating 0035/0036 (no agent_key). */
+async function buildOverviewLegacy(db: Db, orgId: string, w: OverviewWindow) {
+  const rows = await db
+    .select({
+      status: orgOrders.status,
+      scheduledAt: orgOrders.scheduledAt,
+      totalMinor: orgOrders.totalMinor,
+      inspectorNames: orgOrders.inspectorNames,
+      buyingAgentName: orgOrders.buyingAgentName,
+      buyingAgentEmail: orgOrders.buyingAgentEmail,
+      buyingAgentPhone: orgOrders.buyingAgentPhone,
+      serviceType: orgOrders.serviceType,
+      referralSource: orgOrders.referralSource,
+    })
+    .from(orgOrders)
+    .where(eq(orgOrders.organizationId, orgId))
+    .orderBy(desc(orgOrders.scheduledAt))
+    .limit(60000);
+
+  const orders: StoredOrder[] = rows.map((r) => ({
+    id: "",
+    status: r.status ?? "scheduled",
+    scheduledAt: r.scheduledAt,
+    totalMinor: r.totalMinor,
+    inspectorNames: toStoredRow({ status: "", scheduledAt: null, totalMinor: null, inspectorNamesJson: r.inspectorNames ?? "[]", buyingAgentName: null, serviceType: null }).inspectorNames,
+    buyingAgentName: r.buyingAgentName,
+    buyingAgentEmail: r.buyingAgentEmail,
+    buyingAgentPhone: r.buyingAgentPhone,
+    serviceNames: toStoredRow({ status: "", scheduledAt: null, totalMinor: null, inspectorNamesJson: "[]", buyingAgentName: null, serviceType: r.serviceType }).serviceNames,
+    referralSource: r.referralSource,
+  }));
+
+  const targets = await db.select().from(orgInspectorTargets).where(eq(orgInspectorTargets.organizationId, orgId)).limit(100);
+  const targetMap = new Map(targets.map((t) => [t.inspectorName, Number(t.jobsPerDay) || 2]));
+  const serviceCountRow = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(orgOrderServices)
+    .where(eq(orgOrderServices.organizationId, orgId))
+    .limit(1);
+  const serviceCount = Number(serviceCountRow[0]?.n ?? 0);
+  const coverageRows = await db
+    .select({
+      orders: sql<number>`count(distinct ${orgOrders.id})`,
+      withServices: sql<number>`count(distinct case when ${orgOrderServices.orderId} is not null then ${orgOrders.id} end)`,
+    })
+    .from(orgOrders)
+    .leftJoin(
+      orgOrderServices,
+      and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
+    )
+    .where(
+      and(
+        eq(orgOrders.organizationId, orgId),
+        ne(orgOrders.status, "cancelled"),
+        gte(orgOrders.scheduledAt, w.from),
+        lt(orgOrders.scheduledAt, w.to),
+      ),
+    )
+    .limit(1);
+  const serviceCoverage = {
+    orders: Number(coverageRows[0]?.orders ?? 0),
+    withServices: Number(coverageRows[0]?.withServices ?? 0),
+  };
+
+  const totals = rangeTotals(orders, w.from, w.to);
+  const prev = rangeTotals(orders, w.prevFrom, w.prevTo);
+  const yoy = rangeTotals(orders, w.yoyFrom, w.yoyTo);
+  const months = monthlySeries(orders, 5);
+  const quarters = quarterlySeries(months);
+  const growth = annualGrowthRate(months);
+  const agents = agentLeaderboard(orders, w.from, w.to);
+  const dropped = droppedAgents(orders, w.from, w.to, w.prevFrom, w.prevTo);
+  const repeat = repeatSplit(orders, w.from, w.to);
+  const inspectors = inspectorPerformance(orders, w.from, w.to, targetMap);
+  const basketRows = await db
+    .select({
+      name: orgOrderServices.name,
+      jobs: sql<number>`count(distinct ${orgOrderServices.orderId})`,
+      revenueMinor: sql<number>`coalesce(sum(case when ${orgOrders.status} = 'completed' then ${orgOrders.totalMinor} else 0 end), 0)`,
+    })
+    .from(orgOrderServices)
+    .innerJoin(orgOrders, and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrders.organizationId, orgId)))
+    .where(
+      and(
+        eq(orgOrderServices.organizationId, orgId),
+        ne(orgOrders.status, "cancelled"),
+        gte(orgOrders.scheduledAt, w.from),
+        lt(orgOrders.scheduledAt, w.to),
+      ),
+    )
+    .groupBy(orgOrderServices.name)
+    .orderBy(desc(sql`count(distinct ${orgOrderServices.orderId})`))
+    .limit(10);
+  const basket =
+    basketRows.length > 0
+      ? basketRows.map((r) => ({ name: r.name, jobs: Number(r.jobs), revenueMinor: Number(r.revenueMinor) }))
+      : basketMix(orders, w.from, w.to);
+
+  return {
+    range: { from: w.from, to: w.to },
+    totals,
+    deltas: {
+      revenuePct: pctChange(totals.revenueMinor, prev.revenueMinor),
+      jobsPct: pctChange(totals.jobs, prev.completed || prev.jobs),
+      avgTicketPct: pctChange(totals.avgTicketMinor, prev.avgTicketMinor),
+      yoyRevenuePct: pctChange(totals.revenueMinor, yoy.revenueMinor),
+      yoyJobsPct: pctChange(totals.jobs, yoy.jobs),
+    },
+    yoy,
+    months,
+    quarters,
+    growth,
+    agents,
+    droppedAgents: dropped,
+    repeat,
+    inspectors,
+    basket,
+    serviceCount,
+    serviceCoverage,
+    dataQuality: dataQualityNotes(rows.length >= 60000),
+  };
+}
+
+function dataQualityNotes(truncated: boolean): string[] {
   const notes: string[] = [];
-  if (rowCount >= 60000) notes.push("Dashboard reads the newest 60,000 orders; older history continues to backfill and aggregate over time.");
+  if (truncated) notes.push("Trend history is capped at the newest 60,000 orders in range; KPIs and leaderboards always use the full range.");
   notes.push("ISN date filters accept whole days only, so consecutive comparison windows share a boundary day counted in both.");
   notes.push("ISN exposes no completion flag on windowed reads: a non-cancelled order scheduled in the past is treated as completed.");
   notes.push("ISN service mix builds from per-order detail reads, newest first; very old orders may still lack service detail while enrichment catches up.");

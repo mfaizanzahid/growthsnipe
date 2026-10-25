@@ -37,10 +37,18 @@ function memoryDb(): Db {
       currency TEXT NOT NULL DEFAULT 'USD', inspector_names TEXT NOT NULL DEFAULT '[]',
       buyer_name TEXT, buyer_email TEXT, buyer_phone TEXT,
       buying_agent_name TEXT, buying_agent_email TEXT, buying_agent_phone TEXT,
+      agent_key TEXT,
       selling_agent_name TEXT, service_type TEXT, referral_source TEXT, address TEXT,
       provider_updated_at TEXT, synced_at INTEGER NOT NULL, raw_json TEXT
     );
     CREATE UNIQUE INDEX org_orders_org_provider_order_idx ON org_orders (organization_id, provider, provider_order_id);
+    CREATE INDEX IF NOT EXISTS org_orders_org_sched_id_idx ON org_orders (organization_id, scheduled_at DESC, id DESC);
+    CREATE INDEX IF NOT EXISTS org_orders_org_status_sched_idx ON org_orders (organization_id, status, scheduled_at);
+    CREATE INDEX IF NOT EXISTS org_orders_org_agent_sched_idx ON org_orders (organization_id, agent_key, scheduled_at);
+    CREATE TABLE IF NOT EXISTS org_order_inspectors (
+      organization_id TEXT NOT NULL, order_id TEXT NOT NULL, inspector_name TEXT NOT NULL,
+      PRIMARY KEY (organization_id, order_id, inspector_name)
+    );
     CREATE TABLE org_order_services (
       id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, order_id TEXT NOT NULL,
       name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'base', amount_minor INTEGER
@@ -273,6 +281,33 @@ describe("analytics sync resilience", () => {
     expect(summary.rowsUpserted).toBe(1);
   }, 60000);
 
+  it("never pulls windows older than the 5-year history", async () => {
+    const db = memoryDb();
+    await seedConnection(db);
+    const seen: Array<{ from: string; to: string }> = [];
+    // An endless vendor: every window returns an order, so only the history
+    // cap can finish the seed (empty-window finish never triggers).
+    const endless = fakeAdapter({
+      async searchOrders(input) {
+        if (input.status === "cancelled") return { items: [] };
+        seen.push({ from: input.from ?? "", to: input.to ?? "" });
+        return { items: [order(`o${seen.length}`, new Date(NOW - 86400000).toISOString())] };
+      },
+    });
+    const cutoff = new Date(NOW);
+    cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 5);
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 60, nowMs: NOW, adapter: endless });
+    expect(seen.length).toBeGreaterThan(0);
+    // Neither end of any requested window may reach past the 5-year cutoff.
+    for (const w of seen) {
+      expect(w.to >= cutoff.toISOString()).toBe(true);
+      expect(w.from >= cutoff.toISOString()).toBe(true);
+    }
+    const second = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 60, nowMs: NOW, adapter: endless });
+    expect(second.finished).toBe(true);
+    expect(second.status).toBe("live");
+  }, 120000);
+
   it("marks auth failures terminal so owners check the connection", async () => {
     const db = memoryDb();
     await seedConnection(db);
@@ -290,8 +325,31 @@ describe("analytics sync resilience", () => {
     expect(attempts).toBe(1);
   });
 
-  it("checkpoints progress mid-run so an interrupted seed never reports zero", async () => {
+  it("heals buyer and agent names on re-sync via the conflict update", async () => {
     const db = memoryDb();
+    await seedConnection(db);
+    let names = { buyer: "Buyer A", buying: "Agent A", selling: "Agent S" };
+    const renaming = fakeAdapter({
+      async searchOrders(input) {
+        if (input.status === "cancelled") return { items: [] };
+        if (input.cursor) return { items: [] };
+        return { items: [{
+          ...order("1", new Date(NOW - 86400000).toISOString()),
+          buyerName: names.buyer,
+          buyingAgentName: names.buying,
+          sellingAgentName: names.selling,
+        }] };
+      },
+    });
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter: renaming });
+    names = { buyer: "Buyer B", buying: "Agent B", selling: "Agent T" };
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter: renaming });
+    const rows = await db.select().from(schema.orgOrders);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ buyerName: "Buyer B", buyingAgentName: "Agent B", sellingAgentName: "Agent T" });
+  });
+
+  it("checkpoints progress mid-run so an interrupted seed never reports zero", async () => {    const db = memoryDb();
     await seedConnection(db);
     const one = fakeAdapter({
       async searchOrders(input) {

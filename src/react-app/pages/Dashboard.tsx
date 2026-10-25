@@ -12,14 +12,14 @@ import {
 import { toast } from "sonner";
 import {
   Bar,
+  BarChart,
   CartesianGrid,
   Cell,
   ComposedChart,
+  LabelList,
   Legend,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -43,6 +43,7 @@ import {
 } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
 import { PRESET_OPTIONS, inclusiveEndDate, presetRange, type Preset } from "../lib/period";
+import { readCachedOverview, sessionCacheStore, writeCachedOverview } from "../lib/overview-cache";
 import { formatCount, isSeedComplete, isSyncDisabled, seedingStats } from "../lib/sync-progress";
 
 type MetricKey = "revenue" | "jobs" | "avgTicket" | "repeatPct";
@@ -237,7 +238,6 @@ export function Dashboard() {
   const lastManualRef = useRef<number | null>(null);
   const [visible, setVisible] = useState<string[]>(WIDGETS.map((w) => w.key));
   const [customOpen, setCustomOpen] = useState(false);
-  const [basketBy, setBasketBy] = useState<"jobs" | "revenue">("jobs");
   const [targetEdits, setTargetEdits] = useState<Record<string, string>>({});
   // Saved jobs-per-day targets by inspector (org-wide setting, shown as text).
   const [targets, setTargets] = useState<Record<string, number>>({});
@@ -289,12 +289,23 @@ export function Dashboard() {
     }
   }, []);
 
-  // Stable callback: fetches only when the period effect (or an explicit
-  // action) calls it. It must NOT depend on `overview`, or every successful
-  // fetch would create a new callback identity and re-trigger the effect
-  // into an infinite request loop.
-  const loadOverview = useCallback(async (id: string, from: string, to: string) => {
+  // Stable callback: cache-first within the tab session. Reloads, preset
+  // switches back to a seen range, and org switches to a seen range render
+  // instantly from sessionStorage; only explicit actions (Refresh button,
+  // Sync click, target save) pass force to refetch. It must NOT depend on
+  // `overview`, or every successful fetch would create a new callback
+  // identity and re-trigger the effect into an infinite request loop.
+  const loadOverview = useCallback(async (id: string, from: string, to: string, opts?: { force?: boolean }) => {
     const req = (overviewReq.current += 1);
+    if (!opts?.force) {
+      const hit = readCachedOverview<Overview>(sessionCacheStore(), id, from, to);
+      if (hit) {
+        hasOverview.current = true;
+        setOverview(hit);
+        setOverviewLoading(false);
+        return;
+      }
+    }
     setOverviewLoading(true);
     try {
       const data = await api<{ overview: Overview }>(
@@ -303,6 +314,7 @@ export function Dashboard() {
       if (req !== overviewReq.current) return;
       hasOverview.current = true;
       setOverview(data.overview);
+      writeCachedOverview(sessionCacheStore(), id, from, to, data.overview);
     } catch (err) {
       if (req !== overviewReq.current) return;
       if (!hasOverview.current) toast.error(err instanceof Error ? err.message : "Could not load analytics");
@@ -370,18 +382,20 @@ export function Dashboard() {
   // (idempotent upserts) and rare: a fresh heartbeat means cron or another
   // tab just worked, so this tab stands down — except when chaining its own
   // runs, which keeps dev seeds moving instead of idling 90s between cycles.
-  // Only visible tabs drive, and charts reload only when the fetched count
-  // actually moved.
+  // Only visible tabs drive, and the driver never reloads the charts: it only
+  // advances sync state plus the seeding banner. Charts render from the
+  // session cache (one entry per org and range, so reloads are instant) and
+  // refetch only on explicit user actions (Refresh button, Sync click,
+  // target save, or a never-seen range).
   // The tab keeps driving after the flip to live while the selected range's
   // basket still needs services: live runs only re-touch the head window, so
-  // without this the tail would never enrich in dev and the pie would sit at
+  // without this the tail would never enrich in dev and the mix would sit at
   // zero forever. In prod the hourly cron shares that tail work.
   const basketNeedsData =
     !!overview &&
     overview.basket.length === 0 &&
     !!overview.serviceCoverage &&
     overview.serviceCoverage.orders > overview.serviceCoverage.withServices;
-  const lastTotalRef = useRef<number | null>(null);
   const lastAutoRef = useRef(0);
   useEffect(() => {
     const driving = !!orgId && (sync?.state === "backfilling" || basketNeedsData);
@@ -389,19 +403,10 @@ export function Dashboard() {
     const t = setInterval(() => {
       void loadStatus(orgId!).then((s) => {
         if (!s) return;
-        if (s.state === "live" && !basketNeedsData) {
-          lastTotalRef.current = s.totalFetched;
-          void loadOverview(orgId!, range.from, range.to);
-          return;
-        }
         // Never drive on terminal states (bad credentials): the error alert
         // owns that surface, and retries would only hammer a dead connection.
         if (s.state !== "backfilling" && !(s.state === "live" && basketNeedsData)) return;
         if (refreshing) return;
-        if (s.totalFetched !== lastTotalRef.current) {
-          lastTotalRef.current = s.totalFetched;
-          void loadOverview(orgId!, range.from, range.to);
-        }
         if (document.visibilityState !== "visible") return;
         const nowSec = Math.floor(Date.now() / 1000);
         const ageSec = s.lastSyncedAt ? nowSec - s.lastSyncedAt : Infinity;
@@ -422,7 +427,8 @@ export function Dashboard() {
       await api(`/api/analytics/refresh?orgId=${orgId}`, { method: "POST", body: JSON.stringify({ orgId }) });
       if (!silent) toast.success("Sync check started");
       await loadStatus(orgId);
-      await loadOverview(orgId, range.from, range.to);
+      // Silent auto-driver runs never reload the charts; explicit clicks do.
+      if (!silent) await loadOverview(orgId, range.from, range.to, { force: true });
     } catch (err) {
       if (!silent) toast.error(err instanceof Error ? err.message : "Refresh failed");
     } finally {
@@ -462,7 +468,7 @@ export function Dashboard() {
       toast.success("Capacity target saved");
       setTargets((s) => ({ ...s, [name]: v }));
       setEditingTarget(null);
-      await loadOverview(orgId, range.from, range.to);
+      await loadOverview(orgId, range.from, range.to, { force: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save target");
     }
@@ -662,6 +668,16 @@ export function Dashboard() {
                   <Input id="dash-to" type="date" className="h-8 w-auto" value={customTo} onChange={(e) => { setCustomTo(e.target.value); savePeriod("custom", customFrom, e.target.value); }} />
                 </>
               )}
+              {/* Charts-only reload for this period: no provider sync, no D1 writes. */}
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={overviewLoading || !orgId}
+                title="Reload charts for this period"
+                onClick={() => { if (orgId) void loadOverview(orgId, range.from, range.to, { force: true }); }}
+              >
+                <ArrowPathIcon className={overviewLoading ? "size-4 animate-spin" : "size-4"} /> Refresh
+              </Button>
               <div className="ml-auto flex flex-wrap items-center gap-2">
                 {overviewLoading && (
                   <span role="status" className="flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground">
@@ -698,8 +714,8 @@ export function Dashboard() {
             <div aria-busy={overviewLoading} className={overviewLoading ? "pointer-events-none space-y-4 opacity-60 transition-opacity" : "space-y-4"}>
               {visible.includes("kpis") && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Revenue, period</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{formatWholeMoney(t.revenueMinor, "USD")}</span><span className="text-xs text-muted-foreground">avg {formatWholeMoney(Math.round(t.revenueMinor / rangeMonths), "USD")}/mo</span></div><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.yoyRevenuePct} label="Last year" /><DeltaBadge value={overview.deltas.revenuePct} label="Prior period" /></div></CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Jobs</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{t.jobs}</span><span className="text-xs text-muted-foreground">avg {Math.round(t.jobs / rangeMonths)}/mo</span></div><p className="text-xs text-muted-foreground">{t.completed} completed : {t.pending} pending : {t.cancelled} cancelled</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.yoyJobsPct} label="Last year" /><DeltaBadge value={overview.deltas.jobsPct} label="Prior period" /></div></CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Revenue, period</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{formatWholeMoney(t.revenueMinor, "USD")}</span><span className="text-xs text-muted-foreground">avg {formatWholeMoney(Math.round(t.revenueMinor / rangeMonths), "USD")}/mo</span></div><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.yoyRevenuePct} label="Previous year" /><DeltaBadge value={overview.deltas.revenuePct} label="Prior period" /></div></CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Jobs</CardTitle></CardHeader><CardContent><div className="flex flex-wrap items-baseline gap-x-2"><span className="text-2xl font-bold">{t.jobs}</span><span className="text-xs text-muted-foreground">avg {Math.round(t.jobs / rangeMonths)}/mo</span></div><p className="text-xs text-muted-foreground">{t.completed} completed : {t.pending} pending : {t.cancelled} cancelled</p><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.yoyJobsPct} label="Previous year" /><DeltaBadge value={overview.deltas.jobsPct} label="Prior period" /></div></CardContent></Card>
                   <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Average ticket</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{t.avgTicketMinor === null ? "n/a" : formatWholeMoney(t.avgTicketMinor, "USD")}</div><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1"><DeltaBadge value={overview.deltas.avgTicketPct} label="Prior period" /></div></CardContent></Card>
                   <Card><CardHeader><CardTitle className="text-sm text-muted-foreground">Repeat vs one off</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{overview.repeat.repeatAgentJobs} <span className="text-sm font-normal text-muted-foreground">repeat{repeatPct === null ? "" : ` (${repeatPct}%)`}</span></div><p className="text-xs text-muted-foreground">{overview.repeat.oneOffAgentJobs} one off{oneOffPct === null ? "" : ` (${oneOffPct}%)`} in period</p></CardContent></Card>
                 </div>
@@ -897,11 +913,7 @@ export function Dashboard() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-1.5">
                         <CardTitle>Basket mix of services</CardTitle>
-                        <CardDescription>Top services in period. ISN detail fills newest first; very old orders may still lack service detail.</CardDescription>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant={basketBy === "jobs" ? "default" : "outline"} size="sm" onClick={() => setBasketBy("jobs")}>Jobs</Button>
-                        <Button variant={basketBy === "revenue" ? "default" : "outline"} size="sm" onClick={() => setBasketBy("revenue")}>Revenue</Button>
+                        <CardDescription>Top 10 services in period by jobs, with penetration (share of period orders containing each service). ISN detail fills newest first; very old orders may still lack service detail.</CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -923,46 +935,53 @@ export function Dashboard() {
                         <p className="text-sm text-muted-foreground">No service mix recorded for this period.</p>
                       )
                     ) : (
-                      <div className="grid items-center gap-4 md:grid-cols-2">
-                        <div className="h-72">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie data={overview.basket} dataKey={basketBy === "jobs" ? "jobs" : "revenueMinor"} nameKey="name" outerRadius="80%">
-                                {overview.basket.map((b, i) => (
-                                  <Cell key={b.name} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                                ))}
-                              </Pie>
-                              <Tooltip
-                                formatter={(v, name) => {
-                                  const total = overview.basket.reduce((s, b) => s + (basketBy === "jobs" ? b.jobs : b.revenueMinor), 0);
-                                  const pct = total > 0 && typeof v === "number" ? ` (${((v / total) * 100).toFixed(1)}%)` : "";
-                                  return [basketBy === "jobs" ? `${v} jobs${pct}` : `${formatWholeMoney(Math.round(typeof v === "number" ? v : 0), "USD")}${pct}`, name];
-                                }}
-                              />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-4">Service</th><th className="py-1 pr-4">{basketBy === "jobs" ? "Jobs" : "Revenue"}</th><th className="py-1">Share</th></tr></thead>
-                            <tbody>
-                              {(() => {
-                                const total = overview.basket.reduce((s, b) => s + (basketBy === "jobs" ? b.jobs : b.revenueMinor), 0);
-                                return overview.basket.map((b, i) => {
-                                  const value = basketBy === "jobs" ? b.jobs : b.revenueMinor;
-                                  return (
+                      (() => {
+                        const rows = [...overview.basket].sort((a, b) => b.jobs - a.jobs).slice(0, 10);
+                        // Penetration: distinct orders containing the service
+                        // over all non-cancelled period orders. Only the top
+                        // 10 services are displayed.
+                        const orderBase = overview.serviceCoverage?.orders ?? 0;
+                        const penetration = (jobs: number) => (orderBase > 0 ? `${((jobs / orderBase) * 100).toFixed(1)}%` : "n/a");
+                        return (
+                          <div className="grid items-center gap-4 md:grid-cols-2">
+                            <div className="h-80">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 52 }}>
+                                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                                  <XAxis type="number" allowDecimals={false} />
+                                  <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 12 }} />
+                                  <Tooltip
+                                    formatter={(v) => {
+                                      const jobs = typeof v === "number" ? v : 0;
+                                      return [`${jobs} jobs (${penetration(jobs)})`, "Jobs"];
+                                    }}
+                                  />
+                                  <Bar dataKey="jobs" name="Jobs" radius={[0, 4, 4, 0]}>
+                                    {rows.map((b, i) => (
+                                      <Cell key={b.name} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                                    ))}
+                                    <LabelList dataKey="jobs" position="right" formatter={(v) => (typeof v === "number" ? penetration(v) : "")} />
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-4">Service</th><th className="py-1 pr-4">Jobs</th><th className="py-1">Penetration</th></tr></thead>
+                                <tbody>
+                                  {rows.map((b, i) => (
                                     <tr key={b.name} className="border-t">
                                       <td className="py-1 pr-4"><span className="mr-2 inline-block size-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />{b.name}</td>
-                                      <td className="py-1 pr-4">{basketBy === "jobs" ? value : formatWholeMoney(Math.round(value), "USD")}</td>
-                                      <td className="py-1">{total > 0 ? `${((value / total) * 100).toFixed(1)}%` : "n/a"}</td>
+                                      <td className="py-1 pr-4">{b.jobs}</td>
+                                      <td className="py-1">{penetration(b.jobs)}</td>
                                     </tr>
-                                  );
-                                });
-                              })()}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })()
                     )}
                     {overview.dataQuality.map((q) => (
                       <p key={q} className="mt-2 text-xs text-muted-foreground">{q}</p>

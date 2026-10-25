@@ -9,6 +9,7 @@ import {
   orgAgents,
   orgDashboardLayouts,
   orgInspectorTargets,
+  orgOrderInspectors,
   orgOrderServices,
   orgOrders,
   orgSyncState,
@@ -17,12 +18,15 @@ import {
 
 /** 90-day provider windows: small enough for Spectora paging and ISN payloads. */
 export const SYNC_CHUNK_DAYS = 90;
-/** Chunks per scheduled run: bounds Cron CPU and subrequests for all-history backfills. */
+/** Warehouse history depth: only the last 5 years are pulled and synced. */
+export const SYNC_HISTORY_YEARS = 5;
+/** Chunks per scheduled run: bounds Cron CPU and subrequests for 5-year backfills. */
 export const SYNC_MAX_CHUNKS_PER_RUN = 4;
 /** Empty chunks in a row before a backfill is declared complete (live). */
 const EMPTY_CHUNKS_TO_FINISH = 2;
-/** Safety floor: never walk further back than this many chunks (~15 years). */
-const MAX_BACKFILL_CHUNKS = 60;
+/** Safety floor: 90-day chunks covering the 5-year history plus headroom.
+ * The exact bound is the calendar cutoff enforced in the walk below. */
+const MAX_BACKFILL_CHUNKS = 21;
 /** One-go seed budget: a full backfill runs to completion in a single task. */
 export const FULL_BACKFILL_CHUNKS = MAX_BACKFILL_CHUNKS;
 /** Chunk fetch attempts before giving up on one window (transient vendor hiccups). */
@@ -107,6 +111,18 @@ export function extractAgentContact(details: Record<string, unknown>): { email: 
     email: normEmail(firstPresent(details, ["buyingAgentEmail", "buying_agent_email", "agentEmail", "agentemail", "agent_email"])),
     phone: normPhone(firstPresent(details, ["buyingAgentPhone", "buying_agent_phone", "agentMobile", "agentmobile", "agentPhone", "agent_mobile"])),
   };
+}
+
+/**
+ * Materialized referring-agent identity: email first, phone fallback.
+ * Must match metrics.ts agentKey exactly (e:<lower email> else p:<digits>).
+ * NULL when neither contact is present; keyless rows are excluded from the
+ * leaderboard in both SQL and JS paths.
+ */
+export function toAgentKey(email: string | null, phone: string | null): string | null {
+  if (email) return `e:${email}`;
+  if (phone) return `p:${phone}`;
+  return null;
 }
 
 /** Split a Spectora serviceNames-style value into basket items. ISN has no verified service field yet. */
@@ -287,12 +303,22 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
   }
 
   let backDone = 0;
+  // Calendar cutoff for the 5-year history: windows ending on or before it
+  // are never pulled, and a straddling window is clamped to start at it.
+  const cutoff = new Date(nowMs);
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - SYNC_HISTORY_YEARS);
+  const cutoffMs = cutoff.getTime();
+  const cutoffIso = cutoff.toISOString();
   for (let i = 0; i < budget && !terminal; i += 1) {
     // Skip the window the head just covered on fresh workspaces (unless the
     // head failed, in which case the backfill re-covers it).
     const backIndex = syncedChunks + backDone + (headOk && syncedChunks === 0 ? 1 : 0);
     if (backIndex >= MAX_BACKFILL_CHUNKS) { finished = true; break; }
-    const { from, to } = chunkRange(nowMs, backIndex);
+    const window = chunkRange(nowMs, backIndex);
+    const to = window.to;
+    let from = window.from;
+    if (new Date(to).getTime() <= cutoffMs) { finished = true; break; }
+    if (new Date(from).getTime() < cutoffMs) from = cutoffIso;
     try {
       const orders = await fetchChunkWithRetry(adapter, conn.provider, from, to);
       if (orders.length === 0) {
@@ -367,7 +393,7 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
   return { orgId, provider: conn.provider, status, chunksSynced, rowsUpserted, enriched, enrichFailed, cursorDate, finished, error };
 }
 
-/** Seed a workspace in one continuous run (connect-time): walks the whole
+/** Seed a workspace in one continuous run (connect-time): walks the 5-year
  * history instead of spreading chunks across hourly ticks. The hourly cron
  * resumes automatically if this run is cut short, so callers treat a
  * non-live status as "still going", never as failure. */
@@ -593,6 +619,7 @@ async function upsertOrders(
     const id = `${orgId}:${provider}:${o.id}`;
     const details = (o.details ?? {}) as Record<string, unknown>;
     const { email: agentEmail, phone: agentPhone } = extractAgentContact(details);
+    const agentKey = toAgentKey(agentEmail, agentPhone);
     stmts.push(
       db
         .insert(orgOrders)
@@ -611,6 +638,7 @@ async function upsertOrders(
           buyingAgentName: typeof o.buyingAgentName === "string" ? o.buyingAgentName : null,
           buyingAgentEmail: agentEmail,
           buyingAgentPhone: agentPhone,
+          agentKey,
           sellingAgentName: typeof o.sellingAgentName === "string" ? o.sellingAgentName : null,
           serviceType: typeof o.serviceType === "string" ? o.serviceType : null,
           referralSource: typeof o.referralSource === "string" ? o.referralSource : null,
@@ -628,12 +656,28 @@ async function upsertOrders(
             totalMinor: typeof o.total === "number" ? o.total : null,
             inspectorNames: JSON.stringify(inspectors),
             serviceType: typeof o.serviceType === "string" ? o.serviceType : null,
+            buyerName: typeof o.buyerName === "string" ? o.buyerName : null,
+            buyingAgentName: typeof o.buyingAgentName === "string" ? o.buyingAgentName : null,
             buyingAgentEmail: agentEmail,
             buyingAgentPhone: agentPhone,
+            agentKey,
+            sellingAgentName: typeof o.sellingAgentName === "string" ? o.sellingAgentName : null,
             syncedAt: nowSec,
           },
         }),
     );
+
+    // Inspector junction: replace per order so re-syncs never duplicate and
+    // removed inspectors lose credit. Unlike services (which ISN enriches
+    // from detail reads), inspector names always arrive on the listing, so
+    // the delete is unconditional. Keeps inspector_names JSON for
+    // back-compat; SQL aggregates read this table.
+    stmts.push(db.delete(orgOrderInspectors).where(and(eq(orgOrderInspectors.organizationId, orgId), eq(orgOrderInspectors.orderId, id))));
+    for (const name of inspectors) {
+      stmts.push(
+        db.insert(orgOrderInspectors).values({ organizationId: orgId, orderId: id, inspectorName: name }).onConflictDoNothing(),
+      );
+    }
 
     // Basket items: replace per order so re-syncs never duplicate. Rows with
     // no service info leave existing rows alone: ISN `/json` windows carry
@@ -656,7 +700,7 @@ async function upsertOrders(
     // Referring-agent identity: email first, phone fallback (owner decision).
     const email = agentEmail;
     const phone = agentPhone;
-    const key = email ? `e:${email}` : phone ? `p:${phone}` : null;
+    const key = toAgentKey(email, phone);
     if (key && o.buyingAgentName) {
       const cur = agentAgg.get(key) ?? { name: null, email: null, phone: null, first: null, last: null, count: 0 };
       cur.name = o.buyingAgentName;

@@ -385,6 +385,7 @@ export {
   orgSyncState,
   orgOrders,
   orgOrderServices,
+  orgOrderInspectors,
   orgAgents,
   orgInspectorTargets,
   orgDashboardLayouts,

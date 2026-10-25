@@ -18,7 +18,7 @@ export const PRESET_OPTIONS: Array<{ value: Preset; label: string }> = [
   { value: "cur_month", label: "Current month" },
   { value: "prev_month", label: "Previous month" },
   { value: "ytd", label: "Current year" },
-  { value: "last_year", label: "Last year" },
+  { value: "last_year", label: "Previous year" },
   { value: "all", label: "All time" },
   { value: "custom", label: "Custom range" },
 ];

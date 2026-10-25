@@ -244,7 +244,8 @@ export function basketMix(orders: StoredOrder[], fromIso: string, toIso: string,
   const map = new Map<string, { jobs: number; revenueMinor: number }>();
   for (const o of orders) {
     if (!inRange(o, fromMs, toMs) || isCancelled(o)) continue;
-    for (const s of o.serviceNames) {
+    // One order counts once per service even if the listing repeats a name.
+    for (const s of new Set(o.serviceNames)) {
       const cur = map.get(s) ?? { jobs: 0, revenueMinor: 0 };
       cur.jobs += 1;
       if (isCompleted(o)) cur.revenueMinor += o.totalMinor ?? 0;
