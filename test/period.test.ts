@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { inclusiveEndDate, presetRange, type Preset } from "../src/react-app/lib/period";
+import { allTimeLabel, inclusiveEndDate, presetRange, type Preset } from "../src/react-app/lib/period";
 
 describe("presetRange calendar boundaries", () => {
   // Calendar presets must serialize to UTC midnights on the 01st, not
@@ -46,6 +46,24 @@ describe("presetRange calendar boundaries", () => {
   it("rolling presets align to whole UTC days", () => {
     const r = presetRange("30d", "", "", now);
     expect(r).toEqual({ from: "2026-09-24T00:00:00.000Z", to: "2026-10-24T00:00:00.000Z" });
+  });
+
+  it("all time starts at the first order day when known", () => {
+    const r = presetRange("all", "", "", now, "2021-06-15T14:30:00.000Z");
+    expect(r).toEqual({ from: "2021-06-15T00:00:00.000Z", to: "2026-10-24T00:00:00.000Z" });
+  });
+
+  it("all time falls back to 2000 without or with a bad history start", () => {
+    expect(presetRange("all", "", "", now).from).toBe("2000-01-01T00:00:00.000Z");
+    expect(presetRange("all", "", "", now, null).from).toBe("2000-01-01T00:00:00.000Z");
+    expect(presetRange("all", "", "", now, "garbage").from).toBe("2000-01-01T00:00:00.000Z");
+  });
+
+  it("all time label carries the history start month and year", () => {
+    expect(allTimeLabel("2021-10-15T14:30:00.000Z")).toBe("All time (Oct-2021 onwards)");
+    expect(allTimeLabel("2021-01-01T00:00:00.000Z")).toBe("All time (Jan-2021 onwards)");
+    expect(allTimeLabel(null)).toBe("All time");
+    expect(allTimeLabel("garbage")).toBe("All time");
   });
 
   it("every preset round-trips through custom dates byte-identically", () => {

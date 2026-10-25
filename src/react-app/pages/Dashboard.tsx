@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
-import { PRESET_OPTIONS, inclusiveEndDate, presetRange, type Preset } from "../lib/period";
+import { PRESET_OPTIONS, allTimeLabel, inclusiveEndDate, presetRange, type Preset } from "../lib/period";
 import { readCachedOverview, sessionCacheStore, writeCachedOverview } from "../lib/overview-cache";
 import { formatCount, isSeedComplete, isSyncDisabled, seedingStats } from "../lib/sync-progress";
 
@@ -243,8 +243,11 @@ export function Dashboard() {
   const [targets, setTargets] = useState<Record<string, number>>({});
   // Inspector row currently being edited; null means every row shows its saved value.
   const [editingTarget, setEditingTarget] = useState<string | null>(null);
+  // Earliest order date in the warehouse: anchors the All-time preset.
+  // Null until the range endpoint answers (2000 fallback meanwhile).
+  const [historyStart, setHistoryStart] = useState<string | null>(null);
 
-  const range = useMemo(() => presetRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
+  const range = useMemo(() => presetRange(preset, customFrom, customTo, new Date(), historyStart), [preset, customFrom, customTo, historyStart]);
 
   // Year-over-year overlay: one full Jan to Dec axis, one line per year.
   const trendYears = useMemo(() => {
@@ -334,6 +337,15 @@ export function Dashboard() {
     }
   }, []);
 
+  const loadHistoryStart = useCallback(async (id: string) => {
+    try {
+      const data = await api<{ range: { minScheduledAt: string | null } }>(`/api/analytics/range?orgId=${id}`);
+      setHistoryStart(data.range.minScheduledAt);
+    } catch {
+      // Falls back to 2000; the next mount or explicit refresh retries.
+    }
+  }, []);
+
   useEffect(() => {
     if (!orgId) { setLoading(false); return; }
     setLoading(true);
@@ -366,9 +378,10 @@ export function Dashboard() {
         setPeriodReady(true);
         void loadStatus(orgId);
         void loadTargets(orgId);
+        void loadHistoryStart(orgId);
       })
       .finally(() => setLoading(false));
-  }, [orgId, loadStatus, loadTargets]);
+  }, [orgId, loadStatus, loadTargets, loadHistoryStart]);
 
   useEffect(() => {
     if (!orgId || !periodReady) return;
@@ -428,7 +441,12 @@ export function Dashboard() {
       if (!silent) toast.success("Sync check started");
       await loadStatus(orgId);
       // Silent auto-driver runs never reload the charts; explicit clicks do.
-      if (!silent) await loadOverview(orgId, range.from, range.to, { force: true });
+      // Explicit runs also re-read the history start: a deepening backfill
+      // moves the All-time anchor earlier.
+      if (!silent) {
+        await loadHistoryStart(orgId);
+        await loadOverview(orgId, range.from, range.to, { force: true });
+      }
     } catch (err) {
       if (!silent) toast.error(err instanceof Error ? err.message : "Refresh failed");
     } finally {
@@ -653,10 +671,10 @@ export function Dashboard() {
                   setPreset(next);
                   savePeriod(next, from, to);
                 }}>
-                  <SelectTrigger id="dash-preset" className="h-8 w-40"><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="dash-preset" className="h-8 w-56"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {PRESET_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      <SelectItem key={o.value} value={o.value}>{o.value === "all" ? allTimeLabel(historyStart) : o.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

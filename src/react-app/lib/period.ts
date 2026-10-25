@@ -10,8 +10,7 @@ export type Preset =
   | "all"
   | "custom";
 
-export const PRESET_OPTIONS: Array<{ value: Preset; label: string }> = [
-  { value: "30d", label: "Last 30 days" },
+export const PRESET_OPTIONS: Array<{ value: Preset; label: string }> = [  { value: "30d", label: "Last 30 days" },
   { value: "90d", label: "Last 90 days" },
   { value: "12m", label: "Last 12 months" },
   { value: "5y", label: "Last 5 years" },
@@ -22,6 +21,20 @@ export const PRESET_OPTIONS: Array<{ value: Preset; label: string }> = [
   { value: "all", label: "All time" },
   { value: "custom", label: "Custom range" },
 ];
+
+/**
+ * All-time preset label with its dynamic start, e.g.
+ * "All time (Oct-2021 onwards)". Falls back to plain "All time" until the
+ * warehouse history bounds load or when the warehouse is empty.
+ */
+const MON_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function allTimeLabel(historyStartIso?: string | null): string {
+  const ms = historyStartIso ? new Date(historyStartIso).getTime() : NaN;
+  if (!Number.isFinite(ms)) return "All time";
+  const d = new Date(ms);
+  return `All time (${MON_ABBR[d.getUTCMonth()]}-${d.getUTCFullYear()} onwards)`;
+}
 
 /**
  * Resolve a period preset to an ISO range.
@@ -35,7 +48,7 @@ export const PRESET_OPTIONS: Array<{ value: Preset; label: string }> = [
  * resolves to the byte-identical range (see inclusiveEndDate), so switching
  * presets never silently narrows or widens the data.
  */
-export function presetRange(p: Preset, customFrom: string, customTo: string, now: Date = new Date()): { from: string; to: string } {
+export function presetRange(p: Preset, customFrom: string, customTo: string, now: Date = new Date(), historyStartIso?: string | null): { from: string; to: string } {
   const day = 86400000;
   const iso = (ms: number) => new Date(ms).toISOString();
   // Start of today (UTC) and exclusive end covering the whole current day.
@@ -60,7 +73,17 @@ export function presetRange(p: Preset, customFrom: string, customTo: string, now
       to: iso(Date.UTC(now.getFullYear(), 0, 1)),
     };
   } else if (p === "all") {
-    return { from: iso(Date.parse("2000-01-01T00:00:00Z")), to: iso(endOfToday) };
+    // Dynamic start: the earliest order in the warehouse, floored to its UTC
+    // day. Falls back to 2000 until the history bounds load (or when empty).
+    const minMs = historyStartIso ? new Date(historyStartIso).getTime() : NaN;
+    const startMs = Number.isFinite(minMs)
+      ? Date.UTC(
+          new Date(minMs).getUTCFullYear(),
+          new Date(minMs).getUTCMonth(),
+          new Date(minMs).getUTCDate(),
+        )
+      : Date.parse("2000-01-01T00:00:00Z");
+    return { from: iso(startMs), to: iso(endOfToday) };
   }
   // Custom dates from <input type="date"> are date-only strings. The server
   // treats `to` as exclusive, so a date-only end must roll to the next day's

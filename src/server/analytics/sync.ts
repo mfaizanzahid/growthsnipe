@@ -314,11 +314,24 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
     // head failed, in which case the backfill re-covers it).
     const backIndex = syncedChunks + backDone + (headOk && syncedChunks === 0 ? 1 : 0);
     if (backIndex >= MAX_BACKFILL_CHUNKS) { finished = true; break; }
+    // History already reaches the 5-year cutoff (or beyond, for pre-cap
+    // seeds): nothing older is in scope. Without this, the clamped boundary
+    // chunk below writes cursor == cutoff, which recomputes to this same
+    // backIndex on the next run — the seed re-fetches one window endlessly
+    // and never flips live. Uses the run-start cursor, never the in-memory
+    // one, so a run in progress cannot finish itself early.
+    if (state.cursorDate) {
+      const cursorMs = new Date(state.cursorDate).getTime();
+      if (Number.isFinite(cursorMs) && cursorMs <= cutoffMs) { finished = true; break; }
+    }
     const window = chunkRange(nowMs, backIndex);
     const to = window.to;
     let from = window.from;
     if (new Date(to).getTime() <= cutoffMs) { finished = true; break; }
-    if (new Date(from).getTime() < cutoffMs) from = cutoffIso;
+    // A straddling window is clamped to the cutoff, and it is the last
+    // window in scope: fetching it completes the seed.
+    let clamped = false;
+    if (new Date(from).getTime() < cutoffMs) { from = cutoffIso; clamped = true; }
     try {
       const orders = await fetchChunkWithRetry(adapter, conn.provider, from, to);
       if (orders.length === 0) {
@@ -326,7 +339,7 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
         chunksSynced += 1;
         backDone += 1;
         cursorDate = from;
-        if (emptyStreak >= EMPTY_CHUNKS_TO_FINISH) { finished = true; break; }
+        if (clamped || emptyStreak >= EMPTY_CHUNKS_TO_FINISH) { finished = true; break; }
         await checkpoint(cursorDate, (state.totalFetched ?? 0) + rowsUpserted);
         continue;
       }
@@ -336,6 +349,13 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
       chunksSynced += 1;
       backDone += 1;
       cursorDate = from;
+      if (clamped) {
+        // Boundary window stored: everything older is out of scope, so the
+        // seed is done now, not on some later run.
+        finished = true;
+        await checkpoint(cursorDate, (state.totalFetched ?? 0) + rowsUpserted);
+        break;
+      }
       await checkpoint(cursorDate, (state.totalFetched ?? 0) + rowsUpserted);
     } catch (err) {
       error = err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300);

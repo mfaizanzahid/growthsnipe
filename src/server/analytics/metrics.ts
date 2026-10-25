@@ -149,6 +149,39 @@ export function annualGrowthRate(months: MonthPoint[]): Array<{ year: number; re
   });
 }
 
+/**
+ * First full year of warehouse history from the earliest order date. The
+ * earliest year counts only when history starts on its January 1st;
+ * anything later means that year is partial and the next one is first.
+ * Null when the start is unknown (keep every year).
+ */
+export function firstFullYear(minScheduledAt: string | null): number | null {
+  const minMs = minScheduledAt ? new Date(minScheduledAt).getTime() : NaN;
+  if (!Number.isFinite(minMs)) return null;
+  const d = new Date(minMs);
+  return d.getUTCMonth() === 0 && d.getUTCDate() === 1 ? d.getUTCFullYear() : d.getUTCFullYear() + 1;
+}
+
+/**
+ * Year-over-year revenue skipping a partial leading year. The first full
+ * year is the base row (growthPct null); the current in-progress year is
+ * included like any other year.
+ */
+export function annualGrowthFullYears(months: MonthPoint[], firstFullYear: number | null): Array<{ year: number; revenueMinor: number; growthPct: number | null }> {
+  const byYear = new Map<number, number>();
+  for (const m of months) {
+    const y = Number(m.month.slice(0, 4));
+    if (!Number.isFinite(y)) continue;
+    if (firstFullYear !== null && y < firstFullYear) continue;
+    byYear.set(y, (byYear.get(y) ?? 0) + m.revenueMinor);
+  }
+  const years = [...byYear.entries()].sort((a, b) => a[0] - b[0]);
+  return years.map(([year, revenueMinor], i) => {
+    const prev = i > 0 ? years[i - 1]![1] : null;
+    return { year, revenueMinor, growthPct: prev === null || prev === 0 ? null : Math.round(((revenueMinor - prev) / prev) * 1000) / 10 };
+  });
+}
+
 function agentKey(o: StoredOrder): string | null {
   const e = typeof o.buyingAgentEmail === "string" ? o.buyingAgentEmail.trim().toLowerCase() : "";
   if (e) return `e:${e}`;

@@ -308,6 +308,77 @@ describe("analytics sync resilience", () => {
     expect(second.status).toBe("live");
   }, 120000);
 
+  it("finishes immediately when the cursor already reaches the 5-year cutoff", async () => {
+    const db = memoryDb();
+    await seedConnection(db);
+    // Pre-cap seed parked at 2014: every backfill window is out of scope.
+    await db.insert(schema.orgSyncState).values({
+      organizationId: ORG,
+      provider: "spectora",
+      status: "backfilling",
+      cursorDate: "2014-06-30T12:00:00.000Z",
+      updatedAt: Math.floor(NOW / 1000),
+    });
+    const seen: Array<{ from: string; to: string }> = [];
+    const adapter = fakeAdapter({
+      async searchOrders(input) {
+        if (input.status === "cancelled") return { items: [] };
+        seen.push({ from: input.from ?? "", to: input.to ?? "" });
+        return { items: [order(`o${seen.length}`, new Date(NOW - 86400000).toISOString())] };
+      },
+    });
+    const summary = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 60, nowMs: NOW, adapter });
+    expect(summary.finished).toBe(true);
+    expect(summary.status).toBe("live");
+    // Only the head window runs; no backfill window is requested twice-ready.
+    const cutoff = new Date(NOW);
+    cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 5);
+    for (const w of seen) expect(w.to >= cutoff.toISOString()).toBe(true);
+  }, 120000);
+
+  it("the clamped boundary chunk finishes the seed instead of repeating", async () => {
+    const db = memoryDb();
+    await seedConnection(db);
+    // Cursor parked exactly at the boundary chunk's end: the next backfill
+    // window straddles the cutoff and must complete the seed in one run.
+    // Without the clamp-finish, this window re-fetches forever with the
+    // cursor pinned to the cutoff.
+    const boundaryTo = new Date(NOW - 1800 * 86400000).toISOString();
+    await db.insert(schema.orgSyncState).values({
+      organizationId: ORG,
+      provider: "spectora",
+      status: "backfilling",
+      cursorDate: boundaryTo,
+      updatedAt: Math.floor(NOW / 1000),
+    });
+    const seen: Array<{ from: string; to: string }> = [];
+    const adapter = fakeAdapter({
+      async searchOrders(input) {
+        if (input.status === "cancelled") return { items: [] };
+        seen.push({ from: input.from ?? "", to: input.to ?? "" });
+        return { items: [order(`o${seen.length}`, new Date(NOW - 86400000).toISOString())] };
+      },
+    });
+    const first = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 60, nowMs: NOW, adapter });
+    expect(first.finished).toBe(true);
+    expect(first.status).toBe("live");
+    const cutoff = new Date(NOW);
+    cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 5);
+    // The boundary fetch starts exactly at the cutoff, never before it.
+    const backfills = seen.filter((w) => w.to < new Date(NOW - 90 * 86400000).toISOString());
+    expect(backfills.length).toBeGreaterThan(0);
+    for (const w of backfills) {
+      expect(w.from >= cutoff.toISOString()).toBe(true);
+      expect(w.to >= cutoff.toISOString()).toBe(true);
+    }
+    // And the next run does not re-fetch it: history is complete.
+    seen.length = 0;
+    const second = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 60, nowMs: NOW, adapter });
+    expect(second.finished).toBe(true);
+    const refetch = seen.filter((w) => w.to < new Date(NOW - 90 * 86400000).toISOString());
+    expect(refetch).toEqual([]);
+  }, 120000);
+
   it("marks auth failures terminal so owners check the connection", async () => {
     const db = memoryDb();
     await seedConnection(db);

@@ -370,7 +370,7 @@ describe("route hardening", () => {
     expect(res.status).toBe(403);
   });
 
-  it("refresh honors the 2-minute cooldown without running a sync", async () => {
+  it("refresh honors the 10-second cooldown without running a sync", async () => {
     const { db, sqlite } = routeDb();
     const nowSec = Math.floor(Date.now() / 1000);
     sqlite.exec(`INSERT INTO org_sync_state (organization_id, provider, status, last_synced_at, total_fetched, updated_at) VALUES ('o1', 'spectora', 'live', ${nowSec}, 10, ${nowSec})`);
@@ -395,6 +395,24 @@ describe("route hardening", () => {
       const res = await app.request(url, {}, ENV);
       expect(res.status).toBe(422);
     }
+  });
+
+  it("range reports warehouse min/max per org, null when empty", async () => {
+    const { db, sqlite } = routeDb();
+    sqlite.exec(`
+      INSERT INTO org_orders (id, organization_id, provider, provider_order_id, status, scheduled_at, synced_at) VALUES
+        ('o1:spectora:1', 'o1', 'spectora', '1', 'completed', '2026-03-05T10:00:00Z', 1),
+        ('o1:spectora:2', 'o1', 'spectora', '2', 'completed', '2024-01-01T10:00:00Z', 1),
+        ('o1:spectora:3', 'o1', 'spectora', '3', 'completed', NULL, 1);
+    `);
+    const app = buildApp(db);
+    const r1 = await app.request("/api/analytics/range?orgId=o1", {}, ENV);
+    expect(r1.status).toBe(200);
+    expect(await r1.json()).toEqual({ range: { minScheduledAt: "2024-01-01T10:00:00Z", maxScheduledAt: "2026-03-05T10:00:00Z" } });
+    // o2 is a member org with no orders: nulls, not an error.
+    const r2 = await app.request("/api/analytics/range?orgId=o2", {}, ENV);
+    expect(r2.status).toBe(200);
+    expect(await r2.json()).toEqual({ range: { minScheduledAt: null, maxScheduledAt: null } });
   });
 
   it("basket never counts another org's service rows for this org's order", async () => {

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { and, desc, eq, gte, lt, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, lt, ne, sql } from "drizzle-orm";
 import type { Env } from "../types";
 import {
   contextMiddleware,
@@ -30,9 +30,10 @@ import {
 } from "../analytics/queries";
 import {
   agentLeaderboard,
-  annualGrowthRate,
+  annualGrowthFullYears,
   basketMix,
   droppedAgents,
+  firstFullYear,
   inspectorPerformance,
   monthlySeries,
   pctChange,
@@ -105,15 +106,29 @@ export function createAnalyticsRoutes(deps: {
     return c.json({ status: { state: s.status, provider: s.provider, totalFetched: s.totalFetched, cursorDate: s.cursorDate, lastSyncedAt: s.lastSyncedAt, error: s.errorText, seedStartedAt: s.seedStartedAt, totalEstimate: s.totalEstimate } });
   });
 
-  routes.post("/api/analytics/refresh", guard, mem("user"), gated(), async (c) => {
+  // History bounds for the All-time preset: single indexed scan, no rows.
+  routes.get("/api/analytics/range", guard, mem("viewer", true), gated(), async (c) => {
     const orgId = c.get("orgId") as string;
     const db = c.get("db") as Db;
-    // Short cooldown: a sync within the last 2 minutes returns current state
+    const rows = await db
+      .select({
+        min: sql<string | null>`min(${orgOrders.scheduledAt})`,
+        max: sql<string | null>`max(${orgOrders.scheduledAt})`,
+      })
+      .from(orgOrders)
+      .where(and(eq(orgOrders.organizationId, orgId), isNotNull(orgOrders.scheduledAt)))
+      .limit(1);
+    return c.json({ range: { minScheduledAt: rows[0]?.min ?? null, maxScheduledAt: rows[0]?.max ?? null } });
+  });
+
+  routes.post("/api/analytics/refresh", guard, mem("user"), gated(), async (c) => {    const orgId = c.get("orgId") as string;
+    const db = c.get("db") as Db;
+    // Short cooldown: a sync within the last 10 seconds returns current state
     // instead of hammering the provider and D1 again. 200 (not 429) so the
     // dashboard's silent auto-driver keeps reloading status/overview normally.
     const rows = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
     const last = rows[0]?.lastSyncedAt ?? 0;
-    if (Math.floor(Date.now() / 1000) - last < 120) return c.json({ summary: null, cooledDown: true });
+    if (Math.floor(Date.now() / 1000) - last < 10) return c.json({ summary: null, cooledDown: true });
     const summary = await runAnalyticsSyncForOrg(c.env as Env, db, orgId, { maxChunks: 2 });
     return c.json({ summary });
   });
@@ -324,6 +339,7 @@ async function buildOverviewSql(db: Db, orgId: string, w: OverviewWindow) {
     serviceCountRow,
     coverageRows,
     basketRows,
+    historyStartRow,
   ] = await Promise.all([
     getRangeTotals(db, orgId, w.from, w.to),
     getRangeTotals(db, orgId, w.prevFrom, w.prevTo),
@@ -388,6 +404,12 @@ async function buildOverviewSql(db: Db, orgId: string, w: OverviewWindow) {
       .groupBy(orgOrderServices.name)
       .orderBy(desc(sql`count(distinct ${orgOrderServices.orderId})`))
       .limit(10),
+    // Warehouse history start for full-year growth bounds: index seek.
+    db
+      .select({ min: sql<string | null>`min(${orgOrders.scheduledAt})` })
+      .from(orgOrders)
+      .where(and(eq(orgOrders.organizationId, orgId), isNotNull(orgOrders.scheduledAt)))
+      .limit(1),
   ]);
   const totals = sqlTotalsToRange(totalsSql);
   const prev = sqlTotalsToRange(prevSql);
@@ -411,7 +433,9 @@ async function buildOverviewSql(db: Db, orgId: string, w: OverviewWindow) {
 
   const months = monthlySeries(trend, 5);
   const quarters = quarterlySeries(months);
-  const growth = annualGrowthRate(months);
+  // Year-over-year growth skips a partial leading year: the first full
+  // year is the base row (growthPct null). The current year stays included.
+  const growth = annualGrowthFullYears(months, firstFullYear(historyStartRow[0]?.min ?? null));
 
   const agents = agentsFull.slice(0, 20);
   const curKeys = new Set(agentsFull.map((a) => a.key));
@@ -542,7 +566,13 @@ async function buildOverviewLegacy(db: Db, orgId: string, w: OverviewWindow) {
   const yoy = rangeTotals(orders, w.yoyFrom, w.yoyTo);
   const months = monthlySeries(orders, 5);
   const quarters = quarterlySeries(months);
-  const growth = annualGrowthRate(months);
+  const historyStartRow = await db
+    .select({ min: sql<string | null>`min(${orgOrders.scheduledAt})` })
+    .from(orgOrders)
+    .where(and(eq(orgOrders.organizationId, orgId), isNotNull(orgOrders.scheduledAt)))
+    .limit(1);
+  const legacyBounds = historyStartRow[0]?.min ?? null;
+  const growth = annualGrowthFullYears(months, firstFullYear(legacyBounds));
   const agents = agentLeaderboard(orders, w.from, w.to);
   const dropped = droppedAgents(orders, w.from, w.to, w.prevFrom, w.prevTo);
   const repeat = repeatSplit(orders, w.from, w.to);
