@@ -564,8 +564,9 @@ export function Dashboard() {
   // Whole calendar months covered by the selected range, for monthly averages.
   const rangeSpanMs = new Date(range.to).getTime() - new Date(range.from).getTime();
   // Year-over-year deltas only read honestly on windows up to a year: longer
-  // ranges overlap their own shifted comparison almost entirely.
-  const showYoY = Number.isFinite(rangeSpanMs) && rangeSpanMs > 0 && rangeSpanMs <= 365 * 86400000;
+  // ranges overlap their own shifted comparison almost entirely. 366 covers
+  // Current Year on Dec 31 of a leap year.
+  const showYoY = Number.isFinite(rangeSpanMs) && rangeSpanMs > 0 && rangeSpanMs <= 366 * 86400000;
   const rangeMonths = !Number.isFinite(rangeSpanMs) || rangeSpanMs <= 0 ? 1 : Math.max(1, Math.round(rangeSpanMs / 86400000 / 30.44));
   const repeatTotal = (overview?.repeat.repeatAgentJobs ?? 0) + (overview?.repeat.oneOffAgentJobs ?? 0);
   const repeatPct = repeatTotal > 0 ? Math.round(((overview?.repeat.repeatAgentJobs ?? 0) / repeatTotal) * 100) : null;

@@ -1,5 +1,9 @@
 # Decision log SaaS Billing Portal (fresh project, GHL removed)
 
+## 2026-10-26 - YoY badges cover leap-year Current Year (owner decision)
+
+Owner confirmed Current Year math (prior period is the equal window before Jan 1; YoY is the same dates last year) and asked to cover the Dec 31 leap-year edge, where the span hits 366 days. Visibility cutoff is now 366 days. Typecheck and lint clean; HMR picks it up with no restart.
+
 ## 2026-10-26 - Monthly overlay hides the partial starting year (owner decision)
 
 Owner asked to hide the initial partial year on the month-wise season overlay as well: its line started mid-axis with null-bridged months, implying a full-year shape. The year chips and lines now follow the growth series, which starts at the first full year, instead of deriving years from the raw monthly buckets. Typecheck and lint clean; HMR picks it up with no restart.
