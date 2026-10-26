@@ -415,8 +415,7 @@ describe("route hardening", () => {
     expect(await r2.json()).toEqual({ range: { minScheduledAt: null, maxScheduledAt: null } });
   });
 
-  it("status reports cap-aware chunk walk position", async () => {
-    const { db, sqlite } = routeDb();
+  it("status reports cap-aware chunk walk position", async () => {    const { db, sqlite } = routeDb();
     const nowSec = Math.floor(Date.now() / 1000);
     sqlite.exec(`
       INSERT INTO org_sync_state (organization_id, provider, status, cursor_date, last_synced_at, total_fetched, updated_at)
@@ -427,9 +426,32 @@ describe("route hardening", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { status: { backfillChunksDone: number; backfillChunksTotal: number } };
     // Same cursor math as the unit test, evaluated at runtime now.
-    const expected = Math.max(0, Math.min(21, Math.round((Date.now() - Date.parse("2021-11-27T12:00:00.000Z")) / 86400000 / 90)));
-    expect(body.status.backfillChunksTotal).toBe(21);
+    const expected = Math.max(0, Math.min(25, Math.round((Date.now() - Date.parse("2021-11-27T12:00:00.000Z")) / 86400000 / 90)));
+    expect(body.status.backfillChunksTotal).toBe(25);
     expect(body.status.backfillChunksDone).toBe(expected);
+  });
+
+  it("status reports the enrichment backlog while live, null while backfilling", async () => {
+    const { db, sqlite } = routeDb();
+    const nowSec = Math.floor(Date.now() / 1000);
+    sqlite.exec(`
+      INSERT INTO org_sync_state (organization_id, provider, status, cursor_date, last_synced_at, total_fetched, updated_at)
+      VALUES ('o1', 'spectora', 'live', '2021-01-01T00:00:00.000Z', ${nowSec}, 3, ${nowSec});
+      INSERT INTO org_orders (id, organization_id, provider, provider_order_id, status, scheduled_at, synced_at) VALUES
+        ('o1:spectora:1', 'o1', 'spectora', '1', 'completed', '2026-03-05T10:00:00Z', 1),
+        ('o1:spectora:2', 'o1', 'spectora', '2', 'completed', '2026-03-06T10:00:00Z', 1),
+        ('o1:spectora:3', 'o1', 'spectora', '3', 'cancelled', '2026-03-07T10:00:00Z', 1);
+      INSERT INTO org_order_services (id, organization_id, order_id, name, kind) VALUES
+        ('o1:spectora:1:svc:0', 'o1', 'o1:spectora:1', 'General Home Inspection', 'base');
+    `);
+    const app = buildApp(db);
+    const live = await app.request("/api/analytics/status?orgId=o1", {}, ENV);
+    expect(live.status).toBe(200);
+    // Cancelled excluded: 2 in scope, 1 with detail.
+    expect((await live.json()) as unknown).toMatchObject({ status: { state: "live", enrichment: { orders: 2, withServices: 1 } } });
+    sqlite.exec(`UPDATE org_sync_state SET status = 'backfilling' WHERE organization_id = 'o1'`);
+    const filling = await app.request("/api/analytics/status?orgId=o1", {}, ENV);
+    expect((await filling.json()) as unknown).toMatchObject({ status: { enrichment: null } });
   });
 
   it("basket never counts another org's service rows for this org's order", async () => {

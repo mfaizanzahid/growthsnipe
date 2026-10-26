@@ -74,8 +74,8 @@ describe("analytics warehouse metrics", () => {
     expect(g.find((x) => x.year === 2026)?.growthPct).toBe(50);
   });
 
-  it("full-year growth drops a partial first year but keeps the current year", () => {
-    expect(firstFullYear("2021-10-15T10:00:00Z")).toBe(2022);
+  it("full-year growth bases on the earliest order year and keeps the current year", () => {
+    expect(firstFullYear("2021-10-15T10:00:00Z")).toBe(2021);
     expect(firstFullYear("2021-01-01T00:00:00Z")).toBe(2021);
     expect(firstFullYear(null)).toBeNull();
     const months = [
@@ -84,12 +84,13 @@ describe("analytics warehouse metrics", () => {
       { month: "2023-01", revenueMinor: 15000, jobs: 1, completed: 1, avgTicketMinor: 15000, repeatJobs: 0 },
       { month: "2026-03", revenueMinor: 20000, jobs: 1, completed: 1, avgTicketMinor: 20000, repeatJobs: 0 },
     ];
-    const g = annualGrowthFullYears(months, 2022);
-    expect(g.map((x) => x.year)).toEqual([2022, 2023, 2026]);
-    expect(g[0]).toMatchObject({ revenueMinor: 10000, growthPct: null });
-    expect(g[1]).toMatchObject({ revenueMinor: 15000, growthPct: 50 });
-    expect(g[2]).toMatchObject({ revenueMinor: 20000, growthPct: 33.3 });
-    // Unknown start keeps every year, partial first year included.
+    const g = annualGrowthFullYears(months, 2021);
+    expect(g.map((x) => x.year)).toEqual([2021, 2022, 2023, 2026]);
+    expect(g[0]).toMatchObject({ revenueMinor: 1000, growthPct: null });
+    expect(g[1]).toMatchObject({ revenueMinor: 10000, growthPct: 900 });
+    expect(g[2]).toMatchObject({ revenueMinor: 15000, growthPct: 50 });
+    expect(g[3]).toMatchObject({ revenueMinor: 20000, growthPct: 33.3 });
+    // Unknown start keeps every year too.
     expect(annualGrowthFullYears(months, null).map((x) => x.year)).toEqual([2021, 2022, 2023, 2026]);
   });
 

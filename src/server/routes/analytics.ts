@@ -107,7 +107,28 @@ export function createAnalyticsRoutes(deps: {
       return c.json({ status: { state: "idle", provider: null, totalFetched: 0, cursorDate: null, lastSyncedAt: null, seedStartedAt: null, totalEstimate: null, backfillChunksDone: idle.done, backfillChunksTotal: idle.total } });
     }
     const progress = backfillProgress(s.cursorDate, s.status, Date.now());
-    return c.json({ status: { state: s.status, provider: s.provider, totalFetched: s.totalFetched, cursorDate: s.cursorDate, lastSyncedAt: s.lastSyncedAt, error: s.errorText, seedStartedAt: s.seedStartedAt, totalEstimate: s.totalEstimate, backfillChunksDone: progress.done, backfillChunksTotal: progress.total } });
+    // Global enrichment backlog (all history, no date filter): distinct
+    // non-cancelled orders versus those already carrying service rows.
+    // Computed only while live — during backfilling the seeding banner
+    // covers progress and this scan is saved. The dashboard keeps its
+    // progress banner up until withServices catches orders.
+    let enrichment: { orders: number; withServices: number } | null = null;
+    if (s.status === "live") {
+      const cov = await db
+        .select({
+          orders: sql<number>`count(distinct ${orgOrders.id})`,
+          withServices: sql<number>`count(distinct case when ${orgOrderServices.orderId} is not null then ${orgOrders.id} end)`,
+        })
+        .from(orgOrders)
+        .leftJoin(
+          orgOrderServices,
+          and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
+        )
+        .where(and(eq(orgOrders.organizationId, orgId), ne(orgOrders.status, "cancelled")))
+        .limit(1);
+      enrichment = { orders: Number(cov[0]?.orders ?? 0), withServices: Number(cov[0]?.withServices ?? 0) };
+    }
+    return c.json({ status: { state: s.status, provider: s.provider, totalFetched: s.totalFetched, cursorDate: s.cursorDate, lastSyncedAt: s.lastSyncedAt, error: s.errorText, seedStartedAt: s.seedStartedAt, totalEstimate: s.totalEstimate, backfillChunksDone: progress.done, backfillChunksTotal: progress.total, enrichment } });
   });
 
   // History bounds for the All-time preset: single indexed scan, no rows.

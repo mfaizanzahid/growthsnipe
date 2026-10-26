@@ -150,22 +150,21 @@ export function annualGrowthRate(months: MonthPoint[]): Array<{ year: number; re
 }
 
 /**
- * First full year of warehouse history from the earliest order date. The
- * earliest year counts only when history starts on its January 1st;
- * anything later means that year is partial and the next one is first.
+ * First full year of warehouse history: the year of the earliest order.
+ * The sync always pulls from January 1st of the starting year, so coverage
+ * is whole-year by construction and a quiet January still counts as full.
  * Null when the start is unknown (keep every year).
  */
 export function firstFullYear(minScheduledAt: string | null): number | null {
   const minMs = minScheduledAt ? new Date(minScheduledAt).getTime() : NaN;
   if (!Number.isFinite(minMs)) return null;
-  const d = new Date(minMs);
-  return d.getUTCMonth() === 0 && d.getUTCDate() === 1 ? d.getUTCFullYear() : d.getUTCFullYear() + 1;
+  return new Date(minMs).getUTCFullYear();
 }
 
 /**
- * Year-over-year revenue skipping a partial leading year. The first full
- * year is the base row (growthPct null); the current in-progress year is
- * included like any other year.
+ * Year-over-year revenue from the base year onward. The first full year is
+ * the base row (growthPct null); the current in-progress year is included
+ * like any other year.
  */
 export function annualGrowthFullYears(months: MonthPoint[], firstFullYear: number | null): Array<{ year: number; revenueMinor: number; growthPct: number | null }> {
   const byYear = new Map<number, number>();

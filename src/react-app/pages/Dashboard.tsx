@@ -100,6 +100,12 @@ interface SyncStatus {
   totalEstimate?: number | null;
   backfillChunksDone?: number | null;
   backfillChunksTotal?: number | null;
+  enrichment?: { orders: number; withServices: number } | null;
+}
+
+/** Live seed with service detail still missing: the progress banner stays up. */
+function needsEnrichment(s: Pick<SyncStatus, "state" | "enrichment">): boolean {
+  return s.state === "live" && !!s.enrichment && s.enrichment.orders > s.enrichment.withServices;
 }
 
 type TrendMonth = Overview["months"][number];
@@ -183,9 +189,9 @@ function SeedProgress({ sync, title = "Syncing your history" }: { sync: SyncStat
   );
 }
 
-/** Basket card loading: service enrichment progress for the selected range —
- * how many of its orders already carry service detail — not the overall
- * order-sync progress shown at the top of the page. */
+/** Service enrichment progress — how many orders already carry service
+ * detail. Used by the basket card (selected range) and the top banner
+ * (whole history while live). */
 function BasketSyncing({ coverage }: { coverage: { orders: number; withServices: number } }) {
   if (coverage.orders === 0) {
     return <p className="text-sm text-muted-foreground">No orders in this period yet.</p>;
@@ -198,7 +204,7 @@ function BasketSyncing({ coverage }: { coverage: { orders: number; withServices:
         <ArrowPathIcon className="size-4 animate-spin text-muted-foreground" />
         Syncing service detail
       </p>
-      <p className="text-xs text-muted-foreground">{line} — newest orders first.</p>
+      <p className="text-xs text-muted-foreground">{line}.</p>
       <div
         role="progressbar"
         aria-label="Service detail progress"
@@ -351,6 +357,7 @@ export function Dashboard() {
     if (!orgId) { setLoading(false); return; }
     setLoading(true);
     prevSyncState.current = null;
+    prevEnriching.current = null;
     Promise.all([
       api<{ overview: { connections: SidekickConnection[] } }>(`/api/sidekick/overview?orgId=${orgId}`).catch(() => null),
       fetch(`/api/billing/subscription?orgId=${orgId}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
@@ -404,21 +411,22 @@ export function Dashboard() {
   // session cache (one entry per org and range, so reloads are instant) and
   // refetch only on explicit user actions (Refresh button, Sync click,
   // target save, or a never-seen range).
-  // The tab keeps driving after the flip to live while the selected range's
-  // basket still needs services: live runs only re-touch the head window, so
-  // without this the tail would never enrich in dev and the mix would sit at
-  // zero forever. In prod the hourly cron shares that tail work.
-  const basketNeedsData =
-    !!overview &&
-    overview.basket.length === 0 &&
-    !!overview.serviceCoverage &&
-    overview.serviceCoverage.orders > overview.serviceCoverage.withServices;
+  // The tab keeps driving after the flip to live while service detail is
+  // still missing anywhere in history: live runs only re-touch the head
+  // window, so without this the tail would never enrich in dev and the mix
+  // would sit incomplete forever. In prod the hourly cron shares that work.
+  // (Driving keys off the live status backlog, not the overview basket:
+  // the basket goes non-empty after the first services land while tens of
+  // thousands of orders can still be missing detail.)
+  const enriching = sync ? needsEnrichment(sync) : false;
   const lastAutoRef = useRef(0);
   // Last sync state seen by the driver: detects the backfilling-to-live
-  // flip so the charts reload exactly once when a seed finishes.
+  // flip and the enrichment-drained flip so the charts reload exactly once
+  // at each finish. Refs reset per org in the mount effect below.
   const prevSyncState = useRef<string | null>(null);
+  const prevEnriching = useRef<boolean | null>(null);
   useEffect(() => {
-    const driving = !!orgId && (sync?.state === "backfilling" || basketNeedsData);
+    const driving = !!orgId && (sync?.state === "backfilling" || enriching);
     if (!driving) return;
     const t = setInterval(() => {
       void loadStatus(orgId!).then((s) => {
@@ -431,9 +439,17 @@ export function Dashboard() {
         if (prev === "backfilling" && s.state === "live") {
           void loadOverview(orgId!, range.from, range.to, { force: true });
         }
+        const wasEnriching = prevEnriching.current;
+        const nowEnriching = needsEnrichment(s);
+        prevEnriching.current = nowEnriching;
+        // Enrichment just drained: one forced reload so the finished basket
+        // shows without a manual refresh.
+        if (wasEnriching && !nowEnriching) {
+          void loadOverview(orgId!, range.from, range.to, { force: true });
+        }
         // Never drive on terminal states (bad credentials): the error alert
         // owns that surface, and retries would only hammer a dead connection.
-        if (s.state !== "backfilling" && !(s.state === "live" && basketNeedsData)) return;
+        if (s.state !== "backfilling" && !needsEnrichment(s)) return;
         if (refreshing) return;
         if (document.visibilityState !== "visible") return;
         const nowSec = Math.floor(Date.now() / 1000);
@@ -446,7 +462,7 @@ export function Dashboard() {
       });
     }, 15000);
     return () => clearInterval(t);
-  }, [orgId, sync?.state, basketNeedsData, loadStatus, loadOverview, refreshing, range.from, range.to]);
+  }, [orgId, sync?.state, enriching, loadStatus, loadOverview, refreshing, range.from, range.to]);
 
   async function manualRefresh(silent = false) {
     if (!orgId || refreshing) return;
@@ -545,6 +561,10 @@ export function Dashboard() {
   // live, or fetched count covering the vendor total — never waiting on the
   // status flip for rows that are already in the warehouse.
   const seeding = sync ? !isSeedComplete(sync) && sync.state === "backfilling" : false;
+  // While history syncs, the whole widget zone below the period card shows a
+  // loading state and stays non-interactive: partial-seed figures must never
+  // read as final. It unlocks with the seed (plus the one reload on finish).
+  const widgetsLocked = seeding;
   const syncDisabled = isSyncDisabled({
     state: sync?.state,
     lastSyncedAt: sync?.lastSyncedAt ?? null,
@@ -642,6 +662,9 @@ export function Dashboard() {
 
       {seeding && sync && (
         <SeedProgress sync={sync} />
+      )}
+      {!seeding && enriching && sync?.enrichment && (
+        <BasketSyncing coverage={sync.enrichment} />
       )}
       {sync?.state === "error" && (
         <Alert>
@@ -743,7 +766,22 @@ export function Dashboard() {
             )}
           </Card>
 
-          {overviewLoading && !overview ? (
+          {widgetsLocked ? (
+            <div aria-busy="true" aria-label="Syncing history">
+              <Card>
+                <CardContent className="flex items-center gap-3 py-6">
+                  <ArrowPathIcon className="size-5 animate-spin text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Syncing your history</p>
+                    <p className="text-xs text-muted-foreground">Charts unlock automatically when the seed completes. Progress is shown above.</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <div className="pointer-events-none mt-4 grid gap-4 opacity-60 sm:grid-cols-4" aria-hidden="true">
+                <Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" />
+              </div>
+            </div>
+          ) : overviewLoading && !overview ? (
             <div className="grid gap-4 sm:grid-cols-4"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div>
           ) : overview && t ? (
             // While the new period loads, keep the previous charts visible but

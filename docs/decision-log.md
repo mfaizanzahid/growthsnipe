@@ -1,5 +1,17 @@
 # Decision log SaaS Billing Portal (fresh project, GHL removed)
 
+## 2026-10-26 - Enrichment backlog on status; stalled tab driver fixed (owner decision)
+
+Owner reported enrichment stalled with the tab open (400 of 24k served, driver quiet) and asked that progress show until enrichment completes. Two causes, both fixed. First, the tab driver only continued while the overview basket was completely empty, so the first landed services stood it down with tens of thousands of orders still missing detail; driving now keys off a live enrichment backlog served on the status endpoint (global distinct orders versus those with service rows, computed only while live to save the scan during backfills). Second, the banner hid on live regardless of enrichment; it now stays up with determinate progress until the backlog drains, and the charts reload once when it does (forced past the session cache, like the seed-finish reload). Also removed a contested newest-first claim from the shared progress text. Pinned by a status-backlog endpoint test. Typecheck, lint, and suites green; HMR picks it up with no restart.
+
+## 2026-10-26 - Widget zone locks while history syncs (owner decision)
+
+Owner asked that the whole widget area show a loading state (disabled) while historical data syncs, instead of rendering partial-seed figures as final. The charts, KPIs, and tables now render a spinner card plus dimmed non-interactive skeletons whenever the seed is backfilling and incomplete; the period card stays usable and the seeding banner above keeps live progress. Unlock pairs with the existing finish reload, so completed numbers appear in the same moment. Post-live basket enrichment still uses the basket card's own syncing state. Typecheck and lint clean; HMR picks it up with no restart.
+
+## 2026-10-26 - Starting year always syncs in full and bases growth (owner decision)
+
+Owner changed the partial-leading-year rule: instead of skipping to the first full year, the seed now extends back to January 1st of the cutoff year so the starting year syncs January to December and serves as the growth base. The walk's finish bound moved from the cutoff date to that Jan 1st (windows ending on or before it are never pulled; straddlers clamp to it), the run-start cursor check keys off it, and the chunk safety floor widened to 25 to fit the deepest possible walk. The base year is now simply the earliest order's year. A failing boundary test caught that clamp-to-cutoff could never fire with 90-day chunks (no window can straddle a 9-month gap); the Jan-1 bound has no such hole. Mid-year cursors parked by the old rule heal with one catch-up window on the next run. Pinned by updated walk, clamp, and base-year tests. Typecheck, lint, and suites green; HMR picks it up with no restart.
+
 ## 2026-10-26 - YoY badges cover leap-year Current Year (owner decision)
 
 Owner confirmed Current Year math (prior period is the equal window before Jan 1; YoY is the same dates last year) and asked to cover the Dec 31 leap-year edge, where the span hits 366 days. Visibility cutoff is now 366 days. Typecheck and lint clean; HMR picks it up with no restart.

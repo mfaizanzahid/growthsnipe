@@ -18,15 +18,18 @@ import {
 
 /** 90-day provider windows: small enough for Spectora paging and ISN payloads. */
 export const SYNC_CHUNK_DAYS = 90;
-/** Warehouse history depth: only the last 5 years are pulled and synced. */
+/** Warehouse history depth: the last 5 years, plus the full starting year.
+ * The walk extends back to January 1st of the cutoff year so the earliest
+ * year always syncs January to December and can serve as the growth base. */
 export const SYNC_HISTORY_YEARS = 5;
 /** Chunks per scheduled run: bounds Cron CPU and subrequests for 5-year backfills. */
 export const SYNC_MAX_CHUNKS_PER_RUN = 4;
 /** Empty chunks in a row before a backfill is declared complete (live). */
 const EMPTY_CHUNKS_TO_FINISH = 2;
-/** Safety floor: 90-day chunks covering the 5-year history plus headroom.
- * The exact bound is the calendar cutoff enforced in the walk below. */
-const MAX_BACKFILL_CHUNKS = 21;
+/** Safety floor: 90-day chunks covering the 5-year history, the full
+ * starting year, plus headroom. The Jan-1 bound below stops the walk
+ * regardless; this only caps budgets and runaway loops. */
+const MAX_BACKFILL_CHUNKS = Math.ceil(((SYNC_HISTORY_YEARS + 1) * 366) / SYNC_CHUNK_DAYS);
 
 /**
  * Cap-aware backfill progress for the status endpoint. The vendor grand
@@ -318,35 +321,35 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
   }
 
   let backDone = 0;
-  // Calendar cutoff for the 5-year history: windows ending on or before it
-  // are never pulled, and a straddling window is clamped to start at it.
+  // Calendar cutoff for the 5-year history, extended back to January 1st of
+  // the cutoff year so the starting year always syncs in full (Jan-Dec) and
+  // can serve as the year-over-year base year. Windows ending on or before
+  // the cutoff are never pulled; a straddling window is clamped to Jan 1st.
   const cutoff = new Date(nowMs);
   cutoff.setUTCFullYear(cutoff.getUTCFullYear() - SYNC_HISTORY_YEARS);
-  const cutoffMs = cutoff.getTime();
-  const cutoffIso = cutoff.toISOString();
+  const jan1Ms = Date.UTC(cutoff.getUTCFullYear(), 0, 1);
+  const jan1Iso = new Date(jan1Ms).toISOString();
   for (let i = 0; i < budget && !terminal; i += 1) {
     // Skip the window the head just covered on fresh workspaces (unless the
     // head failed, in which case the backfill re-covers it).
     const backIndex = syncedChunks + backDone + (headOk && syncedChunks === 0 ? 1 : 0);
     if (backIndex >= MAX_BACKFILL_CHUNKS) { finished = true; break; }
-    // History already reaches the 5-year cutoff (or beyond, for pre-cap
-    // seeds): nothing older is in scope. Without this, the clamped boundary
-    // chunk below writes cursor == cutoff, which recomputes to this same
-    // backIndex on the next run — the seed re-fetches one window endlessly
-    // and never flips live. Uses the run-start cursor, never the in-memory
-    // one, so a run in progress cannot finish itself early.
+    // History already reaches the full starting year (or beyond, for seeds
+    // parked mid-year by the old cutoff): nothing older is in scope. Uses
+    // the run-start cursor, never the in-memory one, so a run in progress
+    // cannot finish itself early.
     if (state.cursorDate) {
       const cursorMs = new Date(state.cursorDate).getTime();
-      if (Number.isFinite(cursorMs) && cursorMs <= cutoffMs) { finished = true; break; }
+      if (Number.isFinite(cursorMs) && cursorMs <= jan1Ms) { finished = true; break; }
     }
     const window = chunkRange(nowMs, backIndex);
     const to = window.to;
     let from = window.from;
-    if (new Date(to).getTime() <= cutoffMs) { finished = true; break; }
-    // A straddling window is clamped to the cutoff, and it is the last
-    // window in scope: fetching it completes the seed.
+    if (new Date(to).getTime() <= jan1Ms) { finished = true; break; }
+    // A straddling window is clamped to Jan 1st, and it is the last window
+    // in scope: fetching it completes the seed.
     let clamped = false;
-    if (new Date(from).getTime() < cutoffMs) { from = cutoffIso; clamped = true; }
+    if (new Date(from).getTime() < jan1Ms) { from = jan1Iso; clamped = true; }
     try {
       const orders = await fetchChunkWithRetry(adapter, conn.provider, from, to);
       if (orders.length === 0) {

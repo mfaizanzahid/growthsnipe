@@ -119,12 +119,12 @@ describe("backfill progress", () => {
   // NOW is 2026-10-23T12:00Z: position is whole 90-day chunks from the
   // cursor, clamped to the 21-chunk walk; live is always complete.
   it("derives walk position from the cursor, complete when live", () => {
-    expect(backfillProgress(null, "backfilling", NOW)).toEqual({ done: 0, total: 21 });
-    expect(backfillProgress("2026-10-01T00:00:00.000Z", "backfilling", NOW)).toEqual({ done: 0, total: 21 });
-    expect(backfillProgress("2021-11-27T12:00:00.000Z", "backfilling", NOW)).toEqual({ done: 20, total: 21 });
-    expect(backfillProgress("2014-06-30T12:00:00.000Z", "backfilling", NOW)).toEqual({ done: 21, total: 21 });
-    expect(backfillProgress(null, "live", NOW)).toEqual({ done: 21, total: 21 });
-    expect(backfillProgress("garbage", "backfilling", NOW)).toEqual({ done: 0, total: 21 });
+    expect(backfillProgress(null, "backfilling", NOW)).toEqual({ done: 0, total: 25 });
+    expect(backfillProgress("2026-10-01T00:00:00.000Z", "backfilling", NOW)).toEqual({ done: 0, total: 25 });
+    expect(backfillProgress("2021-11-27T12:00:00.000Z", "backfilling", NOW)).toEqual({ done: 20, total: 25 });
+    expect(backfillProgress("2014-06-30T12:00:00.000Z", "backfilling", NOW)).toEqual({ done: 25, total: 25 });
+    expect(backfillProgress(null, "live", NOW)).toEqual({ done: 25, total: 25 });
+    expect(backfillProgress("garbage", "backfilling", NOW)).toEqual({ done: 0, total: 25 });
   });
 });
 
@@ -309,12 +309,14 @@ describe("analytics sync resilience", () => {
     });
     const cutoff = new Date(NOW);
     cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 5);
+    const jan1 = new Date(Date.UTC(cutoff.getUTCFullYear(), 0, 1));
     await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 60, nowMs: NOW, adapter: endless });
     expect(seen.length).toBeGreaterThan(0);
-    // Neither end of any requested window may reach past the 5-year cutoff.
+    // Window ends stay past January 1st of the cutoff year; starts may
+    // reach it exactly so the starting year syncs in full.
     for (const w of seen) {
-      expect(w.to >= cutoff.toISOString()).toBe(true);
-      expect(w.from >= cutoff.toISOString()).toBe(true);
+      expect(w.to > jan1.toISOString()).toBe(true);
+      expect(w.from >= jan1.toISOString()).toBe(true);
     }
     const second = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 60, nowMs: NOW, adapter: endless });
     expect(second.finished).toBe(true);
@@ -377,12 +379,15 @@ describe("analytics sync resilience", () => {
     expect(first.status).toBe("live");
     const cutoff = new Date(NOW);
     cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 5);
-    // The boundary fetch starts exactly at the cutoff, never before it.
+    const jan1 = new Date(Date.UTC(cutoff.getUTCFullYear(), 0, 1));
+    // The boundary fetch starts exactly at January 1st of the cutoff year,
+    // never before it, and the cursor parks there.
+    expect(first.cursorDate).toBe(jan1.toISOString());
     const backfills = seen.filter((w) => w.to < new Date(NOW - 90 * 86400000).toISOString());
     expect(backfills.length).toBeGreaterThan(0);
     for (const w of backfills) {
-      expect(w.from >= cutoff.toISOString()).toBe(true);
-      expect(w.to >= cutoff.toISOString()).toBe(true);
+      expect(w.from >= jan1.toISOString()).toBe(true);
+      expect(w.to > jan1.toISOString()).toBe(true);
     }
     // And the next run does not re-fetch it: history is complete.
     seen.length = 0;
