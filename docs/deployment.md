@@ -75,8 +75,8 @@ or you need to ship without pushing.
 - `GET https://growthsnipe.com/health` → `{"ok":true,"service":"growthsnipe",...}`
 - Sign up → verify → onboard → test-card payment in live mode with a small
   amount first; refund it from `/superadmin` to prove the money loop.
-- Confirm both Cron triggers show in the Cloudflare dashboard
-  (Workers → Triggers → Crons: `0 3 * * *` billing renewals, `0 * * * *` Sidekick briefing tick).
+- Confirm all three Cron triggers show in the Cloudflare dashboard
+  (Workers → Triggers → Crons: `0 3 * * *` billing renewals, `0 * * * *` Sidekick briefing tick, `* * * * *` analytics seeding/enrichment tick).
 - Confirm `/mcp` is served by the Worker (wrangler `run_worker_first`) and the public pricing page renders plans from `GET /api/plans`.
 - Enable Cloudflare WAF rate-limiting rules for `/api/*` (no in-app rate
   limits on custom endpoints by design).

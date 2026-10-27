@@ -305,11 +305,15 @@ export function Dashboard() {
   // Sync click, target save) pass force to refetch. It must NOT depend on
   // `overview`, or every successful fetch would create a new callback
   // identity and re-trigger the effect into an infinite request loop.
+  // A cached zero-job snapshot is never served: it means the entry was
+  // written mid-seed (or the range is genuinely empty), so it refetches and
+  // is not rewritten — an empty org refetches per navigation instead of
+  // going stale, which is the correct trade.
   const loadOverview = useCallback(async (id: string, from: string, to: string, opts?: { force?: boolean }) => {
     const req = (overviewReq.current += 1);
     if (!opts?.force) {
       const hit = readCachedOverview<Overview>(sessionCacheStore(), id, from, to);
-      if (hit) {
+      if (hit && (hit.totals?.jobs ?? 0) > 0) {
         hasOverview.current = true;
         setOverview(hit);
         setOverviewLoading(false);
@@ -324,7 +328,9 @@ export function Dashboard() {
       if (req !== overviewReq.current) return;
       hasOverview.current = true;
       setOverview(data.overview);
-      writeCachedOverview(sessionCacheStore(), id, from, to, data.overview);
+      if ((data.overview?.totals?.jobs ?? 0) > 0) {
+        writeCachedOverview(sessionCacheStore(), id, from, to, data.overview);
+      }
     } catch (err) {
       if (req !== overviewReq.current) return;
       if (!hasOverview.current) toast.error(err instanceof Error ? err.message : "Could not load analytics");
@@ -358,6 +364,7 @@ export function Dashboard() {
     setLoading(true);
     prevSyncState.current = null;
     prevEnriching.current = null;
+    statusPending.current = false;
     Promise.all([
       api<{ overview: { connections: SidekickConnection[] } }>(`/api/sidekick/overview?orgId=${orgId}`).catch(() => null),
       fetch(`/api/billing/subscription?orgId=${orgId}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
@@ -425,10 +432,20 @@ export function Dashboard() {
   // at each finish. Refs reset per org in the mount effect below.
   const prevSyncState = useRef<string | null>(null);
   const prevEnriching = useRef<boolean | null>(null);
+  // A status poll still in flight: the next tick skips instead of stacking
+  // a second request (under load these polls outlast the 15s cadence).
+  const statusPending = useRef(false);
+  // Kill-switch for the tab auto-driver (NOT deleted, just parked): when
+  // false the tab only polls status and never fires refresh itself — seeds
+  // advance via the Sync button, connect-time runs, and cron. Set true to
+  // re-enable automatic chaining.
+  const AUTO_TAB_REFRESH = false;
   useEffect(() => {
     const driving = !!orgId && (sync?.state === "backfilling" || enriching);
     if (!driving) return;
     const t = setInterval(() => {
+      if (statusPending.current) return;
+      statusPending.current = true;
       void loadStatus(orgId!).then((s) => {
         if (!s) return;
         const prev = prevSyncState.current;
@@ -455,10 +472,12 @@ export function Dashboard() {
         const nowSec = Math.floor(Date.now() / 1000);
         const ageSec = s.lastSyncedAt ? nowSec - s.lastSyncedAt : Infinity;
         const chaining = nowSec - lastAutoRef.current < 120;
-        if (ageSec > 90 || chaining) {
+        if (AUTO_TAB_REFRESH && (ageSec > 90 || chaining)) {
           lastAutoRef.current = nowSec;
           void manualRefresh(true);
         }
+      }).finally(() => {
+        statusPending.current = false;
       });
     }, 15000);
     return () => clearInterval(t);

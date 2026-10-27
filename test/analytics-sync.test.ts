@@ -6,7 +6,7 @@ import type { Db } from "../src/server/repositories/db";
 import type { Env } from "../src/server/lib/env";
 import type { BusinessProviderAdapter, OrderRecord } from "../src/server/providers/types";
 import { encryptJson } from "../src/server/lib/crypto";
-import { backfillProgress, extractBasket, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
+import { backfillProgress, claimRunLease, extractBasket, hasEnrichmentBacklog, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
 import { extractAgentContact } from "../src/server/analytics/sync";
 
 const KEY = "test-sync-key-must-be-long-enough-1234";
@@ -57,6 +57,9 @@ function memoryDb(): Db {
       id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, name TEXT, email TEXT, phone TEXT,
       first_seen_at TEXT, last_seen_at TEXT, order_count INTEGER NOT NULL DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL
+    );
   `);
   return drizzle(
     async (sql: string, params: unknown[]) => {
@@ -83,6 +86,22 @@ async function seedConnection(db: Db, provider: "spectora" | "isn" = "spectora")
 }
 
 const env = { MCP_ENCRYPTION_KEY: KEY } as unknown as Env;
+
+/**
+ * A completed seed: cursor at/below the history cutoff so the run computes
+ * finished immediately. Enrichment only engages on finished or live runs
+ * (strict phases: backfill first, then enrich), so enrichment tests seed
+ * this instead of a fresh backfilling workspace.
+ */
+async function seedLiveState(db: Db) {
+  await db.insert(schema.orgSyncState).values({
+    organizationId: ORG,
+    provider: "isn",
+    status: "live",
+    cursorDate: "2020-01-01T00:00:00.000Z",
+    updatedAt: 1,
+  });
+}
 
 function order(id: string, scheduledAt: string): OrderRecord {
   return {
@@ -562,6 +581,7 @@ describe("analytics sync resilience", () => {
 
   it("enriches ISN service detail newest-first within the per-run cap", async () => {    const db = memoryDb();
     await seedConnection(db, "isn");
+    await seedLiveState(db);
     const isnOrder = (id: string, scheduledAt: string): OrderRecord => ({
       id,
       status: "completed",
@@ -607,6 +627,7 @@ describe("analytics sync resilience", () => {
     // 500'd and the final state write never happened.
     const db = memoryDb();
     await seedConnection(db, "isn");
+    await seedLiveState(db);
     const rains = Array.from({ length: 120 }, (_, i) => ({
       id: `o${i}`,
       status: "completed",
@@ -629,7 +650,7 @@ describe("analytics sync resilience", () => {
     const services = await db.select().from(schema.orgOrderServices);
     expect(services).toHaveLength(120);
     const state = await db.select().from(schema.orgSyncState);
-    expect(state[0]?.status).toBe("backfilling");
+    expect(state[0]?.status).toBe("live");
   });
 
   it("enriches the oldest bare rows so coverage climbs after going live", async () => {
@@ -637,6 +658,7 @@ describe("analytics sync resilience", () => {
     // below, ancient rows would stay bare forever and coverage would freeze.
     const db = memoryDb();
     await seedConnection(db, "isn");
+    await seedLiveState(db);
     await db.insert(schema.orgOrders).values([
       { id: `${ORG}:isn:old`, organizationId: ORG, provider: "isn", providerOrderId: "old", status: "completed", scheduledAt: "2020-01-01T10:00:00Z", syncedAt: 1 },
       { id: `${ORG}:isn:new`, organizationId: ORG, provider: "isn", providerOrderId: "new", status: "completed", scheduledAt: new Date(NOW - 86400000).toISOString(), syncedAt: 1 },
@@ -664,6 +686,7 @@ describe("analytics sync resilience", () => {
     // error — indistinguishable from "nothing to do" while coverage froze.
     const db = memoryDb();
     await seedConnection(db, "isn");
+    await seedLiveState(db);
     const bare: OrderRecord = {
       id: "1",
       status: "completed",
@@ -684,10 +707,81 @@ describe("analytics sync resilience", () => {
     expect(summary.enriched).toBe(0);
     expect(summary.enrichFailed).toBe(1);
     expect(summary.error).toContain("service detail unavailable");
-    expect(summary.status).toBe("backfilling");
+    // A live workspace stays live through an enrichment blackout: the error
+    // is recorded, but enrichment hiccups must not park it as backfilling.
+    expect(summary.status).toBe("live");
     // The run still lands: progress persists for the next retry.
     const state = await db.select().from(schema.orgSyncState);
     expect(state).toHaveLength(1);
     expect(state[0]?.totalFetched).toBe(1);
+  });
+
+  it("skips enrichment while the backfill is unfinished (strict phases)", async () => {    // Backfilling runs fetch listing windows only; detail reads start once
+    // the seed is complete so the two phases never compete for budget.
+    const db = memoryDb();
+    await seedConnection(db, "isn");
+    const adapter = fakeAdapter({
+      async searchOrders(input) {
+        if (input.status === "cancelled") return { items: [] };
+        if (input.cursor) return { items: [] };
+        return {
+          items: [{
+            id: "1", status: "completed",
+            scheduledAt: new Date(NOW - 86400000).toISOString(),
+            total: 50000, currency: "USD", details: {},
+          } as OrderRecord],
+        };
+      },
+      async getOrder(id: string) {
+        return { id, details: { services: [{ uuid: "u", name: "General Home Inspection" }] } } as unknown as OrderRecord;
+      },
+    });
+    const summary = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter });
+    expect(summary.error).toBeUndefined();
+    expect(summary.status).toBe("backfilling");
+    expect(summary.enriched).toBe(0);
+    expect(summary.enrichFailed).toBe(0);
+    const services = await db.select().from(schema.orgOrderServices);
+    expect(services).toHaveLength(0);
+  });
+
+  it("reports an enrichment backlog only for bare non-cancelled orders", async () => {
+    // The per-minute tick gates live workspaces on this: hourly throttle
+    // stands only when enrichment is complete.
+    const db = memoryDb();
+    await seedConnection(db, "isn");
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(false);
+    await db.insert(schema.orgOrders).values([
+      { id: `${ORG}:isn:bare`, organizationId: ORG, provider: "isn", providerOrderId: "bare", status: "completed", scheduledAt: "2026-01-01T10:00:00Z", syncedAt: 1 },
+      { id: `${ORG}:isn:done`, organizationId: ORG, provider: "isn", providerOrderId: "done", status: "completed", scheduledAt: "2026-01-01T10:00:00Z", syncedAt: 1 },
+      { id: `${ORG}:isn:gone`, organizationId: ORG, provider: "isn", providerOrderId: "gone", status: "cancelled", scheduledAt: "2026-01-01T10:00:00Z", syncedAt: 1 },
+    ]);
+    await db.insert(schema.orgOrderServices).values({
+      id: `${ORG}:isn:done:svc:0`, organizationId: ORG, orderId: `${ORG}:isn:done`, name: "General Home Inspection", kind: "base",
+    });
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(true);
+    await db.insert(schema.orgOrderServices).values({
+      id: `${ORG}:isn:bare:svc:0`, organizationId: ORG, orderId: `${ORG}:isn:bare`, name: "General Home Inspection", kind: "base",
+    });
+    // Only the cancelled bare row remains: no backlog.
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(false);
+  });
+
+  it("leases sync runs so overlapping ticks skip busy orgs", async () => {
+    const db = memoryDb();
+    // First claim wins; a second tick inside the window stands down.
+    expect(await claimRunLease(db, ORG, NOW)).toBe(true);
+    expect(await claimRunLease(db, ORG, NOW + 60_000)).toBe(false);
+    // Other orgs are unaffected.
+    expect(await claimRunLease(db, "o2", NOW + 60_000)).toBe(true);
+    // A stale lease (crashed run) expires by time.
+    expect(await claimRunLease(db, ORG, NOW + 120_001)).toBe(true);
+    // Release clears the lease: the next tick runs immediately instead of
+    // waiting out the window.
+    await releaseRunLease(db, ORG);
+    expect(await claimRunLease(db, ORG, NOW + 120_002)).toBe(true);
+    // Releasing what was never claimed is a no-op, never an error.
+    await releaseRunLease(db, "o3");
+    expect(await claimRunLease(db, "o3", NOW)).toBe(true);
   });
 });

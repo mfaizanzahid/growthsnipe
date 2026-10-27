@@ -114,18 +114,32 @@ export function createAnalyticsRoutes(deps: {
     // progress banner up until withServices catches orders.
     let enrichment: { orders: number; withServices: number } | null = null;
     if (s.status === "live") {
-      const cov = await db
-        .select({
-          orders: sql<number>`count(distinct ${orgOrders.id})`,
-          withServices: sql<number>`count(distinct case when ${orgOrderServices.orderId} is not null then ${orgOrders.id} end)`,
-        })
-        .from(orgOrders)
-        .leftJoin(
-          orgOrderServices,
-          and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
-        )
-        .where(and(eq(orgOrders.organizationId, orgId), ne(orgOrders.status, "cancelled")))
-        .limit(1);
+      // The coverage scan races enrichment writes; under contention the read
+      // throws and takes the whole status down with it (then the tab driver
+      // stalls on 500s and an unhandled-error row lands in the logs). A few
+      // quick retries cover both lock errors and transient backend hiccups;
+      // a persistent failure still throws and logs after the last attempt.
+      let cov: Array<{ orders: number; withServices: number }> | undefined;
+      for (let attempt = 0; ; attempt += 1) {
+        try {
+          cov = await db
+            .select({
+              orders: sql<number>`count(distinct ${orgOrders.id})`,
+              withServices: sql<number>`count(distinct case when ${orgOrderServices.orderId} is not null then ${orgOrders.id} end)`,
+            })
+            .from(orgOrders)
+            .leftJoin(
+              orgOrderServices,
+              and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
+            )
+            .where(and(eq(orgOrders.organizationId, orgId), ne(orgOrders.status, "cancelled")))
+            .limit(1);
+          break;
+        } catch (err) {
+          if (attempt >= 2) throw err;
+          await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+        }
+      }
       enrichment = { orders: Number(cov[0]?.orders ?? 0), withServices: Number(cov[0]?.withServices ?? 0) };
     }
     return c.json({ status: { state: s.status, provider: s.provider, totalFetched: s.totalFetched, cursorDate: s.cursorDate, lastSyncedAt: s.lastSyncedAt, error: s.errorText, seedStartedAt: s.seedStartedAt, totalEstimate: s.totalEstimate, backfillChunksDone: progress.done, backfillChunksTotal: progress.total, enrichment } });

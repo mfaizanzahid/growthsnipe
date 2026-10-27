@@ -34,7 +34,7 @@ import {
   writeAppLog,
 } from "../src/server/lib/app-logs";
 import { planCron } from "../src/server/lib/cron-plan";
-import { runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
+import { claimRunLease, hasEnrichmentBacklog, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
 import { orgSyncState } from "../src/server/db/schema";
 
 const billingApp = createApp();
@@ -45,6 +45,12 @@ const mcpApp = new Hono<{ Bindings: Env }>();
  * wrangler.jsonc triggers.crons (top level and env.production).
  */
 const DAILY_CRON = "0 3 * * *";
+
+/**
+ * The hourly Cron trigger (briefings). Must match the "0 * * * *" entry in
+ * wrangler.jsonc triggers.crons (top level and env.production).
+ */
+const HOURLY_CRON = "0 * * * *";
 
 /** app_settings key holding the UTC day the billing cron last ran. */
 const BILLING_RUN_DAY_KEY = "billing_cron_last_run_day";
@@ -156,24 +162,38 @@ mcpApp.all("/mcp", async (c) => {
 
 const app = new Hono<{ Bindings: Env }>();
 app.route("/", mcpApp);
+// Dev-only manual cron tick: `vite dev` never dispatches cron events, so
+// with DEV_CRON_TRIGGER=1 (`.dev.vars`, never production) this runs the
+// exact scheduled handler over HTTP. `?cron=` selects the trigger to
+// emulate (default minutely); anything else 404s when the flag is off.
+app.post("/api/dev/cron-tick", async (c) => {
+  if (c.env.DEV_CRON_TRIGGER !== "1") return c.json({ error: "Not found" }, 404);
+  const cron = new URL(c.req.url).searchParams.get("cron") ?? "* * * * *";
+  await workerHandlers.scheduled(
+    { cron, scheduledTime: Date.now() } as unknown as ScheduledController,
+    c.env,
+    c.executionCtx as unknown as ExecutionContext,
+  );
+  return c.json({ ok: true, cron });
+});
 app.all("/api/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 app.all("/auth/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 app.all("/webhooks/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
   app.get("/health", (c) => c.json({ ok: true, service: "growthsnipe" }));
 app.all("*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 
-export default {
+const workerHandlers = {
   fetch: app.fetch,
     /**
      * Combined Cron:
      * - Daily billing renewals (Safepay unscheduled_cof, manual schedule only).
      * - Daily trial ownership (reminders at -5/-3/0/+3/+5, expiry flip).
-     * - 5-min Sidekick briefing tick (due D1 schedules → briefing jobs).
-     * - Quarter-hour analytics warehouse tick (backfill + enrichment).
+     * - Hourly Sidekick briefing tick (due D1 schedules → briefing jobs).
+     * - Minutely analytics warehouse tick (backfill + enrichment).
      * - Daily platform-log retention purge.
      *
      * The three triggers are distinguished by controller.cron, so billing runs
-     * once a day and the hourly tick only advances briefings. Billing
+     * once a day and briefings run hourly. Billing
      * operations are day-granular (reminder offsets, dunning windows, 24h
      * auto-retry gaps), so running them every tick was wasted work.
      *
@@ -187,6 +207,7 @@ export default {
     const plan = planCron({
       cron: controller.cron,
       dailyCron: DAILY_CRON,
+      hourlyCron: HOURLY_CRON,
       lastBillingDay: (await lastBillingDay(db)) ?? "",
       today: utcDay(now),
     });
@@ -305,10 +326,11 @@ export default {
       );
     }
 
-    // Analytics warehouse sync on every non-daily tick (hourly + quarter
-    // hour): backfill chunks for new connections, then incrementals plus
+    // Analytics warehouse sync on every non-daily tick (hourly + minutely):
+    // backfill chunks for new connections, then incrementals plus
     // service enrichment once live. Live workspaces stay throttled to hourly
-    // incrementals by their own last-synced check below.
+    // incrementals by their own last-synced check below. At a tick a minute,
+    // successful and empty runs stay silent: only failures write a log row.
     if (plan.runAnalytics) {
       jobs.push(
         (async () => {
@@ -318,15 +340,36 @@ export default {
             let synced = 0;
             for (const s of states) {
               if (s.status === "backfilling" || s.status === "error") {
-                await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 4, nowMs: now });
-                synced += 1;
-              } else if (s.status === "live" && (s.lastSyncedAt ?? 0) < hourAgo) {
-                await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 1, nowMs: now });
-                synced += 1;
+                // Skip orgs another tick is already working (lease): without
+                // this, ticks overlapping a long run redo the same windows.
+                // Skips don't count toward the cap and don't stop the loop.
+                // The holder releases in a finally so failures can't park it.
+                if (!(await claimRunLease(db, s.organizationId, now))) continue;
+                try {
+                  await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 4, nowMs: now });
+                  synced += 1;
+                } finally {
+                  await releaseRunLease(db, s.organizationId);
+                }
+              } else if (s.status === "live") {
+                // The hourly gate stands only when enrichment is complete: a
+                // live workspace with orders still missing services runs
+                // every tick until drained, then resumes hourly incrementals.
+                // The backlog probe is skipped when the workspace is stale
+                // (it runs anyway), keeping the common path to one read.
+                const stale = (s.lastSyncedAt ?? 0) < hourAgo;
+                const draining = stale ? false : await hasEnrichmentBacklog(db, s.organizationId);
+                if (!(stale || draining)) continue;
+                if (!(await claimRunLease(db, s.organizationId, now))) continue;
+                try {
+                  await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 1, nowMs: now });
+                  synced += 1;
+                } finally {
+                  await releaseRunLease(db, s.organizationId);
+                }
               }
               if (synced >= 5) break;
             }
-            await writeAppLog(db, { level: "info", event: "cron.analytics", surface: "cron", message: `Analytics tick: ${synced} orgs synced`, detail: { synced } });
           } catch (err) {
             console.error("[cron] analytics failed", err);
             await writeAppLog(db, { level: "error", event: "cron.analytics_failed", surface: "cron", message: err instanceof Error ? err.message : "Analytics tick failed", detail: err });
@@ -367,3 +410,5 @@ export default {
     ctx.waitUntil(Promise.all(jobs));
   },
 };
+
+export default workerHandlers;

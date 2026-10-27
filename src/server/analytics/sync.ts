@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
 import type { Db } from "../repositories/db";
+import { deleteSetting, getSetting, setSetting } from "../repositories";
 import type { Env } from "../lib/env";
 import { decryptJson } from "../lib/crypto";
 import { createProviderAdapter } from "../providers/registry";
@@ -32,6 +33,69 @@ const EMPTY_CHUNKS_TO_FINISH = 2;
 const MAX_BACKFILL_CHUNKS = Math.ceil(((SYNC_HISTORY_YEARS + 1) * 366) / SYNC_CHUNK_DAYS);
 
 /**
+ * Whether any of the org's orders still lack service rows. The per-minute
+ * tick uses this to decide if a live workspace may skip its hourly gate:
+ * the gate stands only when enrichment is complete, otherwise live orgs run
+ * every tick until drained. Cancelled orders never count (enrichment skips
+ * them too). One indexed existence probe.
+ */
+export async function hasEnrichmentBacklog(db: Db, orgId: string): Promise<boolean> {
+  const rows = await db
+    .select({ orderId: orgOrders.id })
+    .from(orgOrders)
+    .leftJoin(
+      orgOrderServices,
+      and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
+    )
+    .where(
+      and(
+        eq(orgOrders.organizationId, orgId),
+        ne(orgOrders.status, "cancelled"),
+        isNull(orgOrderServices.orderId),
+      ),
+    )
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * Run lease so overlapping ticks never work the same org twice. A tick
+ * claims the lease (start timestamp in app settings) before running an
+ * org, releases it when the run finishes, and skips orgs with a fresh
+ * lease: per-minute ticks outpace ~1-2 minute enrichment runs, and without
+ * this every other tick would redo the same 500 detail reads. A fresh lease
+ * therefore means a run started and hasn't reported back (running, or
+ * crashed within the window); stale leases expire by time, an unreadable
+ * lease store runs anyway rather than stalling the seed. The check-then-set
+ * races in theory, but the window is milliseconds against a minute cadence
+ * — overlap goes from systematic to negligible.
+ */
+export const SYNC_RUN_LEASE_MS = 120_000;
+
+export async function claimRunLease(db: Db, orgId: string, nowMs: number): Promise<boolean> {
+  try {
+    const raw = await getSetting(db, `sync_run_lease:${orgId}`);
+    const started = Number.parseInt(raw ?? "", 10);
+    if (Number.isFinite(started) && nowMs - started < SYNC_RUN_LEASE_MS) return false;
+    await setSetting(db, `sync_run_lease:${orgId}`, String(nowMs));
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+/** Release a claimed lease. Only the holder calls this (in a finally), so a
+ * denied tick never deletes another tick's lease. Best-effort: a missed
+ * release just leaves the 120s expiry to clean up. */
+export async function releaseRunLease(db: Db, orgId: string): Promise<void> {
+  try {
+    await deleteSetting(db, `sync_run_lease:${orgId}`);
+  } catch {
+    // Expiry covers it.
+  }
+}
+
+/**
  * Cap-aware backfill progress for the status endpoint. The vendor grand
  * total covers all-time history while we only pull 5 years, so rows-over-
  * estimate can never reach 100%; chunk position over the fixed walk can.
@@ -57,7 +121,7 @@ const BATCH_SLICE = 200;
  * view fills before ancient history; the hourly cadence completes the tail.
  */
 const DEFAULT_ENRICH_PER_RUN = 500;
-const DEFAULT_ENRICH_CONCURRENCY = 8;
+const DEFAULT_ENRICH_CONCURRENCY = 16;
 const MAX_ENRICH_CONCURRENCY = 16;
 
 function enrichPerRun(env: Pick<Env, "ANALYTICS_ENRICH_PER_RUN"> | undefined): number {
@@ -404,9 +468,14 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
   // retry, but the final state write below still happens — otherwise the
   // cursor, totals, and even the live flip are lost with it (exactly how one
   // D1 bound-parameter rejection parked whole seeds in limbo).
+  //
+  // Strict phases: while the backfill is unfinished this run fetches listing
+  // windows only. Enrichment starts once the seed is complete (finished here,
+  // or already live from an earlier run) — detail reads never compete with
+  // history windows for the per-run vendor/CPU budget.
   let enriched = 0;
   let enrichFailed = 0;
-  if (!terminal) {
+  if (!terminal && (finished || state.status === "live")) {
     try {
       const result = await enrichMissingServices(adapter, db, orgId, conn.provider, missing, enrichPerRun(env), enrichConcurrency(env));
       enriched = result.done;

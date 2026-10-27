@@ -31,10 +31,17 @@ export interface Env extends BaseEnv {
    */
   ANALYTICS_ENRICH_PER_RUN?: string;
   /**
-   * Concurrent detail reads during enrichment. Default 8 (capped at 16);
+   * Concurrent detail reads during enrichment. Default 16 (capped at 16);
    * ISN is not rate limited but asks for considerate polling.
    */
   ANALYTICS_ENRICH_CONCURRENCY?: string;
+  /**
+   * Dev-only manual cron tick (`POST /api/dev/cron-tick`). `vite dev` never
+   * dispatches cron events, so this flag (set to "1" in `.dev.vars`, never
+   * in production) exposes the scheduled handler over HTTP for local
+   * verification. Runs the exact same job set as the minutely trigger.
+   */
+  DEV_CRON_TRIGGER?: string;
 }
 
 const envSchema = z.object({

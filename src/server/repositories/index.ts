@@ -86,3 +86,7 @@ export async function setSetting(db: Db, key: string, value: string): Promise<vo
     await db.update(appSettings).set({ value, updatedAt: now }).where(eq(appSettings.key, key));
   }
 }
+
+export async function deleteSetting(db: Db, key: string): Promise<void> {
+  await db.delete(appSettings).where(eq(appSettings.key, key));
+}

@@ -1,5 +1,29 @@
 # Decision log SaaS Billing Portal (fresh project, GHL removed)
 
+## 2026-10-26 - Enrichment concurrency 16; next-batch overlap declined (owner decision)
+
+Owner asked two things. (1) Next-batch-on-overlap instead of skip: declined with reasoning — partitioning concurrent claims needs claim markers (2x D1 writes plus stale-claim reaping) or OFFSET paging (incorrect under concurrent writes); the lease stays the mechanism. It is also less needed now: (2) concurrency default raised 8 to 16 (cap stays 16; sandbox tolerated far higher with zero failures), so a 500-order run fits inside the 60s tick and overlap goes rare with the lease as backstop. Live-verified: ticks deliver full 500-order runs back-to-back. Also broadened the status coverage retry from lock-errors-only to any transient error after a Miniflare internal error beat the lock-only matcher and 500'd a poll. Full gate green (642).
+
+## 2026-10-26 - Claim-and-clear run lease (owner decision)
+
+Owner rejected the start-timestamp approximation and asked for a real in-progress check. Stated constraint: stateless isolates cannot observe each other, so exact exclusion needs a Durable Object (declined as heavy); the lease is now claim-at-start plus release-at-finish, so a fresh lease means a run started and hasn't reported back. Crash backstop unchanged (120s expiry), denied ticks never delete another holder's lease, failures release in a finally. Full gate green (642).
+
+## 2026-10-26 - Run lease against overlapping ticks (owner decision)
+
+Owner asked whether a tick can detect in-progress enrichment and skip: it could not (state records run end only), so runs now take a start-of-run lease (`sync_run_lease:{orgId}` in app settings, no migration). A tick skips orgs with a lease fresher than 120s; stale leases from crashed runs expire by time, an unreadable lease store runs anyway, skips count toward neither the 5-org cap nor loop exit, and the residual check-then-set race window is milliseconds against a minute cadence. Billing/trials/briefings keep their own guards and are untouched. Live-verified path unchanged; full gate green (642).
+
+## 2026-10-26 - Live tick gate honors enrichment backlog; status coverage retries locks (owner decision)
+
+Owner ruled the hourly gate for live orgs stands only when enrichment is complete. New `hasEnrichmentBacklog` existence probe (bare non-cancelled orders, indexed, LIMIT 1): a live workspace with a backlog runs every tick until drained, then resumes hourly incrementals; the probe is skipped when the workspace is stale anyway. Live-verified on dev: ticks advanced services 15.0k to 22.6k with no analytics log rows. Also fixed the fallout the heavier write load exposed: the status coverage scan now retries lock errors 3 times instead of 500ing the poll (which stalled the tab driver and wrote unhandled-error rows). Full gate green (641).
+
+## 2026-10-26 - Strict sync phases, zero-data cache guard (owner decision)
+
+Owner asked for three behaviors. (1) Strict phases: a backfilling run now fetches listing windows only; enrichment engages only on finished or already-live runs, so detail reads never compete with history windows for budget. A live workspace stays live through an enrichment blackout (error recorded, no parking as backfilling). (2) The session overview cache never serves or stores zero-job snapshots: mid-seed empties refetch instead of rendering stale "no data", at the cost of refetching genuinely empty orgs per navigation. (3) The live-flip reload verified exactly-once (prev-state compare, non-overlapping polls, request guard) — no change needed; the enrichment-drained flip keeps its own single reload. Tests: enrichment cases now seed a completed seed, plus a new strict-phase test; full gate green (640).
+
+## 2026-10-26 - Minutely analytics cron, error-only analytics logging (owner decision)
+
+Owner asked for the seeding/enrichment tick every minute instead of every 15, and for quiet superadmin logs: no rows for empty runs, and for seeding/enrichment only failures/errors. Shipped: `* * * * *` replaces `*/15 * * * *` (top level and production); the analytics tick's `cron.analytics` info row is gone while `cron.analytics_failed` stays; briefings gated to the hourly expression (they rode every non-daily tick, which would have meant 1,440 due-checks and log rows a day). Billing, trials, retention, and other job logging untouched. Full gate green (639 tests).
+
 ## 2026-10-26 - Enrichment backlog on status; stalled tab driver fixed (owner decision)
 
 Owner reported enrichment stalled with the tab open (400 of 24k served, driver quiet) and asked that progress show until enrichment completes. Two causes, both fixed. First, the tab driver only continued while the overview basket was completely empty, so the first landed services stood it down with tens of thousands of orders still missing detail; driving now keys off a live enrichment backlog served on the status endpoint (global distinct orders versus those with service rows, computed only while live to save the scan during backfills). Second, the banner hid on live regardless of enrichment; it now stays up with determinate progress until the backlog drains, and the charts reload once when it does (forced past the session cache, like the seed-finish reload). Also removed a contested newest-first claim from the shared progress text. Pinned by a status-backlog endpoint test. Typecheck, lint, and suites green; HMR picks it up with no restart.
