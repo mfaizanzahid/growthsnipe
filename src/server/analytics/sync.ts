@@ -59,37 +59,43 @@ export async function hasEnrichmentBacklog(db: Db, orgId: string): Promise<boole
 }
 
 /**
- * Run lease so overlapping ticks never work the same org twice. A tick
- * claims the lease (start timestamp in app settings) before running an
- * org, releases it when the run finishes, and skips orgs with a fresh
- * lease: per-minute ticks outpace ~1-2 minute enrichment runs, and without
- * this every other tick would redo the same 500 detail reads. A fresh lease
- * therefore means a run started and hasn't reported back (running, or
- * crashed within the window); stale leases expire by time, an unreadable
- * lease store runs anyway rather than stalling the seed. The check-then-set
- * races in theory, but the window is milliseconds against a minute cadence
- * — overlap goes from systematic to negligible.
+ * Run lease so overlapping ticks never redo the same work. A tick claims
+ * the lease (start timestamp in app settings) before running an org,
+ * releases it when the run finishes, and skips orgs with a fresh lease:
+ * per-minute ticks outpace minute-plus enrichment runs, and without this
+ * every other tick would redo the same detail reads. Stale leases (crashed
+ * runs) expire by time; an unreadable lease store runs anyway rather than
+ * stalling the seed. The check-then-set races in theory, but the window is
+ * milliseconds against a minute cadence.
  */
 export const SYNC_RUN_LEASE_MS = 120_000;
 
+export function syncRunLeaseKey(orgId: string): string {
+  return `sync_run_lease:${orgId}`;
+}
+
 export async function claimRunLease(db: Db, orgId: string, nowMs: number): Promise<boolean> {
   try {
-    const raw = await getSetting(db, `sync_run_lease:${orgId}`);
+    const raw = await getSetting(db, syncRunLeaseKey(orgId));
     const started = Number.parseInt(raw ?? "", 10);
     if (Number.isFinite(started) && nowMs - started < SYNC_RUN_LEASE_MS) return false;
-    await setSetting(db, `sync_run_lease:${orgId}`, String(nowMs));
+    await setSetting(db, syncRunLeaseKey(orgId), String(nowMs));
     return true;
   } catch {
     return true;
   }
 }
 
-/** Release a claimed lease. Only the holder calls this (in a finally), so a
- * denied tick never deletes another tick's lease. Best-effort: a missed
- * release just leaves the 120s expiry to clean up. */
-export async function releaseRunLease(db: Db, orgId: string): Promise<void> {
+/** Release a claimed lease, but only if it still carries our start
+ * timestamp: a denied tick must never delete another tick's lease, and a
+ * finished holder must not clear a successor's fresh claim. Best-effort: a
+ * missed release just leaves the 120s expiry to clean up. */
+export async function releaseRunLease(db: Db, orgId: string, startedMs: number): Promise<void> {
   try {
-    await deleteSetting(db, `sync_run_lease:${orgId}`);
+    const raw = await getSetting(db, syncRunLeaseKey(orgId));
+    if (raw === String(startedMs)) {
+      await deleteSetting(db, syncRunLeaseKey(orgId));
+    }
   } catch {
     // Expiry covers it.
   }
@@ -120,9 +126,9 @@ const BATCH_SLICE = 200;
  * `/rest/order/{id}`, one GET each). Newest first so the current business
  * view fills before ancient history; the hourly cadence completes the tail.
  */
-const DEFAULT_ENRICH_PER_RUN = 500;
-const DEFAULT_ENRICH_CONCURRENCY = 16;
-const MAX_ENRICH_CONCURRENCY = 16;
+const DEFAULT_ENRICH_PER_RUN = 1000;
+const DEFAULT_ENRICH_CONCURRENCY = 24;
+const MAX_ENRICH_CONCURRENCY = 32;
 
 function enrichPerRun(env: Pick<Env, "ANALYTICS_ENRICH_PER_RUN"> | undefined): number {
   const n = Number.parseInt(env?.ANALYTICS_ENRICH_PER_RUN?.trim() ?? "", 10);
@@ -358,17 +364,26 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
 
   // Head first: the latest window syncs on EVERY run (incremental head).
   // Previously only the cursor advanced, so a live workspace re-read ancient
-  // windows hourly and never picked up new orders. The head also heals rows
-  // whose mapping improved since they were first stored. It never moves the
+  // windows hourly and never picked up new orders. It never moves the
   // cursor and never counts toward the empty-window finish.
+  //
+  // Window enforcement: ISN ignores date bounds and returns out-of-window
+  // rows, so the head response is filtered client-side to its window (rows
+  // without a date are kept). Without this every run re-upserts thousands
+  // of ancient rows (inflating totalFetched and D1 writes), and worse, the
+  // injected old bare rows shift each run's enrichment claim older than the
+  // published claim floor — silently breaking overlap partitioning.
   if (budget > 0) {
     const headTo = new Date(nowMs).toISOString();
     const headFrom = new Date(nowMs - SYNC_CHUNK_DAYS * 86400000).toISOString();
     try {
       const headOrders = await fetchChunkWithRetry(adapter, conn.provider, headFrom, headTo);
-      if (headOrders.length > 0) {
-        await upsertOrders(db, orgId, conn.provider, headOrders, nowSec, missing);
-        rowsUpserted += headOrders.length;
+      const windowed = headOrders.filter(
+        (o) => !o.scheduledAt || (o.scheduledAt >= headFrom && o.scheduledAt <= headTo),
+      );
+      if (windowed.length > 0) {
+        await upsertOrders(db, orgId, conn.provider, windowed, nowSec, missing);
+        rowsUpserted += windowed.length;
       }
       chunksSynced += 1;
       budget -= 1;

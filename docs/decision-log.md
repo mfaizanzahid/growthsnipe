@@ -1,5 +1,21 @@
 # Decision log SaaS Billing Portal (fresh project, GHL removed)
 
+## 2026-10-26 - Batch back to 1000 for fetch and write paths (owner decision)
+
+Owner kept 1000 for both paths instead of 2000-fetch with chunked writes: one constant, fetch and write batches move together per run (~4.5k statements), no chunked-commit machinery. Concurrency stays 24/32. Full gate green (643).
+
+## 2026-10-26 - Back to skip-only, batch 2000, concurrency 24/32 (owner decision)
+
+Owner chose full revert of the floor protocol plus bigger/faster runs. Removed: floor helpers, pre-claim, tail/head floor filters, floor publish/claim plumbing, summary field, and the three partition tests (worker/refresh keep claim/skip/release with start-compare). Batch 1000 to 2000, concurrency default 16 to 24 (max 32). Live-verified: one tick delivered a full 2000 batch (+2000 coverage, zero failures). Caveat found live: the ~11k-statement writeBatch wedges Miniflare (cascading internal errors on unrelated queries) and stretches runs to ~10 min wall locally — the write path, not the vendor, is now the bottleneck; chunked commits would be the fix, left for a follow-up. Prod needs paid subrequest headroom (2000 external calls/run). Full gate green (643).
+
+## 2026-10-26 - Manual Sync stands down on held lease with 409 (owner decision)
+
+Owner asked that Sync clicks skip (with a visible error) when a cron run overlaps. The refresh route now claims the run lease first and answers 409 ("A scheduled sync is already running for this workspace. Wait a minute and try again.") when another tick holds it; explicit clicks toast the message via the existing error path while silent auto-driver calls stay quiet. Symmetry the other way too: the click holds the lease during its run and publishes its claim floor, so overlapping ticks partition under it instead of redoubling the batch. Full gate green (645).
+
+## 2026-10-26 - Batch 1000 with partitioned overlap via lease floors (owner decision)
+
+Owner asked for batch 1000 and for overlapping runs to cover the next batch instead of skipping. Shipped: default per-run 500 to 1000; lease values carry an optional claim floor (`startedMs|floorTs`) with parse/format helpers; the run publishes its floor early (pre-claim before the slow head fetch, republished at the final claim) via `onEnrichClaim`; an overlapping tick claims bare rows strictly older than the holder's floor while its own fresh-window rows stay unfiltered; release compares the holder's start prefix so a finisher never clears a successor's lease. Tie-skew at the floor is temporary (next unpartitioned claim covers it). One live subtlety found by trace: the floor must publish before the head fetch, otherwise late-tick overlaps only ever see floor-less leases and skip. Live-proven with temp traces (since removed): a partitioned run delivered a full disjoint 1000 batch, zero failures, coverage 16k to 18k across the overlap window. Caveats stated: ~2x D1 write rate per run and 1000 external subrequests per run (verified doc reading allows 10k on paid; confirm prod plan), CPU 30s per sub-hour trigger stays the binding compute budget. Full gate green (645).
+
 ## 2026-10-26 - Enrichment concurrency 16; next-batch overlap declined (owner decision)
 
 Owner asked two things. (1) Next-batch-on-overlap instead of skip: declined with reasoning — partitioning concurrent claims needs claim markers (2x D1 writes plus stale-claim reaping) or OFFSET paging (incorrect under concurrent writes); the lease stays the mechanism. It is also less needed now: (2) concurrency default raised 8 to 16 (cap stays 16; sandbox tolerated far higher with zero failures), so a 500-order run fits inside the 60s tick and overlap goes rare with the lease as backstop. Live-verified: ticks deliver full 500-order runs back-to-back. Also broadened the status coverage retry from lock-errors-only to any transient error after a Miniflare internal error beat the lock-only matcher and 500'd a poll. Full gate green (642).

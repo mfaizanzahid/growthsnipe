@@ -19,7 +19,7 @@ import type { Db } from "../repositories/db";
 import { drizzleStore } from "../repositories/billing";
 import { orgAccess, type OrgAccess } from "../billing/access";
 import { orgDashboardLayouts, orgInspectorTargets, orgOrders, orgOrderServices, orgSyncState, userDashboardPrefs } from "../db/schema";
-import { backfillProgress, runAnalyticsSyncForOrg } from "../analytics/sync";
+import { backfillProgress, claimRunLease, releaseRunLease, runAnalyticsSyncForOrg } from "../analytics/sync";
 import {
   decodeCursor,
   getAgentLeaderboard,
@@ -168,8 +168,20 @@ export function createAnalyticsRoutes(deps: {
     const rows = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
     const last = rows[0]?.lastSyncedAt ?? 0;
     if (Math.floor(Date.now() / 1000) - last < 10) return c.json({ summary: null, cooledDown: true });
-    const summary = await runAnalyticsSyncForOrg(c.env as Env, db, orgId, { maxChunks: 2 });
-    return c.json({ summary });
+    // A scheduled tick already working this org wins: the click stands down
+    // with a 409 so the owner sees why (explicit clicks toast the message;
+    // silent auto-driver calls stay quiet). Otherwise the click claims the
+    // lease itself so overlapping ticks skip it instead of redoubling work.
+    const nowMs = Date.now();
+    if (!(await claimRunLease(db, orgId, nowMs))) {
+      return c.json({ error: "A scheduled sync is already running for this workspace. Wait a minute and try again." }, 409);
+    }
+    try {
+      const summary = await runAnalyticsSyncForOrg(c.env as Env, db, orgId, { maxChunks: 2 });
+      return c.json({ summary });
+    } finally {
+      await releaseRunLease(db, orgId, nowMs);
+    }
   });
 
   routes.get("/api/analytics/overview", guard, mem("viewer", true), gated(), async (c) => {

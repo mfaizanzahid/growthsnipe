@@ -745,8 +745,34 @@ describe("analytics sync resilience", () => {
     expect(services).toHaveLength(0);
   });
 
-  it("reports an enrichment backlog only for bare non-cancelled orders", async () => {
-    // The per-minute tick gates live workspaces on this: hourly throttle
+  it("filters head responses to the requested window (ISN ignores date bounds)", async () => {
+    // ISN returns out-of-window rows; storing them reinflates totalFetched
+    // every run and injects old bare rows that shift enrichment claims older
+    // than published floors (breaking overlap partitioning). Rows without a
+    // date are kept (unplaceable).
+    const db = memoryDb();
+    await seedConnection(db, "isn");
+    const row = (id: string, scheduledAt?: string): OrderRecord => ({
+      id, status: "completed", scheduledAt, total: 50000, currency: "USD", details: {},
+    });
+    const adapter = fakeAdapter({
+      async searchOrders() {
+        return {
+          items: [
+            row("ancient", "2021-05-01T10:00:00Z"),
+            row("fresh", new Date(NOW - 86400000).toISOString()),
+            row("nodate"),
+          ],
+        };
+      },
+    });
+    const summary = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter });
+    expect(summary.error).toBeUndefined();
+    const rows = await db.select().from(schema.orgOrders);
+    expect(rows.map((r) => r.providerOrderId).sort()).toEqual(["fresh", "nodate"]);
+  });
+
+  it("reports an enrichment backlog only for bare non-cancelled orders", async () => {    // The per-minute tick gates live workspaces on this: hourly throttle
     // stands only when enrichment is complete.
     const db = memoryDb();
     await seedConnection(db, "isn");
@@ -776,12 +802,15 @@ describe("analytics sync resilience", () => {
     expect(await claimRunLease(db, "o2", NOW + 60_000)).toBe(true);
     // A stale lease (crashed run) expires by time.
     expect(await claimRunLease(db, ORG, NOW + 120_001)).toBe(true);
-    // Release clears the lease: the next tick runs immediately instead of
-    // waiting out the window.
-    await releaseRunLease(db, ORG);
+    // Release clears the holder's own lease: the next tick runs immediately
+    // instead of waiting out the window.
+    await releaseRunLease(db, ORG, NOW + 120_001);
     expect(await claimRunLease(db, ORG, NOW + 120_002)).toBe(true);
+    // Release never deletes another holder's lease.
+    await releaseRunLease(db, ORG, NOW + 120_002 + 1);
+    expect(await claimRunLease(db, ORG, NOW + 120_003)).toBe(false);
     // Releasing what was never claimed is a no-op, never an error.
-    await releaseRunLease(db, "o3");
+    await releaseRunLease(db, "o3", NOW);
     expect(await claimRunLease(db, "o3", NOW)).toBe(true);
   });
 });

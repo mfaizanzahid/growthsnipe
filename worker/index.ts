@@ -349,7 +349,7 @@ const workerHandlers = {
                   await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 4, nowMs: now });
                   synced += 1;
                 } finally {
-                  await releaseRunLease(db, s.organizationId);
+                  await releaseRunLease(db, s.organizationId, now);
                 }
               } else if (s.status === "live") {
                 // The hourly gate stands only when enrichment is complete: a
@@ -360,12 +360,16 @@ const workerHandlers = {
                 const stale = (s.lastSyncedAt ?? 0) < hourAgo;
                 const draining = stale ? false : await hasEnrichmentBacklog(db, s.organizationId);
                 if (!(stale || draining)) continue;
+                // Skip orgs another tick is already working (lease): overlapping
+                // runs would redo the same batch. Skips don't count toward the
+                // cap and don't stop the loop. The holder releases in a
+                // finally so failures can't park it.
                 if (!(await claimRunLease(db, s.organizationId, now))) continue;
                 try {
                   await runAnalyticsSyncForOrg(env, db, s.organizationId, { maxChunks: 1, nowMs: now });
                   synced += 1;
                 } finally {
-                  await releaseRunLease(db, s.organizationId);
+                  await releaseRunLease(db, s.organizationId, now);
                 }
               }
               if (synced >= 5) break;

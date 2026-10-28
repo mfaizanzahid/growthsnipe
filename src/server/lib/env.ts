@@ -26,12 +26,12 @@ export interface Env extends BaseEnv {
   ISN_SAFETY_LIMIT?: string;
   /**
    * Per-order detail reads per sync run for ISN service enrichment
-   * (no bulk endpoint exists). Default 500; raise to fill histories faster
+   * (no bulk endpoint exists). Default 1000; raise to fill histories faster
    * at the cost of more vendor requests per run, lower to be gentler.
    */
   ANALYTICS_ENRICH_PER_RUN?: string;
   /**
-   * Concurrent detail reads during enrichment. Default 16 (capped at 16);
+   * Concurrent detail reads during enrichment. Default 24 (capped at 32);
    * ISN is not rate limited but asks for considerate polling.
    */
   ANALYTICS_ENRICH_CONCURRENCY?: string;
