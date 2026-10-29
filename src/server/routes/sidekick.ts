@@ -13,6 +13,7 @@ import {
   type SessionResolver,
 } from "../middleware";
 import type { Auth } from "../auth";
+import type { SyncWorkflowBinding } from "../lib/env";
 import type { Db } from "../repositories/db";
 import { drizzleSidekickStore, type BusinessProfileInput, type SidekickStore } from "../sidekick/store";
 import { drizzleStore } from "../repositories/billing";
@@ -26,6 +27,7 @@ import { IsnClient } from "../providers/isn/client";
 import { buildManagementSnapshot, type ManagementSnapshot } from "../sidekick/management";
 import { orgSyncState } from "../db/schema";
 import { runFullBackfill } from "../analytics/sync";
+import { ensureListingLink } from "../analytics/sync-tasks";
 import {
   HOURLY_LOCAL_TIME_RE,
   isValidTimeZone,
@@ -337,10 +339,25 @@ export function createSidekickRoutes(deps: {
       // meanwhile. Best effort: the hourly cron resumes if this run is cut
       // short, and unit-test harnesses without an execution context simply
       // leave the backfill to the cron.
+      //
+      // Workflow mode instead only triggers the first listing link: burst
+      // work happens inside instances, and the chain plus the supervisor
+      // carry the seed from there.
       try {
         const db = c.get("db") as Db;
         const now = Math.floor(Date.now() / 1000);
         await db.insert(orgSyncState).values({ organizationId: orgId, provider, status: "backfilling", updatedAt: now }).onConflictDoNothing();
+        const viaWorkflow = (env as unknown as { ANALYTICS_SYNC_VIA_WORKFLOW?: string }).ANALYTICS_SYNC_VIA_WORKFLOW === "1";
+        if (viaWorkflow) {
+          const link = await ensureListingLink(
+            (env as unknown as { SYNC_WORKFLOW?: SyncWorkflowBinding }).SYNC_WORKFLOW,
+            db,
+            orgId,
+            Date.now(),
+          ).catch(() => null);
+          console.log(`[analytics] seed-on-connect org=${orgId} workflow link=${link?.id ?? "none"}`);
+          return c.json({ connection });
+        }
         const task = runFullBackfill(env, db, orgId).then(
           (s) => console.log(`[analytics] seed-on-connect org=${orgId} status=${s.status} chunks=${s.chunksSynced} rows=${s.rowsUpserted}`),
           (err) => console.error(`[analytics] seed-on-connect failed org=${orgId}`, err),

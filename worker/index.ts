@@ -35,6 +35,8 @@ import {
 } from "../src/server/lib/app-logs";
 import { planCron } from "../src/server/lib/cron-plan";
 import { claimRunLease, hasEnrichmentBacklog, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
+import { runWorkflowSupervisor } from "../src/server/analytics/sync-tasks";
+import { SyncWorkflow } from "../src/server/analytics/sync-workflow";
 import { orgSyncState } from "../src/server/db/schema";
 
 const billingApp = createApp();
@@ -176,11 +178,29 @@ app.post("/api/dev/cron-tick", async (c) => {
   );
   return c.json({ ok: true, cron });
 });
+// Dev-only workflow instance inspector (same flag as cron-tick): returns the
+// status of one instance by id so wedged links/parents are visible locally.
+app.post("/api/dev/workflow-status", async (c) => {
+  if (c.env.DEV_CRON_TRIGGER !== "1") return c.json({ error: "Not found" }, 404);
+  const body = await c.req.json().catch(() => ({})) as { id?: unknown };
+  if (typeof body.id !== "string" || body.id === "") return c.json({ error: "id required" }, 422);
+  const binding = c.env.SYNC_WORKFLOW;
+  if (!binding) return c.json({ error: "no binding" }, 500);
+  try {
+    const handle = await binding.get(body.id);
+    const st = await handle.status().catch((err: unknown) => ({ status: "unreadable", error: String(err) }));
+    return c.json({ ok: true, id: body.id, status: st });
+  } catch (err) {
+    return c.json({ ok: false, id: body.id, error: err instanceof Error ? err.message : String(err) });
+  }
+});
 app.all("/api/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 app.all("/auth/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 app.all("/webhooks/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
   app.get("/health", (c) => c.json({ ok: true, service: "growthsnipe" }));
 app.all("*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
+
+export { SyncWorkflow };
 
 const workerHandlers = {
   fetch: app.fetch,
@@ -331,9 +351,26 @@ const workerHandlers = {
     // service enrichment once live. Live workspaces stay throttled to hourly
     // incrementals by their own last-synced check below. At a tick a minute,
     // successful and empty runs stay silent: only failures write a log row.
+    //
+    // Workflow mode (ANALYTICS_SYNC_VIA_WORKFLOW=1) supervises instead of
+    // running: listing links and enrichment parents are ensured, drained
+    // live workspaces get inline hourly heads, and burst work happens only
+    // inside instances. Cron-inline stays the default path.
     if (plan.runAnalytics) {
-      jobs.push(
-        (async () => {
+      if (env.ANALYTICS_SYNC_VIA_WORKFLOW === "1") {
+        jobs.push(
+          (async () => {
+            try {
+              await runWorkflowSupervisor(env.SYNC_WORKFLOW, env, db, now);
+            } catch (err) {
+              console.error("[cron] analytics supervisor failed", err);
+              await writeAppLog(db, { level: "error", event: "cron.analytics_failed", surface: "cron", message: err instanceof Error ? err.message : "Analytics supervisor failed", detail: err });
+            }
+          })(),
+        );
+      } else {
+        jobs.push(
+          (async () => {
           try {
             const states = await db.select().from(orgSyncState).limit(20);
             const hourAgo = Math.floor(now / 1000) - 3600;
@@ -380,6 +417,7 @@ const workerHandlers = {
           }
         })(),
       );
+      }
     }
 
     // Retention sweep: platform logs older than the window are deleted once a

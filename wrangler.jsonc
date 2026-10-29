@@ -25,6 +25,13 @@
       "migrations_dir": "./db/migrations"
     }
   ],
+  "workflows": [
+    {
+      "name": "sync-workflow",
+      "binding": "SYNC_WORKFLOW",
+      "class_name": "SyncWorkflow"
+    }
+  ],
   "vars": {
     "SAFEPAY_ENV": "sandbox",
     "SAFEPAY_API_BASE": "https://sandbox.api.getsafepay.com",

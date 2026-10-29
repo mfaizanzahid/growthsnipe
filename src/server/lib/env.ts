@@ -42,6 +42,40 @@ export interface Env extends BaseEnv {
    * verification. Runs the exact same job set as the minutely trigger.
    */
   DEV_CRON_TRIGGER?: string;
+  /** Sync Workflow entrypoint binding (workflows in wrangler.jsonc). */
+  SYNC_WORKFLOW?: SyncWorkflowBinding;
+  /**
+   * Route per-org sync through durable Workflow links + enrichment fan-out
+   * instead of the inline loop ("1"). Default off: cron-inline stays the
+   * path until this is deliberately enabled per environment.
+   */
+  ANALYTICS_SYNC_VIA_WORKFLOW?: string;
+  /** Orders per enrichment leaf (default 45, max 45: the 50-subrequest cap). */
+  SYNC_WORKFLOW_CHUNK?: string;
+  /** Leaf instances per fan-out wave (default 50, max 50: well under the
+   * 100-concurrent free cap with margin for queued overflow). */
+  SYNC_WORKFLOW_FANOUT?: string;
+  /** Vendor detail reads inside one leaf (default 4, max 8: leaves already
+   * run 50-way parallel, so per-leaf concurrency stays low). */
+  SYNC_WORKFLOW_CHILD_CONCURRENCY?: string;
+  /** Parent pacing sleep between waves, seconds (default 15, max 3600). */
+  SYNC_WORKFLOW_PACE_SECONDS?: string;
+}
+
+/** Minimal Workflow binding surface used by triggers and tasks. */
+export interface SyncWorkflowInstanceHandle {
+  id: string;
+  status(): Promise<{
+    status: string;
+    error?: unknown;
+  }>;
+  delete(): Promise<void>;
+}
+
+export interface SyncWorkflowBinding {
+  create(options: { id?: string; params?: unknown }): Promise<SyncWorkflowInstanceHandle>;
+  createBatch(batch: Array<{ id?: string; params?: unknown }>): Promise<SyncWorkflowInstanceHandle[]>;
+  get(id: string): Promise<SyncWorkflowInstanceHandle>;
 }
 
 const envSchema = z.object({

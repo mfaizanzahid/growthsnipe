@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { and, desc, eq, gte, isNotNull, lt, ne, sql } from "drizzle-orm";
 import type { Env } from "../types";
+import type { Env as WorkflowEnv } from "../lib/env";
 import {
   contextMiddleware,
   createContextMiddleware,
@@ -19,7 +20,8 @@ import type { Db } from "../repositories/db";
 import { drizzleStore } from "../repositories/billing";
 import { orgAccess, type OrgAccess } from "../billing/access";
 import { orgDashboardLayouts, orgInspectorTargets, orgOrders, orgOrderServices, orgSyncState, userDashboardPrefs } from "../db/schema";
-import { backfillProgress, claimRunLease, releaseRunLease, runAnalyticsSyncForOrg } from "../analytics/sync";
+import { backfillProgress, claimRunLease, hasEnrichmentBacklog, NO_CHARGE_MARKER, releaseRunLease, runAnalyticsSyncForOrg } from "../analytics/sync";
+import { buildOrgAdapter, ensureEnrichmentParent, ensureListingLink } from "../analytics/sync-tasks";
 import {
   decodeCursor,
   getAgentLeaderboard,
@@ -168,6 +170,36 @@ export function createAnalyticsRoutes(deps: {
     const rows = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
     const last = rows[0]?.lastSyncedAt ?? 0;
     if (Math.floor(Date.now() / 1000) - last < 10) return c.json({ summary: null, cooledDown: true });
+    const env = c.env as Env;
+    const wenv = c.env as unknown as WorkflowEnv;
+    // Workflow mode: pure trigger, zero inline vendor I/O for bursts. Resume
+    // listing, ensure the parent, and run an inline head only when the
+    // workspace is live, drained, and stale (explicit click, bounded work).
+    // The dashboard ignores the response body and reloads status itself.
+    if (wenv.ANALYTICS_SYNC_VIA_WORKFLOW === "1") {
+      const nowMs = Date.now();
+      const st = rows[0];
+      if (!st || st.status === "backfilling") {
+        await ensureListingLink(wenv.SYNC_WORKFLOW, db, orgId, nowMs).catch(() => null);
+      } else if (st.status === "live") {
+        const org = await buildOrgAdapter(wenv, db, orgId).catch(() => null);
+        if (org) await ensureEnrichmentParent(wenv.SYNC_WORKFLOW, db, orgId, org.provider, nowMs).catch(() => null);
+        const hourAgo = Math.floor(nowMs / 1000) - 3600;
+        const stale = (st.lastSyncedAt ?? 0) < hourAgo;
+        const draining = stale ? false : await hasEnrichmentBacklog(db, orgId).catch(() => false);
+        if (stale || draining) {
+          if (!(await claimRunLease(db, orgId, nowMs))) {
+            return c.json({ error: "A scheduled sync is already running for this workspace. Wait a minute and try again." }, 409);
+          }
+          try {
+            await runAnalyticsSyncForOrg(env, db, orgId, { maxChunks: 1, head: true, enrich: false, nowMs });
+          } finally {
+            await releaseRunLease(db, orgId, nowMs);
+          }
+        }
+      }
+      return c.json({ summary: null, triggered: true });
+    }
     // A scheduled tick already working this org wins: the click stands down
     // with a 409 so the owner sees why (explicit clicks toast the message;
     // silent auto-driver calls stay quiet). Otherwise the click claims the
@@ -447,6 +479,7 @@ async function buildOverviewSql(db: Db, orgId: string, w: OverviewWindow) {
       .where(
         and(
           eq(orgOrderServices.organizationId, orgId),
+          ne(orgOrderServices.name, NO_CHARGE_MARKER),
           ne(orgOrders.status, "cancelled"),
           gte(orgOrders.scheduledAt, w.from),
           lt(orgOrders.scheduledAt, w.to),
@@ -639,6 +672,7 @@ async function buildOverviewLegacy(db: Db, orgId: string, w: OverviewWindow) {
     .where(
       and(
         eq(orgOrderServices.organizationId, orgId),
+        ne(orgOrderServices.name, NO_CHARGE_MARKER),
         ne(orgOrders.status, "cancelled"),
         gte(orgOrders.scheduledAt, w.from),
         lt(orgOrders.scheduledAt, w.to),

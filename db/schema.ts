@@ -386,7 +386,6 @@ export {
   orgOrders,
   orgOrderServices,
   orgOrderInspectors,
-  orgAgents,
   orgInspectorTargets,
   orgDashboardLayouts,
   userDashboardPrefs,

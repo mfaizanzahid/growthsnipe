@@ -28,6 +28,7 @@ import {
 const MIG_0035 = readFileSync(new URL("../db/migrations/0035_org_orders_perf_idx.sql", import.meta.url), "utf8");
 const MIG_0036 = readFileSync(new URL("../db/migrations/0036_org_order_inspectors.sql", import.meta.url), "utf8");
 const MIG_0037 = readFileSync(new URL("../db/migrations/0037_org_order_inspectors_backfill.sql", import.meta.url), "utf8");
+const MIG_0039 = readFileSync(new URL("../db/migrations/0039_drop_redundant_warehouse.sql", import.meta.url), "utf8");
 
 const BASE_DDL = `
   CREATE TABLE org_orders (
@@ -95,6 +96,38 @@ describe("migrations 0035/0036", () => {
     const tables = (sqlite.prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`).all() as Array<{ name: string }>).map((r) => r.name);
     expect(tables).toContain("org_order_inspectors");
     expect(tables).toContain("org_agents");
+  });
+
+  it("0039 drops redundant indexes and the write-only agents table", () => {
+    const { sqlite } = memoryDb();
+    sqlite.exec(MIG_0035);
+    sqlite.exec(MIG_0036);
+    sqlite.exec(MIG_0039);
+    const names = indexNames(sqlite);
+    // Superseded / redundant indexes are gone; covering composites stay.
+    expect(names).not.toContain("org_orders_org_status_idx");
+    expect(names).not.toContain("org_orders_org_scheduled_idx");
+    expect(names).not.toContain("org_order_inspectors_org_order_idx");
+    for (const want of [
+      "org_orders_org_provider_order_idx",
+      "org_orders_org_sched_id_idx",
+      "org_orders_org_status_sched_idx",
+      "org_orders_org_agent_sched_idx",
+      "org_order_services_org_name_idx",
+      "org_order_inspectors_org_insp_idx",
+    ]) {
+      expect(names).toContain(want);
+    }
+    const tables = (sqlite.prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`).all() as Array<{ name: string }>).map((r) => r.name);
+    expect(tables).not.toContain("org_agents");
+    // Re-runnable: every statement is IF EXISTS guarded.
+    expect(() => sqlite.exec(MIG_0039)).not.toThrow();
+    for (const line of MIG_0039.split("\n")) {
+      const t = line.trim().toUpperCase();
+      if (t.startsWith("DROP INDEX") || t.startsWith("DROP TABLE")) {
+        expect(t).toMatch(/IF EXISTS/);
+      }
+    }
   });
 
   it("is re-runnable for indexes and junction (column add is single-apply, like all repo migrations)", () => {

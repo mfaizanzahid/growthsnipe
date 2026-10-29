@@ -6,7 +6,7 @@ import type { Db } from "../src/server/repositories/db";
 import type { Env } from "../src/server/lib/env";
 import type { BusinessProviderAdapter, OrderRecord } from "../src/server/providers/types";
 import { encryptJson } from "../src/server/lib/crypto";
-import { backfillProgress, claimRunLease, extractBasket, hasEnrichmentBacklog, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
+import { backfillProgress, claimRunLease, extractBasket, hasEnrichmentBacklog, mergeSyncCursor, mergeSyncFetched, mergeSyncStatus, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
 import { extractAgentContact } from "../src/server/analytics/sync";
 
 const KEY = "test-sync-key-must-be-long-enough-1234";
@@ -52,10 +52,6 @@ function memoryDb(): Db {
     CREATE TABLE org_order_services (
       id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, order_id TEXT NOT NULL,
       name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'base', amount_minor INTEGER
-    );
-    CREATE TABLE org_agents (
-      id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, name TEXT, email TEXT, phone TEXT,
-      first_seen_at TEXT, last_seen_at TEXT, order_count INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE IF NOT EXISTS app_settings (
       key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL
@@ -134,8 +130,7 @@ function fakeAdapter(impl: Partial<BusinessProviderAdapter> & { calls?: Array<{ 
   } as unknown as BusinessProviderAdapter;
 }
 
-describe("backfill progress", () => {
-  // NOW is 2026-10-23T12:00Z: position is whole 90-day chunks from the
+describe("backfill progress", () => {  // NOW is 2026-10-23T12:00Z: position is whole 90-day chunks from the
   // cursor, clamped to the 21-chunk walk; live is always complete.
   it("derives walk position from the cursor, complete when live", () => {
     expect(backfillProgress(null, "backfilling", NOW)).toEqual({ done: 0, total: 25 });
@@ -175,9 +170,9 @@ describe("basket extraction", () => {
     expect(
       extractBasket({ serviceNames: "General Home Inspection, Radon", serviceAddOnNames: "Radon, WDO" }, undefined),
     ).toEqual([
-      { name: "General Home Inspection", kind: "base" },
-      { name: "Radon", kind: "base" },
-      { name: "WDO", kind: "addon" },
+      { name: "General Home Inspection", kind: "base", amountMinor: null },
+      { name: "Radon", kind: "base", amountMinor: null },
+      { name: "WDO", kind: "addon", amountMinor: null },
     ]);
   });
 
@@ -198,9 +193,9 @@ describe("basket extraction", () => {
         undefined,
       ),
     ).toEqual([
-      { name: "General Home Inspection", kind: "base" },
-      { name: "Wind Mitigation - w/ HI", kind: "base" },
-      { name: "Buyer's Complete Bundle", kind: "package" },
+      { name: "General Home Inspection", kind: "base", amountMinor: null },
+      { name: "Wind Mitigation - w/ HI", kind: "base", amountMinor: null },
+      { name: "Buyer's Complete Bundle", kind: "package", amountMinor: null },
     ]);
   });
 
@@ -224,8 +219,8 @@ describe("basket extraction", () => {
         undefined,
       ),
     ).toEqual([
-      { name: "General Home Inspection", kind: "base" },
-      { name: "Wind Mitigation with Home Inspection", kind: "base" },
+      { name: "General Home Inspection", kind: "base", amountMinor: 38900 },
+      { name: "Wind Mitigation with Home Inspection", kind: "base", amountMinor: 0 },
     ]);
   });
 
@@ -238,7 +233,63 @@ describe("basket extraction", () => {
         },
         undefined,
       ),
-    ).toEqual([{ name: "General Home Inspection", kind: "base" }]);
+    ).toEqual([{ name: "General Home Inspection", kind: "base", amountMinor: null }]);
+  });
+
+  it("maps fee amounts to minor units (major-unit dollars per total_fee convention)", () => {    // fees[].amount is major units: a $389 inspection reads 389, a $10
+    // financing fee reads 10. Non-numeric and negative amounts map to null
+    // (kept, never guessed); only an explicit numeric zero is zero.
+    expect(
+      extractBasket(
+        {
+          services: [],
+          packages: [],
+          fees: [
+            { id: "a", amount: 389, name: "General Home Inspection" },
+            { id: "b", amount: 10, name: "FlexFund Fee" },
+            { id: "c", amount: 0, name: "Waived Trip" },
+            { id: "d", amount: "25.5", name: "String Fee" },
+            { id: "e", amount: -5, name: "Credit" },
+            { id: "f", name: "No Amount" },
+          ],
+        },
+        undefined,
+      ),
+    ).toEqual([
+      { name: "General Home Inspection", kind: "base", amountMinor: 38900 },
+      { name: "FlexFund Fee", kind: "base", amountMinor: 1000 },
+      { name: "Waived Trip", kind: "base", amountMinor: 0 },
+      { name: "String Fee", kind: "base", amountMinor: 2550 },
+      { name: "Credit", kind: "base", amountMinor: null },
+      { name: "No Amount", kind: "base", amountMinor: null },
+    ]);
+  });
+
+  it("attaches fee amounts to same-name services without adding rows", () => {
+    // The common case the nulls came from: services[] names the work while
+    // fees[] carries the money. Exact cleaned-name match attaches the amount
+    // (no new rows, no double count); ambiguous or missing matches stay null.
+    expect(
+      extractBasket(
+        {
+          services: [
+            { uuid: "a", name: "General Home Inspection" },
+            { uuid: "b", name: "Radon" },
+            { uuid: "c", name: "Mold Testing" },
+          ],
+          fees: [
+            { id: "f1", amount: 160, name: "General Home Inspection" },
+            { id: "f2", amount: 0, name: "Radon" },
+            { id: "f3", amount: 50, name: "Radon" },
+          ],
+        },
+        undefined,
+      ),
+    ).toEqual([
+      { name: "General Home Inspection", kind: "base", amountMinor: 16000 },
+      { name: "Radon", kind: "base", amountMinor: null },
+      { name: "Mold Testing", kind: "base", amountMinor: null },
+    ]);
   });
 });
 
@@ -743,6 +794,94 @@ describe("analytics sync resilience", () => {
     expect(summary.enrichFailed).toBe(0);
     const services = await db.select().from(schema.orgOrderServices);
     expect(services).toHaveLength(0);
+  });
+
+  it("merges concurrent state writes monotonically (no cursor regression)", async () => {
+    // A stale overlapping run must never move the cursor backward or shrink
+    // totals: last-writer-wins across concurrent links/ticks/clicks parked a
+    // live seed behind already-completed links.
+    expect(mergeSyncCursor("2022-08-21T10:00:00Z", "2022-05-01T10:00:00Z")).toBe("2022-05-01T10:00:00Z");
+    expect(mergeSyncCursor("2022-05-01T10:00:00Z", "2022-08-21T10:00:00Z")).toBe("2022-05-01T10:00:00Z");
+    expect(mergeSyncCursor(null, "2022-08-21T10:00:00Z")).toBe("2022-08-21T10:00:00Z");
+    expect(mergeSyncCursor("2022-08-21T10:00:00Z", null)).toBe("2022-08-21T10:00:00Z");
+    expect(mergeSyncCursor(null, null)).toBeNull();
+    expect(mergeSyncFetched(24186, 20000)).toBe(24186);
+    expect(mergeSyncFetched(null, 20000)).toBe(20000);
+    expect(mergeSyncFetched(undefined, 20000)).toBe(20000);
+    // Stale runs keep live rows live; fresh runs pass through everything.
+    expect(mergeSyncStatus("live", "backfilling", "backfilling")).toBe("live");
+    expect(mergeSyncStatus("live", "live", "backfilling")).toBe("backfilling");
+    expect(mergeSyncStatus("live", "backfilling", "error")).toBe("error");
+    expect(mergeSyncStatus("backfilling", "backfilling", "error")).toBe("error");
+    expect(mergeSyncStatus(null, "backfilling", "backfilling")).toBe("backfilling");
+  });
+
+  it("marks all-zero detail reads so they are never re-claimed", async () => {
+    // A detail read that succeeds but yields nothing chargeable writes one
+    // marker row: the order counts as enrichment-complete (claim probes key
+    // off row presence) while never reading as a purchased service. Failed
+    // reads throw instead and retry.
+    const db = memoryDb();
+    await seedConnection(db, "isn");
+    await seedLiveState(db);
+    await db.insert(schema.orgOrders).values({
+      id: `${ORG}:isn:z`, organizationId: ORG, provider: "isn", providerOrderId: "z",
+      status: "completed", scheduledAt: "2026-01-01T10:00:00Z", syncedAt: 1,
+    });
+    const adapter = fakeAdapter({
+      async searchOrders() {
+        return { items: [] };
+      },
+      async getOrder(id: string) {
+        return { id, details: { services: [], packages: [], fees: [{ id: "f", amount: 0, name: "Waived" }] } } as unknown as OrderRecord;
+      },
+    });
+    const first = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter });
+    expect(first.error).toBeUndefined();
+    expect(first.enriched).toBe(1);
+    const services = await db.select().from(schema.orgOrderServices);
+    expect(services).toHaveLength(1);
+    expect(services[0]).toMatchObject({ orderId: `${ORG}:isn:z`, name: "__no_charge__", amountMinor: 0 });
+    // Second run: the marked order is not claimed again.
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(false);
+    const second = await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter });
+    expect(second.enriched).toBe(0);
+  });
+
+  it("skips unchanged rows on re-sync (change detection)", async () => {
+    // Steady-state heads re-fetch thousands of identical rows; each skipped
+    // row saves ~7 D1 writes (row + indexes). syncedAt going stale on
+    // skipped rows is unobservable (never read anywhere).
+    const db = memoryDb();
+    await seedConnection(db, "isn");
+    const row = {
+      id: "7", status: "completed", scheduledAt: new Date(NOW - 86400000).toISOString(),
+      total: 50000, currency: "USD", inspectorName: "Sam", details: {},
+    } as OrderRecord;
+    const adapter = fakeAdapter({
+      async searchOrders() {
+        return { items: [row] };
+      },
+    });
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter });
+    const before = await db.select().from(schema.orgOrders);
+    expect(before).toHaveLength(1);
+    const syncedAt = before[0]?.syncedAt;
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW + 3600000, adapter });
+    const after = await db.select().from(schema.orgOrders);
+    expect(after).toHaveLength(1);
+    // Untouched: identical re-sync wrote nothing (syncedAt frozen).
+    expect(after[0]?.syncedAt).toBe(syncedAt);
+    // A changed row still rewrites.
+    const changed = { ...row, total: 60000 };
+    const adapter2 = fakeAdapter({
+      async searchOrders() {
+        return { items: [changed] };
+      },
+    });
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW + 7200000, adapter: adapter2 });
+    const updated = await db.select().from(schema.orgOrders);
+    expect(updated[0]?.totalMinor).toBe(60000);
   });
 
   it("filters head responses to the requested window (ISN ignores date bounds)", async () => {

@@ -136,4 +136,32 @@ describe("overview service coverage", () => {
     expect(body.overview.basket).toHaveLength(10);
     expect(body.overview.serviceCoverage.orders).toBe(3);
   });
+
+  it("excludes the no-charge marker from the basket but counts it as covered", async () => {
+    const { db, sqlite } = memoryDb();
+    sqlite.exec(`
+      INSERT INTO org_orders (id, organization_id, provider, provider_order_id, status, scheduled_at, total_minor, synced_at) VALUES
+        ('o1:isn:a', 'o1', 'isn', 'a', 'completed', '2026-03-01T10:00:00Z', 50000, 1),
+        ('o1:isn:b', 'o1', 'isn', 'b', 'completed', '2026-03-02T10:00:00Z', 60000, 1);
+      INSERT INTO org_order_services (id, organization_id, order_id, name, kind, amount_minor) VALUES
+        ('o1:isn:a:svc:0', 'o1', 'o1:isn:a', 'General Home Inspection', 'base', 50000),
+        ('o1:isn:b:svc:__no_charge__', 'o1', 'o1:isn:b', '__no_charge__', 'base', 0);
+    `);
+    const app = buildApp(db);
+    const res = await app.request(
+      "/api/analytics/overview?orgId=o1&from=2026-01-01T00:00:00.000Z&to=2026-12-31T00:00:00.000Z",
+      {},
+      ENV,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      overview: {
+        basket: Array<{ name: string; jobs: number }>;
+        serviceCoverage: { orders: number; withServices: number };
+      };
+    };
+    // Marker order counts as covered, but the marker is not a service.
+    expect(body.overview.serviceCoverage).toEqual({ orders: 2, withServices: 2 });
+    expect(body.overview.basket).toEqual([{ name: "General Home Inspection", jobs: 1, revenueMinor: 50000 }]);
+  });
 });

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import type { Db } from "../repositories/db";
 import { deleteSetting, getSetting, setSetting } from "../repositories";
 import type { Env } from "../lib/env";
@@ -6,8 +6,8 @@ import { decryptJson } from "../lib/crypto";
 import { createProviderAdapter } from "../providers/registry";
 import type { BusinessProviderAdapter, OrderRecord, ProviderKey } from "../providers/types";
 import { splitPeople } from "../briefing/analyze";
+import { toMinorUnits } from "../providers/money";
 import {
-  orgAgents,
   orgDashboardLayouts,
   orgInspectorTargets,
   orgOrderInspectors,
@@ -254,29 +254,106 @@ function toNameList(value: unknown): string[] {
  *   absent — but never merged alongside them, which would double-count and
  *   drag financing fees into clean mixes. ISN `/json` windows carry none of
  *   these, which is why those rows rely on the enrichment pass below.
+ *
+ * Amounts ride only on ISN `fees[]` rows (`fees[].amount`, major units per
+ * the `total_fee` convention and live-probed magnitudes — a $389 inspection
+ * reads 389, a $10 financing fee reads 10; the ISN spec itself punts on
+ * units, see the decision log). Everything else carries null (unknown,
+ * always kept). Non-numeric and negative amounts also map to null (never
+ * guessed, never dropped): only an explicit numeric zero is zero.
  */
+export interface BasketItem {
+  name: string;
+  kind: string;
+  amountMinor: number | null;
+}
+
+function cleanName(p: string): string {
+  return p.replace(/\s+/g, " ").trim();
+}
+
+function feeLines(value: unknown): Array<{ name: string; amountMinor: number | null }> {
+  // Delimited-string fees predate the object shape; names only, no amounts.
+  if (typeof value === "string") {
+    return toNameList(value).map((name) => ({ name, amountMinor: null as number | null }));
+  }
+  if (!Array.isArray(value)) return [];
+  const out: Array<{ name: string; amountMinor: number | null }> = [];
+  for (const v of value) {
+    if (!v || typeof v !== "object") continue;
+    const obj = v as { show?: unknown; name?: unknown; title?: unknown; amount?: unknown };
+    if (obj.show === "no") continue;
+    const raw = obj.name ?? obj.title;
+    if (typeof raw !== "string") continue;
+    const name = cleanName(raw);
+    if (name === "") continue;
+    const amountMinor =
+      typeof obj.amount === "number" || typeof obj.amount === "string"
+        ? (toMinorUnits(obj.amount) ?? null)
+        : null;
+    out.push({ name, amountMinor });
+  }
+  return out;
+}
+
+/**
+ * Fee amount lookup: an exact cleaned-name match attaches the amount only
+ * when unambiguous (exactly one numeric amount for the name). Unknown,
+ * non-numeric, negative, or multiply-defined amounts resolve to null
+ * (kept, never guessed) — a mismatched amount is worse than none, and
+ * only an explicit numeric zero may later filter a row.
+ */
+function feeAmountLookup(lines: Array<{ name: string; amountMinor: number | null }>): Map<string, number | null> {
+  const byName = new Map<string, Array<number | null>>();
+  for (const line of lines) {
+    const list = byName.get(line.name) ?? [];
+    list.push(line.amountMinor);
+    byName.set(line.name, list);
+  }
+  const out = new Map<string, number | null>();
+  for (const [name, amounts] of byName) {
+    const numeric = amounts.filter((a): a is number => typeof a === "number");
+    out.set(name, numeric.length === 1 ? numeric[0]! : null);
+  }
+  return out;
+}
+
 export function extractBasket(
   details: Record<string, unknown>,
   serviceType: unknown,
-): Array<{ name: string; kind: string }> {
+): BasketItem[] {
   const listed = toNameList(details.services);
+  const fees = feeLines(details.fees);
+  const lookup = feeAmountLookup(fees);
+  const withAmount = (name: string): number | null => lookup.get(name) ?? null;
+  const feeFallback =
+    listed.length > 0
+      ? []
+      : fees.map(({ name, amountMinor }) => ({ name, kind: "base", amountMinor }));
   const base = [
-    ...toNameList((details.serviceNames as unknown) ?? serviceType),
-    ...(listed.length > 0 ? listed : toNameList(details.fees)),
+    ...toNameList((details.serviceNames as unknown) ?? serviceType).map((name) => ({ name, kind: "base", amountMinor: withAmount(name) })),
+    ...(listed.length > 0
+      ? listed.map((name) => ({ name, kind: "base", amountMinor: withAmount(name) }))
+      : feeFallback),
   ];
   const seen = new Set<string>();
-  const baseNames = base.filter((n) => (seen.has(n) ? false : (seen.add(n), true)));
-  const addons = toNameList(details.serviceAddOnNames).filter((n) => !seen.has(n));
-  for (const n of addons) seen.add(n);
-  const packages = toNameList(details.packages).filter((n) => !seen.has(n));
-  return [
-    ...baseNames.map((name) => ({ name, kind: "base" })),
-    ...addons.map((name) => ({ name, kind: "addon" })),
-    ...packages.map((name) => ({ name, kind: "package" })),
-  ];
+  const baseNames = base.filter((n) => (seen.has(n.name) ? false : (seen.add(n.name), true)));
+  const addons = toNameList(details.serviceAddOnNames)
+    .filter((n) => !seen.has(n))
+    .map((name) => ({ name, kind: "addon", amountMinor: withAmount(name) }));
+  for (const n of addons) seen.add(n.name);
+  const packages = toNameList(details.packages)
+    .filter((n) => !seen.has(n))
+    .map((name) => ({ name, kind: "package", amountMinor: withAmount(name) }));
+  return [...baseNames, ...addons, ...packages];
 }
 
-async function loadOrgProvider(db: Db, orgId: string): Promise<{ provider: ProviderKey; credentials: Record<string, string> } | null> {
+/** Marker row for orders whose detail read succeeded but yielded nothing
+ * chargeable: counts as enrichment-complete (never re-claimed) while never
+ * reading as a purchased service. Failed reads never mark (they retry). */
+export const NO_CHARGE_MARKER = "__no_charge__";
+
+export async function loadOrgProvider(db: Db, orgId: string): Promise<{ provider: ProviderKey; credentials: Record<string, string> } | null> {
   const rows = await db
     .select()
     .from(sidekickConnections)
@@ -288,7 +365,7 @@ async function loadOrgProvider(db: Db, orgId: string): Promise<{ provider: Provi
   return { provider: row.provider as ProviderKey, credentials: { __encrypted: row.encryptedCredentials } };
 }
 
-export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, opts: { maxChunks?: number; nowMs?: number; adapter?: BusinessProviderAdapter } = {}): Promise<SyncRunSummary> {
+export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, opts: { maxChunks?: number; nowMs?: number; adapter?: BusinessProviderAdapter; head?: boolean; enrich?: boolean } = {}): Promise<SyncRunSummary> {
   const maxChunks = Math.max(1, Math.min(opts.maxChunks ?? SYNC_MAX_CHUNKS_PER_RUN, MAX_BACKFILL_CHUNKS));
   const nowMs = opts.nowMs ?? Date.now();
   const conn = await loadOrgProvider(db, orgId);
@@ -354,26 +431,31 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
    * restart, timeout) otherwise leaves zeros behind while thousands of rows
    * sit committed, and the dashboard reports "0 orders synced". Checkpoints
    * preserve the run-start status; only the final write computes the outcome.
+   * Positions merge monotonically (see mergeSyncCursor) so concurrent runs
+   * can never regress the walk.
    */
   const checkpoint = async (cursor: string | null, fetched: number): Promise<void> => {
+    const current = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
+    const cur = current[0];
+    const nextCursor = mergeSyncCursor(cur?.cursorDate ?? null, cursor);
+    const nextFetched = mergeSyncFetched(cur?.totalFetched, fetched);
     await db
       .insert(orgSyncState)
-      .values({ organizationId: orgId, provider: conn.provider, status: state.status, cursorDate: cursor, lastSyncedAt: nowSec, totalFetched: fetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate })
-      .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: state.status, cursorDate: cursor, lastSyncedAt: nowSec, totalFetched: fetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate } });
+      .values({ organizationId: orgId, provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate })
+      .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate } });
   };
 
-  // Head first: the latest window syncs on EVERY run (incremental head).
-  // Previously only the cursor advanced, so a live workspace re-read ancient
-  // windows hourly and never picked up new orders. It never moves the
-  // cursor and never counts toward the empty-window finish.
+  // Head first: the latest window syncs on EVERY run (incremental head),
+  // unless the caller is a backfill link (which spends its whole budget on
+  // history windows). Previously only the cursor advanced, so a live
+  // workspace re-read ancient windows hourly and never picked up new orders.
+  // It never moves the cursor and never counts toward the empty-window finish.
   //
   // Window enforcement: ISN ignores date bounds and returns out-of-window
   // rows, so the head response is filtered client-side to its window (rows
   // without a date are kept). Without this every run re-upserts thousands
-  // of ancient rows (inflating totalFetched and D1 writes), and worse, the
-  // injected old bare rows shift each run's enrichment claim older than the
-  // published claim floor — silently breaking overlap partitioning.
-  if (budget > 0) {
+  // of ancient rows, inflating totalFetched and D1 writes for no new data.
+  if (opts.head !== false && budget > 0) {
     const headTo = new Date(nowMs).toISOString();
     const headFrom = new Date(nowMs - SYNC_CHUNK_DAYS * 86400000).toISOString();
     try {
@@ -487,10 +569,11 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
   // Strict phases: while the backfill is unfinished this run fetches listing
   // windows only. Enrichment starts once the seed is complete (finished here,
   // or already live from an earlier run) — detail reads never compete with
-  // history windows for the per-run vendor/CPU budget.
+  // history windows for the per-run vendor/CPU budget. Backfill links pass
+  // enrich: false so the enrichment parent (or a later run) owns the backlog.
   let enriched = 0;
   let enrichFailed = 0;
-  if (!terminal && (finished || state.status === "live")) {
+  if (opts.enrich !== false && !terminal && (finished || state.status === "live")) {
     try {
       const result = await enrichMissingServices(adapter, db, orgId, conn.provider, missing, enrichPerRun(env), enrichConcurrency(env));
       enriched = result.done;
@@ -507,12 +590,58 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
       error ??= detail;
     }
   }
+  // Final state write with the same monotonic merge as checkpoints: re-read
+  // the row so a stale overlapping run can neither regress the cursor nor
+  // shrink the totals (which parked a live seed at 24.2k behind completed
+  // links). Genuine errors still surface, and the next clean run clears
+  // transient error text as before.
+  const finalRows = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
+  const fcur = finalRows[0];
+  const finalCursor = mergeSyncCursor(fcur?.cursorDate ?? null, cursorDate);
+  const finalFetched = mergeSyncFetched(fcur?.totalFetched, totalFetched);
+  const finalStatus = mergeSyncStatus(fcur?.status, state.status, status);
   await db
     .insert(orgSyncState)
-    .values({ organizationId: orgId, provider: conn.provider, status, cursorDate, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate })
-    .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status, cursorDate, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate } });
+    .values({ organizationId: orgId, provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate })
+    .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate } });
 
-  return { orgId, provider: conn.provider, status, chunksSynced, rowsUpserted, enriched, enrichFailed, cursorDate, finished, error };
+  return { orgId, provider: conn.provider, status: finalStatus, chunksSynced, rowsUpserted, enriched, enrichFailed, cursorDate: finalCursor, finished, error };
+}
+
+/**
+ * Monotonic merge for concurrent-run state writes: overlapping runs
+ * (links, ticks, clicks) must never move the cursor backward or shrink the
+ * totals — last-writer-wins across concurrent runs otherwise regresses the
+ * walk and parks the seed. ISO-8601 UTC cursors order lexicographically; a
+ * null cursor carries no position. Pure and unit-tested.
+ */
+export function mergeSyncCursor(
+  current: string | null,
+  computed: string | null,
+): string | null {
+  if (!current) return computed;
+  if (!computed) return current;
+  return computed < current ? computed : current;
+}
+
+export function mergeSyncFetched(current: number | null | undefined, computed: number): number {
+  return Math.max(current ?? 0, computed);
+}
+
+/**
+ * A run that did not start live must not flip a live workspace back to
+ * backfilling: its view predates whatever flipped it live. Genuine errors
+ * still surface (fresh-live runs pass through untouched).
+ */
+export function mergeSyncStatus(
+  currentStatus: string | null | undefined,
+  runStartStatus: string,
+  computedStatus: string,
+): string {
+  if (currentStatus === "live" && runStartStatus !== "live" && computedStatus === "backfilling") {
+    return "live";
+  }
+  return computedStatus;
 }
 
 /** Seed a workspace in one continuous run (connect-time): walks the 5-year
@@ -560,7 +689,7 @@ function httpStatusOf(err: unknown): number | undefined {
  * failure permanently falls back to sequential execution for the process.
  */
 let batchSupported: boolean | undefined;
-async function runBatch(db: Db, stmts: unknown[]): Promise<void> {
+export async function runBatch(db: Db, stmts: unknown[]): Promise<void> {
   for (let i = 0; i < stmts.length; i += BATCH_SLICE) {
     const slice = stmts.slice(i, i + BATCH_SLICE);
     if (batchSupported !== false) {
@@ -592,6 +721,109 @@ async function runBatch(db: Db, stmts: unknown[]): Promise<void> {
  * so without it ancient rows would stay bare forever and coverage would
  * freeze the moment a seed flips live.
  */
+export interface EnrichOrderResult {
+  orderId: string;
+  items: BasketItem[];
+}
+
+/**
+ * Bounded missing-service claim for fan-out parents: bare non-cancelled ISN
+ * orders, newest first so recent dashboard periods fill before ancient
+ * history. The inline tail below stays oldest-first (it feeds a merge sort);
+ * this ordering serves parents that partition the claim across leaves.
+ */
+export async function claimMissingServiceIds(
+  db: Db,
+  orgId: string,
+  limit: number,
+): Promise<Array<{ providerOrderId: string; scheduledAt: string | null }>> {
+  const rows = await db
+    .select({ providerOrderId: orgOrders.providerOrderId, scheduledAt: orgOrders.scheduledAt })
+    .from(orgOrders)
+    .leftJoin(
+      orgOrderServices,
+      and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
+    )
+    .where(
+      and(
+        eq(orgOrders.organizationId, orgId),
+        eq(orgOrders.provider, "isn"),
+        ne(orgOrders.status, "cancelled"),
+        isNull(orgOrderServices.orderId),
+      ),
+    )
+    .orderBy(desc(orgOrders.scheduledAt))
+    .limit(Math.max(1, Math.floor(limit)));
+  return rows.map((r) => ({ providerOrderId: r.providerOrderId, scheduledAt: r.scheduledAt }));
+}
+
+/** Detail reads for explicit order ids. Skips nothing: the caller owns the
+ * claim (inline existence filter or parent-partitioned sets). Failed reads
+ * come back ok:false and retry later; empty successes come back with no
+ * items and resolve to marker rows at write time. */
+export async function fetchEnrichBatch(
+  adapter: BusinessProviderAdapter,
+  orgId: string,
+  providerOrderIds: string[],
+  concurrency: number,
+): Promise<{ results: EnrichOrderResult[]; failed: number; firstError: string | null }> {
+  const results: EnrichOrderResult[] = [];
+  let failed = 0;
+  let firstError: string | null = null;
+  // Bounded worker pool: detail reads are network-bound, so a handful in
+  // flight at once fills far faster than sequential fetches. Each order is
+  // independent (deterministic statement ids), so completion order is moot.
+  let next = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(Math.max(1, concurrency), Math.max(1, providerOrderIds.length))) }, async () => {
+    while (next < providerOrderIds.length) {
+      const providerOrderId = providerOrderIds[next++]!;
+      try {
+        const detail = await adapter.getOrder(providerOrderId);
+        const items = extractBasket((detail?.details ?? {}) as Record<string, unknown>, undefined);
+        results.push({ orderId: `${orgId}:isn:${providerOrderId}`, items });
+      } catch (err) {
+        // One unreadable order never blocks the rest; retried next drain.
+        failed += 1;
+        if (firstError === null) {
+          firstError = err instanceof Error ? err.message.slice(0, 160) : String(err).slice(0, 160);
+        }
+      }
+    }
+  });
+  await Promise.all(workers);
+  return { results, failed, firstError };
+}
+
+/** Replace-per-order service writes for fetched results (busy-retried by
+ * callers that need it). Zero-amount lines are ignored; orders resolving to
+ * nothing chargeable get the no-charge marker (counts as complete, never
+ * re-claimed); failed reads were never fetched into results and retry
+ * later. Returns orders resolved. */
+export async function writeEnrichBatch(
+  db: Db,
+  orgId: string,
+  results: EnrichOrderResult[],
+): Promise<{ done: number }> {
+  const stmts: unknown[] = [];
+  for (const result of results) {
+    const charged = result.items.filter((item) => item.amountMinor !== 0);
+    stmts.push(db.delete(orgOrderServices).where(and(eq(orgOrderServices.organizationId, orgId), eq(orgOrderServices.orderId, result.orderId))));
+    if (charged.length === 0) {
+      stmts.push(
+        db.insert(orgOrderServices).values({ id: `${result.orderId}:svc:${NO_CHARGE_MARKER}`, organizationId: orgId, orderId: result.orderId, name: NO_CHARGE_MARKER, kind: "base", amountMinor: 0 }).onConflictDoNothing(),
+      );
+    } else {
+      charged.forEach((item, idx) => {
+        stmts.push(
+          db.insert(orgOrderServices).values({ id: `${result.orderId}:svc:${idx}`, organizationId: orgId, orderId: result.orderId, name: item.name, kind: item.kind, amountMinor: item.amountMinor }).onConflictDoNothing(),
+        );
+      });
+    }
+  }
+  await runBatch(db, stmts);
+  return { done: results.length };
+}
+
 async function enrichMissingServices(
   adapter: BusinessProviderAdapter,
   db: Db,
@@ -648,42 +880,48 @@ async function enrichMissingServices(
       return true;
     })
     .slice(0, perRun);
-  const stmts: unknown[] = [];
-  let done = 0;
-  let failed = 0;
-  let firstError: string | null = null;
-  // Bounded worker pool: detail reads are network-bound, so a handful in
-  // flight at once fills far faster than sequential fetches. Each order is
-  // independent (deterministic statement ids), so completion order is moot.
-  let next = 0;
-  const workers = Array.from({ length: Math.min(Math.max(1, concurrency), todo.length) }, async () => {
-    while (next < todo.length) {
-      const m = todo[next++]!;
-      try {
-        const detail = await adapter.getOrder(m.providerOrderId);
-        const items = extractBasket((detail?.details ?? {}) as Record<string, unknown>, undefined);
-        if (items.length === 0) continue;
-        const orderId = `${orgId}:isn:${m.providerOrderId}`;
-        stmts.push(db.delete(orgOrderServices).where(and(eq(orgOrderServices.organizationId, orgId), eq(orgOrderServices.orderId, orderId))));
-        items.forEach((item, idx) => {
-          stmts.push(
-            db.insert(orgOrderServices).values({ id: `${orderId}:svc:${idx}`, organizationId: orgId, orderId, name: item.name, kind: item.kind, amountMinor: null }).onConflictDoNothing(),
-          );
-        });
-        done += 1;
-      } catch (err) {
-        // One unreadable order never blocks the rest; failures are counted
-        // (noticed below) and retried next run.
-        failed += 1;
-        if (firstError === null) {
-          firstError = err instanceof Error ? err.message.slice(0, 160) : String(err).slice(0, 160);
-        }
-      }
-    }
-  });
-  await Promise.all(workers);
-  await runBatch(db, stmts);
-  return { done, failed, attempted: todo.length, firstError };
+  const fetched = await fetchEnrichBatch(
+    adapter,
+    orgId,
+    todo.map((m) => m.providerOrderId),
+    concurrency,
+  );
+  const written = await writeEnrichBatch(db, orgId, fetched.results);
+  return { done: written.done, failed: fetched.failed, attempted: todo.length, firstError: fetched.firstError };
+}
+
+/**
+ * Next listing-link action from fresh sync state (self-healing: retries and
+ * triggers always recompute instead of trusting a stale index). Mirrors the
+ * walk arithmetic in runAnalyticsSyncForOrg for the link context (no head
+ * window, no in-run progress): position is whole 90-day chunks from the
+ * cursor, finished at the history floor or the chunk cap. A run that flips
+ * the state itself (live/error) needs no link; terminal error parks the
+ * walk until credentials are fixed (supervisor skips error states too).
+ */
+export async function deriveNextListingLink(
+  db: Db,
+  orgId: string,
+  nowMs: number,
+): Promise<{ action: "link"; backIndex: number } | { action: "finish" }> {
+  const rows = await db.select().from(orgSyncState).where(eq(orgSyncState.organizationId, orgId)).limit(1);
+  const state = rows[0];
+  if (!state) return { action: "link", backIndex: 0 };
+  if (state.status === "live" || state.status === "error") return { action: "finish" };
+  let syncedChunks = 0;
+  let cursorMs: number | null = null;
+  if (state.cursorDate) {
+    cursorMs = new Date(state.cursorDate).getTime();
+    if (Number.isFinite(cursorMs)) syncedChunks = Math.max(0, Math.round((nowMs - cursorMs) / (SYNC_CHUNK_DAYS * 86400000)));
+  }
+  const cutoff = new Date(nowMs);
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - SYNC_HISTORY_YEARS);
+  const jan1Ms = Date.UTC(cutoff.getUTCFullYear(), 0, 1);
+  if (syncedChunks >= MAX_BACKFILL_CHUNKS) return { action: "finish" };
+  if (cursorMs !== null && Number.isFinite(cursorMs) && cursorMs <= jan1Ms) return { action: "finish" };
+  const windowTo = new Date(nowMs - syncedChunks * SYNC_CHUNK_DAYS * 86400000).toISOString();
+  if (new Date(windowTo).getTime() <= jan1Ms) return { action: "finish" };
+  return { action: "link", backIndex: syncedChunks };
 }
 
 /** One chunk from the provider. Spectora merges the disjoint cancelled listing. */
@@ -730,7 +968,77 @@ async function upsertOrders(
   nowSec: number,
   missing?: Array<{ providerOrderId: string; scheduledAt: string | null }>,
 ): Promise<void> {
-  const agentAgg = new Map<string, { name: string | null; email: string | null; phone: string | null; first: string | null; last: string | null; count: number }>();
+  // Change detection: steady-state heads re-fetch thousands of unchanged
+  // rows every run, and each upsert costs ~7 D1 writes (row + indexes).
+  // Bulk-read the stored fingerprints first (90-sliced IN queries — reads
+  // are 50x cheaper than writes in the budget) and skip identical rows
+  // entirely. Fingerprint covers exactly the ON CONFLICT SET columns (plus
+  // keys implicitly); syncedAt is deliberately excluded (write-only, never
+  // read, so its staleness on skipped rows is unobservable).
+  const wanted = [...new Set(orders.map((o) => String(o.id)))];
+  const stored = new Map<string, string>();
+  for (let i = 0; i < wanted.length; i += 90) {
+    const slice = wanted.slice(i, i + 90);
+    const rows = await db
+      .select({
+        providerOrderId: orgOrders.providerOrderId,
+        status: orgOrders.status,
+        scheduledAt: orgOrders.scheduledAt,
+        completedAt: orgOrders.completedAt,
+        totalMinor: orgOrders.totalMinor,
+        inspectorNames: orgOrders.inspectorNames,
+        serviceType: orgOrders.serviceType,
+        buyerName: orgOrders.buyerName,
+        buyingAgentName: orgOrders.buyingAgentName,
+        buyingAgentEmail: orgOrders.buyingAgentEmail,
+        buyingAgentPhone: orgOrders.buyingAgentPhone,
+        agentKey: orgOrders.agentKey,
+        sellingAgentName: orgOrders.sellingAgentName,
+      })
+      .from(orgOrders)
+      .where(
+        and(
+          eq(orgOrders.organizationId, orgId),
+          eq(orgOrders.provider, provider),
+          inArray(orgOrders.providerOrderId, slice),
+        ),
+      );
+    for (const r of rows) {
+      stored.set(r.providerOrderId, JSON.stringify([
+        r.status, r.scheduledAt ?? null, r.completedAt ?? null, r.totalMinor ?? null,
+        r.inspectorNames, r.serviceType ?? null, r.buyerName ?? null,
+        r.buyingAgentName ?? null, r.buyingAgentEmail ?? null, r.buyingAgentPhone ?? null,
+        r.agentKey ?? null, r.sellingAgentName ?? null,
+      ]));
+    }
+  }
+  // Existing basket signatures for the same rows: listing services can change
+  // while every order field stays identical, and without this the skip would
+  // leave stale service rows behind. Same 90-slice discipline (reads are 50x
+  // cheaper than writes in the budget).
+  const storedBasket = new Map<string, string>();
+  for (let i = 0; i < wanted.length; i += 90) {
+    const slice = wanted.slice(i, i + 90);
+    const ids = slice.map((providerOrderId) => `${orgId}:${provider}:${providerOrderId}`);
+    const rows = await db
+      .select({
+        orderId: orgOrderServices.orderId,
+        name: orgOrderServices.name,
+        kind: orgOrderServices.kind,
+        amountMinor: orgOrderServices.amountMinor,
+      })
+      .from(orgOrderServices)
+      .where(and(eq(orgOrderServices.organizationId, orgId), inArray(orgOrderServices.orderId, ids)));
+    const byOrder = new Map<string, Array<[string, string, number | null]>>();
+    for (const r of rows) {
+      const list = byOrder.get(r.orderId) ?? [];
+      list.push([r.name, r.kind, r.amountMinor ?? null]);
+      byOrder.set(r.orderId, list);
+    }
+    for (const [orderId, list] of byOrder) {
+      storedBasket.set(orderId, JSON.stringify(list.map((e) => JSON.stringify(e)).sort()));
+    }
+  }
   // Collect first, write in batches: per-statement round trips make busy
   // chunks (thousands of writes) take minutes on D1. Order is preserved, so
   // each order's service delete still precedes its inserts.
@@ -742,6 +1050,36 @@ async function upsertOrders(
     const details = (o.details ?? {}) as Record<string, unknown>;
     const { email: agentEmail, phone: agentPhone } = extractAgentContact(details);
     const agentKey = toAgentKey(agentEmail, agentPhone);
+    const basket = extractBasket(details, o.serviceType);
+    const charged = basket.filter((item) => item.amountMinor !== 0);
+    const basketSig = JSON.stringify(charged.map((item) => JSON.stringify([item.name, item.kind, item.amountMinor])).sort());
+    const fingerprint = JSON.stringify([
+      typeof o.status === "string" ? o.status.toLowerCase() : "scheduled",
+      scheduledAt,
+      typeof o.completedAt === "string" ? o.completedAt : null,
+      typeof o.total === "number" ? o.total : null,
+      JSON.stringify(inspectors),
+      typeof o.serviceType === "string" ? o.serviceType : null,
+      typeof o.buyerName === "string" ? o.buyerName : null,
+      typeof o.buyingAgentName === "string" ? o.buyingAgentName : null,
+      agentEmail,
+      agentPhone,
+      agentKey,
+      typeof o.sellingAgentName === "string" ? o.sellingAgentName : null,
+    ]);
+    // The listing path never deletes service rows on an empty basket
+    // (enrichment owns those), so an empty incoming basket always compares
+    // equal here regardless of stored rows.
+    const basketSame = charged.length === 0 || (storedBasket.get(id) ?? "[]") === basketSig;
+    if (stored.get(String(o.id)) === fingerprint && basketSame) {
+      // Unchanged: skip all writes for this row (order, junction, basket).
+      // Bare ISN rows are still reported for enrichment: the existence probe
+      // filters already-served ones, so this costs nothing downstream.
+      if (charged.length === 0 && provider === "isn") {
+        missing?.push({ providerOrderId: String(o.id), scheduledAt });
+      }
+      continue;
+    }
     stmts.push(
       db
         .insert(orgOrders)
@@ -803,44 +1141,22 @@ async function upsertOrders(
     // Basket items: replace per order so re-syncs never duplicate. Rows with
     // no service info leave existing rows alone: ISN `/json` windows carry
     // no services, and wiping here would delete what the enrichment pass
-    // below already captured from per-order detail reads.
-    const basket = extractBasket(details, o.serviceType);
-    if (basket.length > 0) {
+    // below already captured from per-order detail reads. Zero-amount lines
+    // are ignored like in the enrichment pass; an all-zero listing defers
+    // to enrichment (which marks) instead of writing marker rows itself
+    // (`charged` computed above for the change-detection signature).
+    if (charged.length > 0) {
       stmts.push(db.delete(orgOrderServices).where(and(eq(orgOrderServices.organizationId, orgId), eq(orgOrderServices.orderId, id))));
-      basket.forEach((item, svcIdx) => {
+      charged.forEach((item, svcIdx) => {
         // Do-nothing on conflict: concurrent runs (tab driver plus cron) may
         // interleave the same deterministic ids; the content is identical.
         stmts.push(
-          db.insert(orgOrderServices).values({ id: `${id}:svc:${svcIdx}`, organizationId: orgId, orderId: id, name: item.name, kind: item.kind, amountMinor: null }).onConflictDoNothing(),
+          db.insert(orgOrderServices).values({ id: `${id}:svc:${svcIdx}`, organizationId: orgId, orderId: id, name: item.name, kind: item.kind, amountMinor: item.amountMinor }).onConflictDoNothing(),
         );
       });
     } else if (provider === "isn") {
       missing?.push({ providerOrderId: String(o.id), scheduledAt });
     }
-
-    // Referring-agent identity: email first, phone fallback (owner decision).
-    const email = agentEmail;
-    const phone = agentPhone;
-    const key = toAgentKey(email, phone);
-    if (key && o.buyingAgentName) {
-      const cur = agentAgg.get(key) ?? { name: null, email: null, phone: null, first: null, last: null, count: 0 };
-      cur.name = o.buyingAgentName;
-      cur.email = email;
-      cur.phone = phone;
-      cur.count += 1;
-      if (scheduledAt && (!cur.first || scheduledAt < cur.first)) cur.first = scheduledAt;
-      if (scheduledAt && (!cur.last || scheduledAt > cur.last)) cur.last = scheduledAt;
-      agentAgg.set(key, cur);
-    }
-  }
-  for (const [key, a] of agentAgg) {
-    const id = `${orgId}:agent:${key}`;
-    stmts.push(
-      db
-        .insert(orgAgents)
-        .values({ id, organizationId: orgId, name: a.name, email: a.email, phone: a.phone, firstSeenAt: a.first, lastSeenAt: a.last, orderCount: a.count })
-        .onConflictDoNothing(),
-    );
   }
   await runBatch(db, stmts);
   void orgDashboardLayouts;
