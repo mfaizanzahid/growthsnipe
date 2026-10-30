@@ -1,7 +1,6 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers";
 import { NonRetryableError } from "cloudflare:workflows";
 import type { Env } from "../lib/env";
-import { writeAppLog } from "../lib/app-logs";
 import type { Db } from "../repositories/db";
 import { createDb } from "../repositories/db";
 import {
@@ -9,6 +8,7 @@ import {
   TerminalSyncError,
   buildOrgAdapter,
   enrichRunTag,
+  ensureEnrichmentParent,
   getOrCreateInstance,
   isQuotaError,
   jitterMs,
@@ -81,6 +81,16 @@ export class SyncWorkflow extends WorkflowEntrypoint<Env, SyncWorkflowParams> {
     const db = this.db();
     // Step results must stay JSON-serializable: the adapter (functions)
     // never crosses a step boundary, so every step rebuilds it cheaply.
+    const loaded = await step.do(
+      "load",
+      { retries: { limit: 2, delay: "10 seconds", backoff: "exponential" }, timeout: "2 minutes" },
+      async () => {
+        const org = await buildOrgAdapter(this.env, db, orgId);
+        return { provider: org?.provider ?? null };
+      },
+    );
+    if (!loaded.provider) return { finished: true, reason: "no-connection", backIndex };
+    const provider = loaded.provider;
     const outcome = await step.do(
       "chunk",
       { retries: { limit: 3, delay: "30 seconds", backoff: "exponential" }, timeout: "15 minutes" },
@@ -90,14 +100,22 @@ export class SyncWorkflow extends WorkflowEntrypoint<Env, SyncWorkflowParams> {
       "chain",
       { retries: { limit: 2, delay: "10 seconds", backoff: "exponential" }, timeout: "2 minutes" },
       async () => {
-        if (outcome.finished) return { finished: true, backIndex };
+        // A finished walk starts enrichment immediately (not on the next
+        // supervisor tick): the parent fans out from whatever is bare, and
+        // the supervisor stays a backstop for crashed or deleted parents.
+        // No-op when there is no backlog.
+        if (outcome.finished) {
+          await ensureEnrichmentParent(this.binding(), db, orgId, provider, Date.now());
+          return { finished: true, backIndex };
+        }
         // Self-perpetuating serial walk: derive the next index fresh so a
         // retried link can never skip or repeat work beyond idempotent
         // re-fetching. Deterministic ids make duplicate creation safe.
-        // Parent creation is the supervisor's job (backlog probe), not the
-        // chain's, so a finished walk simply ends here.
         const next = await deriveNextListingLink(db, orgId, Date.now());
-        if (next.action === "finish") return { finished: true, backIndex };
+        if (next.action === "finish") {
+          await ensureEnrichmentParent(this.binding(), db, orgId, provider, Date.now());
+          return { finished: true, backIndex };
+        }
         await getOrCreateInstance(this.binding(), listingLinkId(orgId, next.backIndex), {
           kind: "listing-link",
           orgId,
@@ -180,8 +198,6 @@ export class SyncWorkflow extends WorkflowEntrypoint<Env, SyncWorkflowParams> {
         { retries: { limit: 3, delay: "30 seconds", backoff: "exponential" }, timeout: "15 minutes" },
         () => writeEnrichBatch(db, orgId, fetched.results),
       );
-      // TEMP-TRACE: leaf outcome (queryable via app_logs).
-      await writeAppLog(db, { level: "info", event: "sync.leaf_done", surface: "cron", message: `Leaf idx=${index}: results=${fetched.results.length} served=${written.done} fetchFailed=${fetched.failed} firstError=${fetched.firstError ?? "none"}`, orgId }).catch(() => {});
       return { done: written.done, failed: fetched.failed, attempted: orderIds.length };
     } catch (err) {
       if (isQuotaError(err)) {

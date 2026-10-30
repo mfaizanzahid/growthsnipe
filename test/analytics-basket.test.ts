@@ -164,4 +164,33 @@ describe("overview service coverage", () => {
     expect(body.overview.serviceCoverage).toEqual({ orders: 2, withServices: 2 });
     expect(body.overview.basket).toEqual([{ name: "General Home Inspection", jobs: 1, revenueMinor: 50000 }]);
   });
+
+  it("excludes fee/refund/discount noise names from the basket", async () => {
+    const { db, sqlite } = memoryDb();
+    sqlite.exec(`
+      INSERT INTO org_orders (id, organization_id, provider, provider_order_id, status, scheduled_at, total_minor, synced_at) VALUES
+        ('o1:isn:a', 'o1', 'isn', 'a', 'completed', '2026-03-01T10:00:00Z', 50000, 1);
+      INSERT INTO org_order_services (id, organization_id, order_id, name, kind, amount_minor) VALUES
+        ('o1:isn:a:svc:0', 'o1', 'o1:isn:a', 'General Home Inspection', 'fee', 38900),
+        ('o1:isn:a:svc:1', 'o1', 'o1:isn:a', 'Credit Card Convenience Fee', 'fee', 391),
+        ('o1:isn:a:svc:2', 'o1', 'o1:isn:a', 'Refund Issued', 'fee', 1000),
+        ('o1:isn:a:svc:3', 'o1', 'o1:isn:a', 'Early Discount', 'fee', 500);
+    `);
+    const app = buildApp(db);
+    const res = await app.request(
+      "/api/analytics/overview?orgId=o1&from=2026-01-01T00:00:00.000Z&to=2026-12-31T00:00:00.000Z",
+      {},
+      ENV,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      overview: {
+        basket: Array<{ name: string; jobs: number }>;
+        serviceCoverage: { orders: number; withServices: number };
+      };
+    };
+    // Only the genuine service charge reads as basket; coverage still counts it.
+    expect(body.overview.basket).toEqual([{ name: "General Home Inspection", jobs: 1, revenueMinor: 50000 }]);
+    expect(body.overview.serviceCoverage).toEqual({ orders: 1, withServices: 1 });
+  });
 });

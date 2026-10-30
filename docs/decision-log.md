@@ -1,5 +1,17 @@
 # Decision log SaaS Billing Portal (fresh project, GHL removed)
 
+## 2026-10-26 - Parent pace must exceed leaf latency or waves re-claim in-flight rows (owner decision)
+
+Live stall at 8,338 with a healthy-cycling parent and zero-fail leaves: claim cycles (~25-45s) ran faster than leaf latency (~60-120s), so every wave re-claimed uncommitted in-flight rows — ~80% of vendor reads duplicated, coverage crept at ~50/min. Fixed by raising default parent pace 15s to 60s (cycle period now covers worst-case leaf latency) and restarting the wasteful parent (terminate is data-safe: idempotent writes, claims recompute). Verified live: +3,723 then +3,600 per 4-6 min window (~900/min, 12-18x). Structural note: in-flight rows are fundamentally invisible to claims (uncommitted), so pacing — not smarter claiming — is the correct control; a gather would cost steps and add a second failure mode. Full gate green (686).
+
+## 2026-10-26 - Fees-only enrichment with noise exclusion (owner decision)
+
+Owner directed the basket mix to source exclusively from fee lines. Enrichment now writes `extractFeeItems` results (fee-name noise excluded: fee/refund/discount, case-insensitive, shared JS predicate + SQL patterns); unfetchable-fee details fall back to service names so fee-less orders stay visible instead of marking unknown. Fees-only orders with zero chargeable lines still resolve to the marker row; failed reads retry. Unchanged by design: listing path (Spectora unaffected), claim/coverage existence (row-presence), penetration (client-side off basket), change-detection fingerprints. Full gate green (686).
+
+## 2026-10-26 - Monotonic sync-state merge; chain starts enrichment (owner decision)
+
+Live seed parked at 24.2k behind already-completed links: concurrent runs' last-writer-wins state writes regressed the cursor (and could shrink totals or flip live back). Checkpoints and the final write now re-read and merge monotonically (min cursor, max fetched, live-guard for stale runs), pinned by unit tests. The finishing link also creates the enrichment parent directly instead of waiting for the next supervisor tick (supervisor stays the backstop). Process note: the workflow shell shipped with references that failed typecheck (vite serves without typechecking, vitest doesn't typecheck) — the finish path threw at runtime, which is exactly why this seed went live with no parent. Gates now run tsc + lint + tests + build every time.
+
 ## 2026-10-26 - Fee amounts attached by name match; units confirmed live (owner decision)
 
 Owner saw mostly-null `amount_minor` despite `fees[].amount` existing. Root cause: fees were a fallback used only when `services[]` is empty, so the majority path (services-named rows) never saw amounts. Fix: `fees[]` is now always parsed into an amount lookup, attached by exact cleaned-name match — no new rows, no double count, unmatched/ambiguous/non-numeric/negative stay null, explicit zero stays zero (then filtered at write per the existing rule). Units uncertainty from the earlier entry is now resolved by live data, not just fixtures: Re-Inspection $99.00, CC fees $1.94–$5.89, Trip $99.00 — minor-unit readings ($0.99 re-inspections) would be absurd, so major-unit dollars stands. Honest scope: only fee-type lines carry amounts in practice; base service rows (`services[]` objects have no amount field) stay null — no verified source exists, and none is invented. Mix composition unchanged (rows existed already; only amounts filled in). Full gate green (682).

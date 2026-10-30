@@ -57,7 +57,7 @@ export function workflowChildConcurrency(env: Pick<Env, "SYNC_WORKFLOW_CHILD_CON
 
 export function workflowPaceSeconds(env: Pick<Env, "SYNC_WORKFLOW_PACE_SECONDS"> | undefined): number {
   const n = Number.parseInt(env?.SYNC_WORKFLOW_PACE_SECONDS?.trim() ?? "", 10);
-  if (!Number.isFinite(n)) return 15;
+  if (!Number.isFinite(n)) return 60;
   return Math.max(0, Math.min(3600, Math.floor(n)));
 }
 

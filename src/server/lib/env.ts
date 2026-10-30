@@ -58,7 +58,8 @@ export interface Env extends BaseEnv {
   /** Vendor detail reads inside one leaf (default 4, max 8: leaves already
    * run 50-way parallel, so per-leaf concurrency stays low). */
   SYNC_WORKFLOW_CHILD_CONCURRENCY?: string;
-  /** Parent pacing sleep between waves, seconds (default 15, max 3600). */
+  /** Parent pacing sleep between waves, seconds (default 60: must exceed
+   * worst-case leaf latency or waves re-claim in-flight rows, max 3600). */
   SYNC_WORKFLOW_PACE_SECONDS?: string;
 }
 
@@ -70,6 +71,7 @@ export interface SyncWorkflowInstanceHandle {
     error?: unknown;
   }>;
   delete(): Promise<void>;
+  terminate(): Promise<void>;
 }
 
 export interface SyncWorkflowBinding {

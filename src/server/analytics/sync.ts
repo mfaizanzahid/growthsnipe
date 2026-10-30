@@ -353,6 +353,75 @@ export function extractBasket(
  * reading as a purchased service. Failed reads never mark (they retry). */
 export const NO_CHARGE_MARKER = "__no_charge__";
 
+/**
+ * Fee-name noise for basket analytics: surcharges, financing lines, refunds
+ * and discounts are real charges but not performed services — as basket rows
+ * they would rank payment processing as a best-selling service. Matched
+ * case-insensitively (SQLite LIKE is ASCII case-insensitive; keep the JS
+ * predicate in sync).
+ */
+export const FEE_NOISE_PATTERNS = ["%fee%", "%refund%", "%discount%"] as const;
+
+export function isFeeNoise(name: string): boolean {
+  const lower = name.toLowerCase();
+  return lower.includes("fee") || lower.includes("refund") || lower.includes("discount");
+}
+
+/**
+ * Fee-derived basket items for one order's detail payload: ISN `fees[]`
+ * rows with amounts, minus noise names. This is the basket-mix source of
+ * truth (services[]/packages/addons names are deliberately NOT rows here —
+ * they carry no amounts and would double-count the same work). Unknown and
+ * negative amounts are kept as null; explicit zeros are kept here and
+ * filtered at write time (an all-zero order resolves to the marker row).
+ */
+export function extractFeeItems(details: Record<string, unknown>): BasketItem[] {
+  const out: BasketItem[] = [];
+  for (const line of feeLines(details.fees)) {
+    if (isFeeNoise(line.name)) continue;
+    // No dedupe: two identical charges (two trips at $99) are two real
+    // charges. Jobs count distinct orders, so repeats add revenue signal,
+    // never inflated job counts.
+    out.push({ name: line.name, kind: "fee", amountMinor: line.amountMinor });
+  }
+  return out;
+}
+
+/**
+ * Service-name fallback for details with no usable fee lines: services[],
+ * serviceNames, addons and packages with null amounts (no fee data to match
+ * against in this branch by construction). Keeps fee-less details visible
+ * instead of marking everything unknown.
+ */
+function serviceNameItems(details: Record<string, unknown>, serviceType: unknown): BasketItem[] {
+  const listed = toNameList(details.services);
+  const base = [
+    ...toNameList((details.serviceNames as unknown) ?? serviceType).map((name) => ({ name, kind: "base", amountMinor: null as number | null })),
+    ...listed.map((name) => ({ name, kind: "base", amountMinor: null as number | null })),
+  ];
+  const seen = new Set<string>();
+  const baseNames = base.filter((n) => (seen.has(n.name) ? false : (seen.add(n.name), true)));
+  const addons = toNameList(details.serviceAddOnNames)
+    .filter((n) => !seen.has(n))
+    .map((name) => ({ name, kind: "addon", amountMinor: null as number | null }));
+  for (const n of addons) seen.add(n.name);
+  const packages = toNameList(details.packages)
+    .filter((n) => !seen.has(n))
+    .map((name) => ({ name, kind: "package", amountMinor: null as number | null }));
+  return [...baseNames, ...addons, ...packages];
+}
+
+/**
+ * Enrichment items for one order's detail payload: fee lines when usable,
+ * service names otherwise. Failed reads never reach here (they throw and
+ * retry); empty results resolve to the marker row at write time.
+ */
+export function extractEnrichItems(details: Record<string, unknown>): BasketItem[] {
+  const fees = extractFeeItems(details);
+  if (fees.length > 0) return fees;
+  return serviceNameItems(details, undefined);
+}
+
 export async function loadOrgProvider(db: Db, orgId: string): Promise<{ provider: ProviderKey; credentials: Record<string, string> } | null> {
   const rows = await db
     .select()
@@ -773,13 +842,16 @@ export async function fetchEnrichBatch(
   // Bounded worker pool: detail reads are network-bound, so a handful in
   // flight at once fills far faster than sequential fetches. Each order is
   // independent (deterministic statement ids), so completion order is moot.
+  // Fees-only items: the basket mix sources exclusively from fee lines
+  // (services[] names carry no amounts and would double-count the same
+  // work); the zero-filter and marker rules in writeEnrichBatch apply.
   let next = 0;
-  const workers = Array.from({ length: Math.max(1, Math.min(Math.max(1, concurrency), Math.max(1, providerOrderIds.length))) }, async () => {
+  const workers = Array.from({ length: Math.min(Math.max(1, concurrency), Math.max(1, providerOrderIds.length)) }, async () => {
     while (next < providerOrderIds.length) {
       const providerOrderId = providerOrderIds[next++]!;
       try {
         const detail = await adapter.getOrder(providerOrderId);
-        const items = extractBasket((detail?.details ?? {}) as Record<string, unknown>, undefined);
+        const items = extractEnrichItems((detail?.details ?? {}) as Record<string, unknown>);
         results.push({ orderId: `${orgId}:isn:${providerOrderId}`, items });
       } catch (err) {
         // One unreadable order never blocks the rest; retried next drain.

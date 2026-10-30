@@ -180,14 +180,20 @@ app.post("/api/dev/cron-tick", async (c) => {
 });
 // Dev-only workflow instance inspector (same flag as cron-tick): returns the
 // status of one instance by id so wedged links/parents are visible locally.
+// With {"action":"terminate"} it terminates the instance (dev recovery;
+// data-safe: all sync writes are idempotent and claims recompute).
 app.post("/api/dev/workflow-status", async (c) => {
   if (c.env.DEV_CRON_TRIGGER !== "1") return c.json({ error: "Not found" }, 404);
-  const body = await c.req.json().catch(() => ({})) as { id?: unknown };
+  const body = await c.req.json().catch(() => ({})) as { id?: unknown; action?: unknown };
   if (typeof body.id !== "string" || body.id === "") return c.json({ error: "id required" }, 422);
   const binding = c.env.SYNC_WORKFLOW;
   if (!binding) return c.json({ error: "no binding" }, 500);
   try {
     const handle = await binding.get(body.id);
+    if (body.action === "terminate") {
+      await handle.terminate();
+      return c.json({ ok: true, id: body.id, terminated: true });
+    }
     const st = await handle.status().catch((err: unknown) => ({ status: "unreadable", error: String(err) }));
     return c.json({ ok: true, id: body.id, status: st });
   } catch (err) {

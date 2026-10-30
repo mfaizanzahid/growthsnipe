@@ -6,7 +6,7 @@ import type { Db } from "../src/server/repositories/db";
 import type { Env } from "../src/server/lib/env";
 import type { BusinessProviderAdapter, OrderRecord } from "../src/server/providers/types";
 import { encryptJson } from "../src/server/lib/crypto";
-import { backfillProgress, claimRunLease, extractBasket, hasEnrichmentBacklog, mergeSyncCursor, mergeSyncFetched, mergeSyncStatus, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
+import { backfillProgress, claimRunLease, extractBasket, extractEnrichItems, extractFeeItems, hasEnrichmentBacklog, isFeeNoise, mergeSyncCursor, mergeSyncFetched, mergeSyncStatus, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
 import { extractAgentContact } from "../src/server/analytics/sync";
 
 const KEY = "test-sync-key-must-be-long-enough-1234";
@@ -290,6 +290,48 @@ describe("basket extraction", () => {
       { name: "Radon", kind: "base", amountMinor: null },
       { name: "Mold Testing", kind: "base", amountMinor: null },
     ]);
+  });
+
+  it("extracts fee items with noise exclusion, keeping repeat charges", () => {
+    expect(
+      extractFeeItems({
+        services: [{ uuid: "a", name: "General Home Inspection" }],
+        fees: [
+          { id: "f1", amount: 160, name: "General Home Inspection" },
+          { id: "f2", amount: 10, name: "FlexFund Fee" },
+          { id: "f3", amount: 5, name: "REFUND Processing" },
+          { id: "f4", amount: 20, name: "Early Discount" },
+          { id: "f5", amount: 0, name: "Waived Trip" },
+          { id: "f6", amount: 160, name: "General Home Inspection" },
+        ],
+      }),
+    ).toEqual([
+      { name: "General Home Inspection", kind: "fee", amountMinor: 16000 },
+      { name: "Waived Trip", kind: "fee", amountMinor: 0 },
+      { name: "General Home Inspection", kind: "fee", amountMinor: 16000 },
+    ]);
+  });
+
+  it("falls back to service names when no usable fee lines exist", () => {
+    // Fees-only enrichment would mark these unknown; the service fallback
+    // keeps fee-less details visible instead.
+    expect(
+      extractEnrichItems({
+        services: [{ uuid: "a", name: "General Home Inspection" }],
+        fees: [{ id: "f", amount: 10, name: "FlexFund Fee" }],
+      }),
+    ).toEqual([{ name: "General Home Inspection", kind: "base", amountMinor: null }]);
+    expect(extractEnrichItems({})).toEqual([]);
+  });
+
+  it("flags fee/refund/discount names case-insensitively", () => {
+    expect(isFeeNoise("Credit Card Convenience Fee")).toBe(true);
+    expect(isFeeNoise("FEE")).toBe(true);
+    expect(isFeeNoise("refund issued")).toBe(true);
+    expect(isFeeNoise("Early Discount")).toBe(true);
+    expect(isFeeNoise("General Home Inspection")).toBe(false);
+    expect(isFeeNoise("Radon")).toBe(false);
+    expect(isFeeNoise("")).toBe(false);
   });
 });
 

@@ -20,7 +20,7 @@ import type { Db } from "../repositories/db";
 import { drizzleStore } from "../repositories/billing";
 import { orgAccess, type OrgAccess } from "../billing/access";
 import { orgDashboardLayouts, orgInspectorTargets, orgOrders, orgOrderServices, orgSyncState, userDashboardPrefs } from "../db/schema";
-import { backfillProgress, claimRunLease, hasEnrichmentBacklog, NO_CHARGE_MARKER, releaseRunLease, runAnalyticsSyncForOrg } from "../analytics/sync";
+import { backfillProgress, claimRunLease, FEE_NOISE_PATTERNS, hasEnrichmentBacklog, NO_CHARGE_MARKER, releaseRunLease, runAnalyticsSyncForOrg } from "../analytics/sync";
 import { buildOrgAdapter, ensureEnrichmentParent, ensureListingLink } from "../analytics/sync-tasks";
 import {
   decodeCursor,
@@ -480,6 +480,7 @@ async function buildOverviewSql(db: Db, orgId: string, w: OverviewWindow) {
         and(
           eq(orgOrderServices.organizationId, orgId),
           ne(orgOrderServices.name, NO_CHARGE_MARKER),
+          ...FEE_NOISE_PATTERNS.map((p) => sql`${orgOrderServices.name} NOT LIKE ${p}`),
           ne(orgOrders.status, "cancelled"),
           gte(orgOrders.scheduledAt, w.from),
           lt(orgOrders.scheduledAt, w.to),
@@ -673,6 +674,7 @@ async function buildOverviewLegacy(db: Db, orgId: string, w: OverviewWindow) {
       and(
         eq(orgOrderServices.organizationId, orgId),
         ne(orgOrderServices.name, NO_CHARGE_MARKER),
+        ...FEE_NOISE_PATTERNS.map((p) => sql`${orgOrderServices.name} NOT LIKE ${p}`),
         ne(orgOrders.status, "cancelled"),
         gte(orgOrders.scheduledAt, w.from),
         lt(orgOrders.scheduledAt, w.to),

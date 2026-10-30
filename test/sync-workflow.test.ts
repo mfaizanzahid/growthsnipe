@@ -187,7 +187,7 @@ describe("workflow knobs", () => {
     expect(workflowFanout({ SYNC_WORKFLOW_FANOUT: "500" })).toBe(50);
     expect(workflowChildConcurrency(undefined)).toBe(4);
     expect(workflowChildConcurrency({ SYNC_WORKFLOW_CHILD_CONCURRENCY: "99" })).toBe(8);
-    expect(workflowPaceSeconds(undefined)).toBe(15);
+    expect(workflowPaceSeconds(undefined)).toBe(60);
     expect(workflowPaceSeconds({ SYNC_WORKFLOW_PACE_SECONDS: "-5" })).toBe(0);
     expect(ENRICH_CLAIM_CAP).toBe(2000);
     expect(ENRICH_PARENT_STALE_MS).toBe(600000);
