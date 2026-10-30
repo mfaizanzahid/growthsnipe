@@ -8,6 +8,10 @@ New Cloudflare account (ccmohamedali, verified by switch after declining the old
 
 Set `ANALYTICS_SYNC_VIA_WORKFLOW=1` as a prod secret (seeding/enrichment bursts now run on the workflow fan-out, cron owns steady-state heads only). Added the requested `observability` block (logs + traces persisted at full sampling, issue detection) at top level AND under `env.production`, same inheritance lesson as `workflows`. First secret write raced a broken stdin pipe and stored an empty value; caught by re-checking and rewrote with an exact byte file. Redeployed (v6617b12a), health OK.
 
+## 2026-10-26 - Workflow flag moved from secret to prod var
+
+`ANALYTICS_SYNC_VIA_WORKFLOW=1` now lives in `env.production.vars` in `wrangler.jsonc`; the same-named secret was deleted (it would have shadowed the var). Redeployed (v11a36b64) with the flag visible as an Environment Variable, all triggers + workflow attached, health OK.
+
 ## 2026-10-26 - Parent pace must exceed leaf latency or waves re-claim in-flight rows (owner decision)
 
 Live stall at 8,338 with a healthy-cycling parent and zero-fail leaves: claim cycles (~25-45s) ran faster than leaf latency (~60-120s), so every wave re-claimed uncommitted in-flight rows — ~80% of vendor reads duplicated, coverage crept at ~50/min. Fixed by raising default parent pace 15s to 60s (cycle period now covers worst-case leaf latency) and restarting the wasteful parent (terminate is data-safe: idempotent writes, claims recompute). Verified live: +3,723 then +3,600 per 4-6 min window (~900/min, 12-18x). Structural note: in-flight rows are fundamentally invisible to claims (uncommitted), so pacing — not smarter claiming — is the correct control; a gather would cost steps and add a second failure mode. Full gate green (686).

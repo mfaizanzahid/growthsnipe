@@ -61,7 +61,8 @@
     "production": {
       "vars": {
             "AI_MODEL": "gpt-6-luna",
-			"AI_PROVIDER": "openai",
+ 			"AI_PROVIDER": "openai",
+ 			"ANALYTICS_SYNC_VIA_WORKFLOW": "1",
 			"APP_BASE_URL": "https://growthsnipe.com",
 			"BREVO_NEW_SIGNUP_LIST_ID": "8",
 			"BREVO_SENDER_EMAIL": "noreply@growthsnipe.com",
