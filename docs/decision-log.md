@@ -4,6 +4,10 @@
 
 New Cloudflare account (ccmohamedali, verified by switch after declining the old saas/fieldvisory account). Created fresh `growthsnipe-db-prod` (223a2e76) — the config pointed at `fieldvisory-db-prod`, fixed before anything touched it. Migrated 0000-0039, set 11 secrets from dev bring-up values (skipped keys already in prod vars so GrowthSnipe branding wins; MCP_BASE_URL pointed at growthsnipe.com; no workflow flag set, so prod runs cron-inline default). Fixed a real config bug the deploy surfaced: `workflows` is not inherited by environments, so the binding is now declared under `env.production` too. Deployed `growthsnipe-production` (v40faeae6): health OK, plans live from prod D1, all 3 crons + sync-workflow attached.
 
+## 2026-10-26 - Workflow mode enabled in prod + observability
+
+Set `ANALYTICS_SYNC_VIA_WORKFLOW=1` as a prod secret (seeding/enrichment bursts now run on the workflow fan-out, cron owns steady-state heads only). Added the requested `observability` block (logs + traces persisted at full sampling, issue detection) at top level AND under `env.production`, same inheritance lesson as `workflows`. First secret write raced a broken stdin pipe and stored an empty value; caught by re-checking and rewrote with an exact byte file. Redeployed (v6617b12a), health OK.
+
 ## 2026-10-26 - Parent pace must exceed leaf latency or waves re-claim in-flight rows (owner decision)
 
 Live stall at 8,338 with a healthy-cycling parent and zero-fail leaves: claim cycles (~25-45s) ran faster than leaf latency (~60-120s), so every wave re-claimed uncommitted in-flight rows — ~80% of vendor reads duplicated, coverage crept at ~50/min. Fixed by raising default parent pace 15s to 60s (cycle period now covers worst-case leaf latency) and restarting the wasteful parent (terminate is data-safe: idempotent writes, claims recompute). Verified live: +3,723 then +3,600 per 4-6 min window (~900/min, 12-18x). Structural note: in-flight rows are fundamentally invisible to claims (uncommitted), so pacing — not smarter claiming — is the correct control; a gather would cost steps and add a second failure mode. Full gate green (686).
