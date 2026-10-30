@@ -63,13 +63,20 @@
         {
           "binding": "DB",
           "database_name": "growthsnipe-db-prod",
-          "database_id": "ea04c13e-e371-4917-8d69-748724e2bebe",
+          "database_id": "223a2e76-2b2a-4679-a10b-1cb26960e7ca",
           "migrations_dir": "./db/migrations"
         }
       ],
       "triggers": {
         "crons": ["0 3 * * *", "0 * * * *", "* * * * *"]
-      }
+      },
+      "workflows": [
+        {
+          "name": "sync-workflow",
+          "binding": "SYNC_WORKFLOW",
+          "class_name": "SyncWorkflow"
+        }
+      ]
     }
   }
 }
