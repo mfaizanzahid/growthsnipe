@@ -89,7 +89,13 @@ export function createAuth(env: Env, db: Db) {
   const auth = betterAuth({
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.APP_BASE_URL,
-    trustedOrigins: [env.APP_BASE_URL],
+    trustedOrigins: [
+      env.APP_BASE_URL,
+      ...(env.EXTRA_TRUSTED_ORIGINS ?? "")
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean),
+    ],
     database: drizzleAdapter(db, {
       provider: "sqlite",
       // Keyed by BOTH singular model names and plural table names: core
