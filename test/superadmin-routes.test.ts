@@ -153,6 +153,51 @@ describe("superadmin clients + usage + refunds", () => {
   });
 });
 
+describe("superadmin magic link", () => {
+  function buildMagicLinkApp(calls: string[]) {
+    const store = memoryStore();
+    const memberStore: MemberStore = {
+      getMember: async () => null,
+      isSuperadmin: async () => true,
+      seedSuperadmins: async () => undefined,
+    };
+    return createSuperadminRoutes({
+      session: async () => BOSS,
+      store: memberStore,
+      ctx: {
+        db: emptyDrizzle(),
+        auth: {
+          api: {
+            signInMagicLink: async ({ body }: { body: { email: string } }) => {
+              calls.push(body.email);
+              return { status: true };
+            },
+          },
+        } as unknown as Auth,
+      },
+      billing: store,
+      gateway: fakeGateway(),
+      idem: store,
+    });
+  }
+
+  it("sends a sign-in link for superadmins, 422 without email, 403 for non-superadmins", async () => {
+    const calls: string[] = [];
+    const app = buildMagicLinkApp(calls);
+    const res = await call(app, "/api/superadmin/clients/o1/members/magic-link", { email: "owner@acme.com" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(calls).toEqual(["owner@acme.com"]);
+
+    const missing = await call(app, "/api/superadmin/clients/o1/members/magic-link", {});
+    expect(missing.status).toBe(422);
+
+    const store = memoryStore();
+    const denied = buildApp(store, BOSS, false);
+    expect((await call(denied, "/api/superadmin/clients/o1/members/magic-link", { email: "x@y.com" })).status).toBe(403);
+  });
+});
+
 describe("superadmin plans + coupons routes", () => {
   it("enforces the 4-active cap and delete block over HTTP", async () => {
     const store = memoryStore();

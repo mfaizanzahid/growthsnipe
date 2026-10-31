@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { desc, eq, inArray, sql } from "drizzle-orm";
-import { accounts, users, verifications } from "../../../db/schema";
+import { accounts, invitations, users, verifications } from "../../../db/schema";
+import { isSuperadminSeedEmail } from "../lib/access";
+import { getValidFreshInvite } from "../repositories/billing";
 import type { Env } from "../types";
 import { contextMiddleware, createContextMiddleware } from "../middleware";
 import type { Db } from "../repositories/db";
@@ -119,11 +121,11 @@ export function createPendingEmailRoutes(deps: {
   routes.use("*", deps.ctx ? createContextMiddleware(deps.ctx) : contextMiddleware);
 
   /**
-   * Deliberate enumeration oracle for the signup form: tells whether a
-   * VERIFIED account already uses an address so the UI can say "please sign
-   * in" instead of stranding the user on the verify page. Unverified
-   * addresses report false so pending signups keep the resend-link flow
-   * (sign-in would fail for them anyway).
+   * Invite-only sign-in oracle: tells whether a VERIFIED account already uses
+   * an address, whether a pending workspace invitation exists for it, and
+   * whether the address is a superadmin seed email, so the UI can send a
+   * magic link to members, invitees, and superadmins while turning away
+   * strangers. Owner-accepted enumeration tradeoff.
    */
   routes.post("/api/account-exists", async (c) => {
     const parsed = ExistsBody.safeParse(await c.req.json().catch(() => undefined));
@@ -131,7 +133,20 @@ export function createPendingEmailRoutes(deps: {
     const db = c.get("db") as Db;
     const store = deps.store ?? liveStore(db);
     const user = await store.findByEmail(parsed.data.email);
-    return c.json({ exists: user?.emailVerified === true });
+    const exists = user?.emailVerified === true;
+    let invited = false;
+    try {
+      const rows = await db
+        .select({ id: invitations.id })
+        .from(invitations)
+        .where(sql`lower(${invitations.email}) = ${parsed.data.email} AND ${invitations.status} = 'pending'`)
+        .limit(1);
+      invited = rows.length > 0 || (await getValidFreshInvite(db, parsed.data.email)) !== null;
+    } catch {
+      invited = false;
+    }
+    const seed = isSuperadminSeedEmail((c.env as Env).SUPERADMIN_EMAILS, parsed.data.email);
+    return c.json({ exists, invited, allowed: exists || invited || seed });
   });
 
   routes.post("/api/pending-email", async (c) => {

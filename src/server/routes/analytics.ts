@@ -699,9 +699,7 @@ async function buildOverviewLegacy(db: Db, orgId: string, w: OverviewWindow) {
 
 function dataQualityNotes(truncated: boolean): string[] {
   const notes: string[] = [];
-  if (truncated) notes.push("Trend history is capped at the newest 60,000 orders in range; KPIs and leaderboards always use the full range.");
-  notes.push("ISN date filters accept whole days only, so consecutive comparison windows share a boundary day counted in both.");
-  notes.push("ISN exposes no completion flag on windowed reads: a non-cancelled order scheduled in the past is treated as completed.");
-  notes.push("ISN service mix builds from per-order detail reads, newest first; very old orders may still lack service detail while enrichment catches up.");
+  if (truncated) notes.push("Showing your newest 60,000 jobs here. Totals still use all jobs.");
+  notes.push("Day to day comparisons can overlap by one day. Details for very old jobs may still be loading.");
   return notes;
 }

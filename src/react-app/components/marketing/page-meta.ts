@@ -29,9 +29,14 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
       "Why GrowthSnipe starts with the leak: a productized growth company that sizes the gap, builds the system, and stays to run it.",
   },
   "/pricing": {
-    title: "Pricing: SNIPE Intelligence™ and Engine Plans | GrowthSnipe",
+    title: "Pricing: Engine Plans, Scoped on a Call | GrowthSnipe",
     description:
-      "Start SNIPE Intelligence™ free for 30 days, no card required. Compare the offer ladder and Engine Core and Command engagements.",
+      "Every GrowthSnipe plan is scoped with you on a call. Compare the offer ladder and Engine Core and Command engagements.",
+  },
+  "/book": {
+    title: "Book A Call | GrowthSnipe",
+    description:
+      "Book a call with GrowthSnipe. We size the revenue leak in dollars and agree the scope before anything is sold.",
   },
   "/who-we-help": {
     title: "Who We Help: Home-Service Owners | GrowthSnipe",

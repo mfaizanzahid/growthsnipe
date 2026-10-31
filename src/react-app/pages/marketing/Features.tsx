@@ -159,7 +159,7 @@ export function Features() {
 
       <CtaBand
         title="Start with the scorecard"
-        body="Run SNIPE Intelligence™ free for 30 days, or book a discovery call and we will size the leak first."
+        body="Book a call and we will size the leak first."
       />
     </MarketingLayout>
   );

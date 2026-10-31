@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import {
   couponPlans,
   coupons,
+  freshInvites,
   invoiceItems,
   invoiceSequences,
   invitations,
@@ -20,7 +21,7 @@ import {
   webhookEvents,
 } from "../../../db/schema";
 import type { Db } from "./db";
-import { getAllSettings } from "./index";
+import { getAllSettings, listOrgsForUser } from "./index";
 import { nowMs } from "../lib/time";
 import { formatInvoiceNumber } from "../lib/billing-math";
 
@@ -758,6 +759,117 @@ export async function createInvitation(
     createdAt: now,
     updatedAt: now,
   });
+}
+
+/** Fresh-user invites: superadmin pre-approvals for invite-only signup. */
+export const FRESH_INVITE_TTL_MS = 30 * 86400 * 1000;
+
+export type FreshInviteRow = typeof freshInvites.$inferSelect;
+
+export async function getValidFreshInvite(db: Db, email: string): Promise<FreshInviteRow | null> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return null;
+  const rows = await db.select().from(freshInvites).where(eq(freshInvites.email, normalized)).limit(1);
+  const row = rows[0] ?? null;
+  if (!row || row.consumedAt || row.expiresAt.getTime() <= Date.now()) return null;
+  return row;
+}
+
+export async function createFreshInvite(
+  db: Db,
+  row: { id: string; email: string; inviterId?: string | null },
+): Promise<FreshInviteRow> {
+  const now = new Date();
+  const normalized = row.email.trim().toLowerCase();
+  await db.insert(freshInvites).values({
+    id: row.id,
+    email: normalized,
+    inviterId: row.inviterId ?? null,
+    createdAt: now,
+    expiresAt: new Date(now.getTime() + FRESH_INVITE_TTL_MS),
+    consumedAt: null,
+  });
+  const created = await db.select().from(freshInvites).where(eq(freshInvites.id, row.id)).limit(1);
+  if (!created[0]) throw new Error("Fresh invite insert failed");
+  return created[0];
+}
+
+export async function getFreshInviteById(db: Db, id: string): Promise<FreshInviteRow | null> {
+  const rows = await db.select().from(freshInvites).where(eq(freshInvites.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function consumeFreshInvite(db: Db, email: string): Promise<void> {
+  const normalized = email.trim().toLowerCase();
+  await db
+    .update(freshInvites)
+    .set({ consumedAt: new Date() })
+    .where(and(eq(freshInvites.email, normalized), sql`${freshInvites.consumedAt} IS NULL`));
+}
+
+export async function listFreshInvites(db: Db): Promise<FreshInviteRow[]> {
+  return db.select().from(freshInvites).orderBy(desc(freshInvites.createdAt));
+}
+
+export async function revokeFreshInvite(db: Db, id: string): Promise<boolean> {
+  const existing = await db.select({ id: freshInvites.id }).from(freshInvites).where(eq(freshInvites.id, id)).limit(1);
+  if (existing.length === 0) return false;
+  await db.delete(freshInvites).where(eq(freshInvites.id, id));
+  return true;
+}
+
+/**
+ * Invite-only first-workspace gate (unit-tested; wired into
+ * beforeCreateOrganization). Members (any existing org) always pass; a user
+ * with no workspace needs a pending org invitation or a fresh-user invite.
+ * Fail-open only when the lookups themselves error (never lock out on DB
+ * trouble); a definitive "no invite" fails closed.
+ */
+export async function firstOrgInviteVerdict(
+  db: Db,
+  userId: string,
+  email: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const DENIED = "Invite required: book a call and we will send your invite.";
+  let orgs: Array<{ id: string }>;
+  try {
+    orgs = await listOrgsForUser(db, userId);
+  } catch {
+    return { ok: true };
+  }
+  if (orgs.length > 0) return { ok: true };
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return { ok: false, reason: DENIED };
+  try {
+    const pending = await db
+      .select({ id: invitations.id })
+      .from(invitations)
+      .where(sql`lower(${invitations.email}) = ${normalized} AND ${invitations.status} = 'pending'`)
+      .limit(1);
+    if (pending.length > 0) return { ok: true };
+    if (await getValidFreshInvite(db, normalized)) return { ok: true };
+  } catch {
+    return { ok: true };
+  }
+  return { ok: false, reason: DENIED };
+}
+
+/** True when the address already belongs to at least one workspace. */
+export async function emailHasWorkspace(db: Db, email: string): Promise<boolean> {
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return false;
+  const found = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(sql`lower(${users.email}) = ${normalized}`)
+    .limit(1);
+  if (found.length === 0) return false;
+  const memberships = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(eq(members.userId, found[0]!.id))
+    .limit(1);
+  return memberships.length > 0;
 }
 
 export async function getUser(

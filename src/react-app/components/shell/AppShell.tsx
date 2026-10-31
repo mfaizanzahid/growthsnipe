@@ -235,7 +235,7 @@ export function AppShell() {
             >
               {billingNotice.kind === "trial" && (
                 <span>
-                  SNIPE Intelligence™ trial: {billingNotice.daysLeft} day{billingNotice.daysLeft === 1 ? "" : "s"} left. Subscribe to keep full access.
+                  Trial: {billingNotice.daysLeft} day{billingNotice.daysLeft === 1 ? "" : "s"} left. Subscribe to keep full access.
                 </span>
               )}
               {billingNotice.kind === "prepaid" && (

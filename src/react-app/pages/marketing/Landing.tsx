@@ -101,14 +101,14 @@ export function Landing() {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
-                <Link to="/signup">Start SNIPE Intelligence™ free</Link>
+                <Link to="/book">Book A Call</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
                 <Link to="/contact">Get your free Leak Scorecard</Link>
               </Button>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
-              30-day trial, no card required. Or book a discovery call and we will size the gap first.
+              Book a call and we will size the gap first.
             </p>
           </div>
         </div>
@@ -170,7 +170,7 @@ export function Landing() {
                 <Link to="/features">See what it measures</Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link to="/pricing">Start the trial</Link>
+                <Link to="/book">Book A Call</Link>
               </Button>
             </div>
           </div>
@@ -286,7 +286,7 @@ export function Landing() {
                 Start with the scorecard
               </CardTitle>
               <CardDescription>
-                A free Revenue Leak Scorecard and a 30-day SNIPE Intelligence™ trial. See the gap in dollars before you commit to anything.
+                A free Revenue Leak Scorecard. See the gap in dollars before you commit to anything.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -316,7 +316,7 @@ export function Landing() {
 
       <CtaBand
         title="Growth, with the math done"
-        body="Start the free trial or book a discovery call. We will show you the leak before we ask for a card."
+        body="Book a call. We will show you the leak before we ask for anything."
       />
     </MarketingLayout>
   );

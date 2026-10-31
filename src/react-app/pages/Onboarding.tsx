@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { ArrowRightIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { authClient } from "../lib/auth-client";
@@ -358,7 +358,7 @@ export function Onboarding() {
         throw new Error(data?.error ?? "Could not start trial");
       }
       setTrialEndsAt(data?.trialEndsAt ?? null);
-      toast.success("SNIPE Intelligence™ trial started: welcome aboard!");
+      toast.success("Workspace ready: welcome aboard!");
       return true;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start trial");
@@ -419,7 +419,7 @@ export function Onboarding() {
         <Card>
           <CardHeader>
             <CardTitle>About your business</CardTitle>
-            <CardDescription>Personalizes your briefings, snapshots, and AI answers. Business name and trade are required.</CardDescription>
+            <CardDescription>Personalizes your reports. Business name and trade are required.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={saveProfile} className="space-y-4">
@@ -510,6 +510,11 @@ export function Onboarding() {
               <div className="space-y-3">
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-20 w-full" />
+              </div>
+            ) : plans.filter((p) => (p.contactOnly ?? 0) === 0).length === 0 ? (
+              <div className="space-y-3 rounded-lg border p-4 text-center">
+                <p className="text-sm text-muted-foreground">Plans are scoped on a call. Book a call and we will set up your subscription.</p>
+                <Button asChild><Link to="/book">Book A Call</Link></Button>
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -672,9 +677,9 @@ export function Onboarding() {
           <CardContent className="space-y-3 pt-6 text-center">
             <CheckCircleIcon className="mx-auto size-12 text-green-600" />
             <p className="font-medium">
-              SNIPE Intelligence™ trial active{trialEndsAt ? `: ends ${new Date(trialEndsAt * 1000).toLocaleDateString()}` : ""}!
+              Workspace ready{trialEndsAt ? `: ends ${new Date(trialEndsAt * 1000).toLocaleDateString()}` : ""}!
             </p>
-            <p className="text-sm text-muted-foreground">Full access for 30 days, no card required. Subscribe anytime from billing.</p>
+            <p className="text-sm text-muted-foreground">Full access is on. Your plan is managed by our team.</p>
             <Button className="w-full" onClick={() => navigate("/dashboard")}>
               Go to dashboard
             </Button>

@@ -6,7 +6,6 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import { Skeleton } from "../../components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import {
   CtaBand,
@@ -15,7 +14,6 @@ import {
   SectionHeading,
   Testimonial,
 } from "../../components/marketing/MarketingBits";
-import { formatWholeMoney } from "../../lib/money";
 import { parsePlanFeatures } from "../../lib/plan-features";
 
 interface Plan {
@@ -33,11 +31,6 @@ interface Plan {
   features: string | null;
 }
 
-/** Yearly billing at ~10x monthly means ~2 months free vs paying monthly. */
-function hasAnnualDeal(plan: Plan): boolean {
-  return plan.monthlyMinor > 0 && plan.annualMinor > 0 && plan.annualMinor <= 10 * plan.monthlyMinor;
-}
-
 const LADDER = [
   { step: "Revenue Leak Scorecard", price: "Free", body: "A dollar figure for what your leaks cost each month." },
   { step: "Workbooks and webinar", price: "Free", body: "Lead magnets and the monthly live 60-Job Blueprint session." },
@@ -50,15 +43,15 @@ const LADDER = [
 
 const FAQS = [
   {
-    q: "How does the SNIPE Intelligence™ trial work?",
-    a: "Every first workspace gets 30 days of full access with no card and no charge. At the end of the trial you pick the plan or cancel. Additional workspaces subscribe immediately.",
+    q: "How do I start?",
+    a: "Book a call. We size the leak in dollars, agree the scope with you, and quote the plan on the call. Nothing is sold online.",
   },
   {
-    q: "Can I buy the Engine plans online?",
-    a: "No. Engine Core, Engine Command, and the rest of the offer ladder are scoped with you. Use Contact us for pricing and we will walk through fit, term, and setup.",
+    q: "Can I buy an Engine plan online?",
+    a: "No. Engine Core, Engine Command, and the rest of the offer ladder are scoped with you. Book a call and we will walk through fit, term, and setup.",
   },
   {
-    q: "What is included in SNIPE Intelligence™?",
+    q: "What is included in an engagement?",
     a: "One weekly scorecard, forecasting, and custom reports built from the software you already run: booking platform, CRM, phones, and ad accounts. It connects to Spectora and ISN at launch, with more vertical software added over time.",
   },
   {
@@ -67,11 +60,11 @@ const FAQS = [
   },
   {
     q: "Can I switch plans later?",
-    a: "Yes. Upgrades apply right away with a prorated charge. Downgrades start on the next cycle. The plan picker only offers self-serve plans.",
+    a: "Yes. Talk to us and we will move you to the plan that fits. Upgrades apply right away with a prorated charge. Downgrades start on the next cycle.",
   },
   {
     q: "Can I use a discount code?",
-    a: "Enter it at signup. It applies from your first charged period onward. One coupon per subscription; totals never go below zero.",
+    a: "Mention it on the call. It applies from your first charged period onward. One coupon per subscription; totals never go below zero.",
   },
 ];
 
@@ -79,7 +72,6 @@ export function Pricing() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
-  const [interval, setInterval] = useState<"month" | "year">("month");
   const prerendered = useContext(PrerenderContext);
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -105,7 +97,6 @@ export function Pricing() {
     void load();
   }, []);
 
-  const selfServe = plans.filter((p) => (p.contactOnly ?? 0) === 0);
   const contactTiers = plans.filter((p) => (p.contactOnly ?? 0) === 1);
 
   return (
@@ -113,24 +104,14 @@ export function Pricing() {
       <PageHero
         eyebrow="Pricing"
         title="Growth, with the math done"
-        lede="Start with SNIPE Intelligence™ for one flat monthly fee and a 30-day free trial. Everything else is scoped with you, so you only pay for the system you actually need."
+        lede="Every plan is scoped with you on a call, so you only pay for the system you actually need. Start by booking a call."
       />
 
       <section className="mx-auto w-full max-w-6xl px-4 pb-6">
-        <div className="mx-auto max-w-xs">
-          <Tabs value={interval} onValueChange={(v) => setInterval(v as "month" | "year")}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="month">Monthly</TabsTrigger>
-              <TabsTrigger value="year">Yearly</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
         {loading && (prerendered || !mounted) ? (
           <div className="mx-auto mt-8 max-w-2xl text-center">
             <p className="text-muted-foreground">
-              Plans and current prices load live from our billing system when you open this page.
-              SNIPE Intelligence™ starts with a 30-day free trial that needs no card.
+              Plans load live from our billing system when you open this page.
             </p>
           </div>
         ) : loading ? (
@@ -144,52 +125,39 @@ export function Pricing() {
               Try again
             </Button>
           </div>
-        ) : selfServe.length === 0 ? (
+        ) : plans.length === 0 ? (
           <div className="mx-auto mt-8 max-w-md text-center">
-            <p className="text-muted-foreground">No self-serve plans are available yet.</p>
+            <p className="text-muted-foreground">Plans are scoped on a call.</p>
             <Button className="mt-4" asChild>
-              <Link to="/contact">Contact us for pricing</Link>
+              <Link to="/book">Book A Call</Link>
             </Button>
           </div>
         ) : (
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            {selfServe.map((p) => {
-              const recurring = interval === "month" ? p.monthlyMinor : p.annualMinor;
-              const annualDeal = interval === "year" && hasAnnualDeal(p);
-              return (
-                <Card key={p.id} className="flex w-full max-w-sm flex-col">
-                  <CardHeader className="text-center">
-                    <CardTitle>{p.name}</CardTitle>
-                    {p.description && <CardDescription>{p.description}</CardDescription>}
-                  </CardHeader>
-                  <CardContent className="flex flex-1 flex-col gap-4">
-                    <div className="text-center text-4xl font-bold">
-                      {formatWholeMoney(recurring, p.currency)}
-                      <span className="text-base font-normal text-muted-foreground">
-                        /{interval === "month" ? "mo" : "yr"}
-                      </span>
-                    </div>
-                    {annualDeal && (
-                      <p className="text-center text-sm font-semibold text-primary">
-                        Get 2 months free
-                      </p>
-                    )}
-                    <ul className="space-y-2 text-sm">
-                      {parsePlanFeatures(p.features).map((f) => (
-                        <li key={f} className="flex items-start gap-2">
-                          <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button className="mt-auto w-full" asChild>
-                      <Link to="/signup">Start 30-day free trial</Link>
+            {plans.map((p) => (
+              <Card key={p.id} className="flex w-full max-w-sm flex-col">
+                <CardHeader className="text-center">
+                  <CardTitle>{p.name}</CardTitle>
+                  {p.description && <CardDescription>{p.description}</CardDescription>}
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-4">
+                  <ul className="space-y-2 text-sm">
+                    {parsePlanFeatures(p.features).map((f) => (
+                      <li key={f} className="flex items-start gap-2">
+                        <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-auto space-y-2">
+                    <p className="text-center text-sm font-semibold">Pricing on the call</p>
+                    <Button className="w-full" asChild>
+                      <Link to="/book">Book A Call</Link>
                     </Button>
-                    <p className="text-center text-xs text-muted-foreground">No card required</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </section>
@@ -250,9 +218,9 @@ export function Pricing() {
                     ))}
                   </ul>
                   <div className="mt-auto space-y-2">
-                    <p className="text-sm font-semibold">Contact us for pricing</p>
+                    <p className="text-sm font-semibold">Pricing on the call</p>
                     <Button className="w-full" variant="outline" asChild>
-                      <Link to="/contact">Talk to us</Link>
+                      <Link to="/book">Book A Call</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -285,8 +253,8 @@ export function Pricing() {
       </section>
 
       <CtaBand
-        title="Start with the trial"
-        body="Thirty days of SNIPE Intelligence™ with full access. No card. See the number before you decide."
+        title="Start with a call"
+        body="Thirty minutes on your numbers. See the leak before you decide."
       />
     </MarketingLayout>
   );

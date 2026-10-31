@@ -14,11 +14,10 @@ import {
   verificationEmail,
   magicLinkEmail,
   invitationEmail,
-  resetPasswordEmail,
 } from "./lib/email";
 import { isSuperadminSeedEmail, parseSuperadminEmails } from "./lib/access";
 import { getSetting, getUserById, isSuperadmin, seedSuperadmins } from "./repositories";
-import { drizzleStore, getUser, setDefaultOrg } from "./repositories/billing";
+import { consumeFreshInvite, drizzleStore, firstOrgInviteVerdict, getUser, setDefaultOrg } from "./repositories/billing";
 import { activeMemberCount, canCreateOrg, orgAccess } from "./billing/access";
 
 /**
@@ -118,40 +117,11 @@ export function createAuth(env: Env, db: Db) {
         invitations: schema.invitations,
       },
     }),
+    // Invite-only: password sign-in is retired. Sign-in is magic link
+    // (plus Google); new workspaces require a pending invitation (see
+    // beforeCreateOrganization below).
     emailAndPassword: {
-      enabled: true,
-      requireEmailVerification: true,
-      // Re-signup with a pending (unverified) address re-sends the link, so a
-      // confused user isn't stranded without clicking Resend. Verified
-      // addresses are never mailed here — the signup form must not become a
-      // spam cannon against registered emails.
-      onExistingUserSignUp: async ({ user }, request) => {
-        try {
-          const auth = authRef.current;
-          if (!auth) return;
-          await resendVerificationForExistingSignup(
-            db,
-            async (email, headers) => {
-              await auth.api.sendVerificationEmail({
-                body: { email, callbackURL: "/onboarding" },
-                headers,
-              });
-            },
-            user,
-            request?.headers ?? new Headers(),
-          );
-        } catch {
-          // never break signup over a background resend
-        }
-      },
-      sendResetPassword: async ({ user, url }) => {
-        // Auth emails send via Resend (Brevo is billing-only + signup list).
-        await sendEmail(
-          env.RESEND_API_KEY,
-          { ...resetPasswordEmail(user.email, url) /*, bcc: superadminBcc(env, user.email) */ },
-          env.RESEND_FROM_EMAIL,
-        );
-      },
+      enabled: false,
     },
     emailVerification: {
       sendOnSignUp: true,
@@ -168,6 +138,8 @@ export function createAuth(env: Env, db: Db) {
     ...google,
     plugins: [
       magicLink({
+        // Superadmin invites stay usable for 7 days (Better Auth default is 5 minutes).
+        expiresIn: 604800,
         sendMagicLink: async ({ email, url }) => {
           // Auth emails send via Resend (Brevo is billing-only + signup list).
           await sendEmail(
@@ -195,6 +167,11 @@ export function createAuth(env: Env, db: Db) {
               const store = drizzleStore(db);
               const verdict = await canCreateOrg(store, user.id);
               if (!verdict.ok) throw new APIError("FORBIDDEN", { message: verdict.reason ?? "Cannot create another workspace right now" });
+              // Invite-only: a user with no workspace yet must hold a pending
+              // org invitation or a fresh-user invite. Members creating
+              // further workspaces keep the paid-subscription gate above.
+              const inviteVerdict = await firstOrgInviteVerdict(db, user.id, user.email ?? "");
+              if (!inviteVerdict.ok) throw new APIError("FORBIDDEN", { message: inviteVerdict.reason });
             }
             const name = (organization.name ?? "").trim().toLowerCase();
             if (!name) throw new APIError("BAD_REQUEST", { message: "Organization name is required" });
@@ -221,7 +198,8 @@ export function createAuth(env: Env, db: Db) {
               });
             }
           },
-          // The first organization a user creates becomes their default.
+          // The first organization a user creates becomes their default, and a
+          // fresh-user invite is consumed (single-use).
           afterCreateOrganization: async ({ organization, user }) => {
             try {
               if (!user?.id || !organization?.id) return;
@@ -231,6 +209,12 @@ export function createAuth(env: Env, db: Db) {
               }
             } catch {
               // never break org creation over the default pointer
+            }
+            try {
+              const email = (user?.email ?? "").trim().toLowerCase();
+              if (email) await consumeFreshInvite(db, email);
+            } catch {
+              // consumption is bookkeeping; never break org creation over it
             }
           },
         },

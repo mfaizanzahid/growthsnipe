@@ -101,6 +101,17 @@ export const members = sqliteTable(
   }),
 );
 
+/* Fresh-user invites: superadmin pre-approvals for emails with no workspace yet. */
+export const freshInvites = sqliteTable("fresh_invites", {
+  id: text("id").primaryKey(),
+  /** Lowercased invitee address (unique: one pending invite per email). */
+  email: text("email").notNull().unique(),
+  inviterId: text("inviter_id"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  consumedAt: integer("consumed_at", { mode: "timestamp" }),
+});
+
 export const invitations = sqliteTable("invitations", {
   id: text("id").primaryKey(),
   orgId: text("org_id").notNull(),

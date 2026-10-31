@@ -70,7 +70,7 @@ export function WhoWeHelp() {
 
       <CtaBand
         title="Find your starting point"
-        body="Start the free SNIPE Intelligence™ trial, or book a discovery call and we will tell you which plan fits."
+        body="Book a call and we will tell you which plan fits."
       />
     </MarketingLayout>
   );

@@ -169,7 +169,6 @@ function robotsTxt(): string {
     "Disallow: /billing",
     "Disallow: /superadmin",
     "Disallow: /login",
-    "Disallow: /signup",
     "Disallow: /onboarding",
     "",
     `Sitemap: ${HOST}/sitemap.xml`,

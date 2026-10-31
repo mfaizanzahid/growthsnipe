@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { LockClosedIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { authClient } from "../lib/auth-client";
@@ -424,7 +425,7 @@ export function Billing() {
               </>
             ) : (
               <>
-                SNIPE Intelligence™ trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left. Subscribe below
+                Trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left. Subscribe below
                 to keep uninterrupted access; no card is on file.
               </>
             )}
@@ -440,7 +441,18 @@ export function Billing() {
         </Alert>
       )}
 
-      {needsSubscribe && orgId && (
+      {needsSubscribe && orgId && selfServePlans(plans).length === 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Talk to us</CardTitle>
+            <CardDescription>Plans are scoped on a call. Book a call and we will set up your subscription.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild><Link to="/book">Book A Call</Link></Button>
+          </CardContent>
+        </Card>
+      )}
+      {needsSubscribe && orgId && selfServePlans(plans).length > 0 && (
         <SubscribeCard orgId={orgId} plans={plans} onDone={refresh} />
       )}
 
@@ -469,7 +481,7 @@ export function Billing() {
               {isAdmin && (subscription.status === "active" || subscription.status === "past_due" || prepaidTrial) && (
                 <div className="space-y-3 border-t pt-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    {!prepaidTrial && (
+                    {!prepaidTrial && selfServePlans(plans).length > 1 && (
                       <Button
                         variant="outline"
                         onClick={() => {

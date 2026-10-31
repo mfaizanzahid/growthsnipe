@@ -6,10 +6,19 @@ import { DataTable, RowAction, type DataColumn } from "../../components/DataTabl
 import { formatMoney } from "../../lib/money";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
 import { api, runBulk, toastBulk } from "../../components/billing/shared";
 import { ChargeDialog, ConfirmDialog, statusBadge } from "../../components/billing/dialogs";
 import { AdminDenied, AdminLoading, useAdminGuard } from "./guard";
 import type { AdminClient } from "./types";
+
+interface FreshInvite {
+  id: string;
+  email: string;
+  createdAt: string;
+  expiresAt: string;
+  consumedAt: string | null;
+}
 
 export function AdminClients() {
   const allowed = useAdminGuard();
@@ -20,6 +29,9 @@ export function AdminClients() {
   const [selected, setSelected] = useState<string[]>([]);
   const [chargeState, setChargeState] = useState<{ orgIds: string[]; label: string } | null>(null);
   const [cancelOrgs, setCancelOrgs] = useState<AdminClient[] | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invites, setInvites] = useState<FreshInvite[]>([]);
+  const [inviting, setInviting] = useState(false);
 
   async function load() {
     try {
@@ -32,9 +44,66 @@ export function AdminClients() {
     }
   }
 
+  async function loadInvites() {
+    try {
+      const data = await api("/api/superadmin/invites");
+      setInvites(((data as { invites?: FreshInvite[] }).invites ?? []) as FreshInvite[]);
+    } catch {
+      // invites list is auxiliary; the clients table stays usable
+    }
+  }
+
   useEffect(() => {
-    if (allowed) void load();
+    if (allowed) {
+      void load();
+      void loadInvites();
+    }
   }, [allowed]);
+
+  async function doInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      await api("/api/superadmin/invites", {
+        method: "POST",
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+      toast.success("Invite sent with a sign-in link (valid 7 days)");
+      setInviteEmail("");
+      await loadInvites();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invite failed");
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function doResend(id: string) {
+    setBusy(true);
+    try {
+      await api(`/api/superadmin/invites/${id}/resend`, { method: "POST" });
+      toast.success("Sign-in link re-sent (valid 7 days)");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Resend failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doRevoke(id: string) {
+    if (!window.confirm("Revoke this invite? The link stops working.")) return;
+    setBusy(true);
+    try {
+      await api(`/api/superadmin/invites/${id}`, { method: "DELETE" });
+      toast.success("Invite revoked");
+      await loadInvites();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Revoke failed");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function doCharge(orgIds: string[], amountMinor: number, description: string) {
     setBusy(true);
@@ -126,6 +195,53 @@ export function AdminClients() {
         <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
         <p className="text-sm text-muted-foreground">All tenant workspaces. Select rows for bulk actions.</p>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Invite new user</CardTitle>
+          <CardDescription>
+            They get a sign-in link by email and become admin of the workspace they create in onboarding.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={doInvite} className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              placeholder="Email"
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              required
+            />
+            <Button type="submit" disabled={inviting || !inviteEmail.trim()}>
+              {inviting ? "Sending…" : "Invite"}
+            </Button>
+          </form>
+          {invites.filter((i) => !i.consumedAt).length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {invites
+                .filter((i) => !i.consumedAt)
+                .map((i) => (
+                  <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                    <span>
+                      {i.email}{" "}
+                      <span className="text-muted-foreground">
+                        · expires {new Date(i.expiresAt).toLocaleDateString()}
+                      </span>
+                    </span>
+                    <span className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => void doResend(i.id)} disabled={busy}>
+                        Resend link
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => void doRevoke(i.id)} disabled={busy}>
+                        Revoke
+                      </Button>
+                    </span>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Clients</CardTitle>

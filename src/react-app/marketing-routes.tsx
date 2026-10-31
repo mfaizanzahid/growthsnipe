@@ -12,6 +12,7 @@ import { Privacy } from "./pages/marketing/Privacy";
 import { Terms } from "./pages/marketing/Terms";
 import { Contact } from "./pages/marketing/Contact";
 import { About } from "./pages/marketing/About";
+import { Book } from "./pages/marketing/Book";
 
 /**
  * Public marketing routes, shared by the browser router (App.tsx) and the
@@ -37,4 +38,5 @@ export const MARKETING_ROUTES: MarketingRoute[] = [
   { path: "/privacy", Component: Privacy },
   { path: "/terms", Component: Terms },
   { path: "/contact", Component: Contact },
+  { path: "/book", Component: Book },
 ];

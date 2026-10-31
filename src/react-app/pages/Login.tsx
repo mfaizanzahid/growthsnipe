@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { EnvelopeIcon } from "@heroicons/react/24/outline";
 import { authClient, useSession } from "../lib/auth-client";
-import { PasswordInput } from "../components/PasswordInput";
 import { HomeLink } from "../components/HomeLink";
 import { AuthBrand } from "../components/AuthBrand";
 import { Button } from "../components/ui/button";
@@ -11,15 +11,16 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { TermsNotice } from "../components/TermsNotice";
 
+// Invite-only sign-in: email + Continue sends a magic link (7-day validity)
+// to members and invitees. Unknown addresses get an error, not a link.
 export function Login() {
-  const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
   // Deep links (e.g. a protected page) win; otherwise the dashboard.
   const next = from ?? "/dashboard";
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
+  const [sent, setSent] = useState(false);
   const { data: session, isPending: sessionPending } = useSession();
 
   // Already signed in: don't show the form, go to the app.
@@ -27,12 +28,32 @@ export function Login() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const address = email.trim();
+    if (!address) return;
     setPending(true);
     try {
-      const { error } = await authClient.signIn.email({ email, password, callbackURL: "/dashboard" });
-      if (error) throw new Error(error.message ?? "Sign in failed");
-      toast.success("Welcome back");
-      navigate(next, { replace: true });
+      const check = await fetch("/api/account-exists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: address }),
+      }).catch(() => null);
+      const found = (await check?.json().catch(() => null)) as {
+        exists?: boolean;
+        invited?: boolean;
+        allowed?: boolean;
+      } | null;
+      const allowed = found?.allowed ?? (found?.exists || found?.invited);
+      if (!check?.ok || !allowed) {
+        throw new Error("No account uses this email. If you were invited, use your invite link, or book a call and we will send one.");
+      }
+      const { error } = await authClient.signIn.magicLink({
+        email: address,
+        callbackURL: "/dashboard",
+        newUserCallbackURL: "/onboarding",
+      });
+      if (error) throw new Error(error.message ?? "Could not send magic link");
+      setSent(true);
+      toast.success(`Sign-in link sent to ${address}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");
     } finally {
@@ -46,50 +67,53 @@ export function Login() {
       <AuthBrand />
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Sign in</CardTitle>
-          <CardDescription>Welcome back.</CardDescription>
+          <CardTitle>{sent ? "Check your inbox" : "Sign in"}</CardTitle>
+          <CardDescription>
+            {sent
+              ? `A sign-in link is on its way to ${email.trim()}. It stays valid for 7 days.`
+              : "Enter your work email and we'll send you a sign-in link."}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link className="text-xs/relaxed text-muted-foreground underline" to="/forgot-password">
-                  Forgot password?
-                </Link>
-              </div>
-              <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </div>
-            <TermsNotice />
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Signing in…" : "Sign in"}
+        {sent && (
+          <CardContent className="space-y-4">
+            <p className="text-center text-xs/relaxed text-muted-foreground">
+              Wrong address? Go back and use a different one.
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => setSent(false)}>
+              Change email
             </Button>
-          </form>
-          <p className="text-center text-xs/relaxed text-muted-foreground">
-            <Link className="underline" to="/magic">
-              Use a magic link instead
-            </Link>
-          </p>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            or
-            <span className="h-px flex-1 bg-border" />
-          </div>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/dashboard" })}
-          >
-            Continue with Google
-          </Button>
-          <p className="text-center text-xs/relaxed text-muted-foreground">
-            No account? <Link className="underline" to="/signup">Sign up</Link>
-          </p>
-        </CardContent>
+          </CardContent>
+        )}
+        {!sent && (
+          <CardContent className="space-y-4">
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <TermsNotice />
+              <Button type="submit" className="w-full" disabled={pending}>
+                <EnvelopeIcon className="size-4" />
+                {pending ? "Sending…" : "Continue"}
+              </Button>
+            </form>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              or
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/dashboard" })}
+            >
+              Continue with Google
+            </Button>
+            <p className="text-center text-xs/relaxed text-muted-foreground">
+              No account yet? <Link className="underline" to="/book">Book a call</Link>
+            </p>
+          </CardContent>
+        )}
       </Card>
     </div>
   );

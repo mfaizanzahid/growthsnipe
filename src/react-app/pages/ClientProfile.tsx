@@ -232,6 +232,23 @@ export function ClientProfile() {
     }
   }
 
+  async function doMagicLink() {
+    setBusy(true);
+    try {
+      await api(`/api/superadmin/clients/${orgId}/members/magic-link`, {
+        method: "POST",
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+      toast.success("Sign-in link sent (valid 7 days)");
+      setInviteEmail("");
+      await refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Send failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function doRole(memberId: string, role: string) {
     setBusy(true);
     try {
@@ -483,6 +500,9 @@ export function ClientProfile() {
             </Select>
             <Button onClick={() => void doInvite()} disabled={busy || !inviteEmail.trim()}>
               Invite
+            </Button>
+            <Button variant="outline" onClick={() => void doMagicLink()} disabled={busy || !inviteEmail.trim()}>
+              Send link
             </Button>
           </div>
         </CardContent>

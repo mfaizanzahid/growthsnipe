@@ -105,7 +105,7 @@ export function ConnectPlatformForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="platform-isn-access">Access key</Label>
-            <PasswordInput id="platform-isn-access" autoComplete="off" placeholder="ISN access key (Basic-auth username)" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} />
+            <PasswordInput id="platform-isn-access" autoComplete="off" placeholder="ISN access key" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="platform-isn-secret">Secret key</Label>

@@ -131,10 +131,71 @@ describe("account-exists route", () => {
       { id: "u1", email: "done@test.com", emailVerified: true },
       { id: "u2", email: "pending@test.com", emailVerified: false },
     ]);
-    expect(await (await check(app, { email: "done@test.com" })).json()).toEqual({ exists: true });
-    expect(await (await check(app, { email: "DONE@test.com" })).json()).toEqual({ exists: true });
-    expect(await (await check(app, { email: "pending@test.com" })).json()).toEqual({ exists: false });
-    expect(await (await check(app, { email: "ghost@test.com" })).json()).toEqual({ exists: false });
+    expect(await (await check(app, { email: "done@test.com" })).json()).toEqual({ exists: true, invited: false, allowed: true });
+    expect(await (await check(app, { email: "DONE@test.com" })).json()).toEqual({ exists: true, invited: false, allowed: true });
+    expect(await (await check(app, { email: "pending@test.com" })).json()).toEqual({ exists: false, invited: false, allowed: false });
+    expect(await (await check(app, { email: "ghost@test.com" })).json()).toEqual({ exists: false, invited: false, allowed: false });
+  });
+
+  it("reports invited when a pending workspace invitation exists", async () => {
+    const invitedApp = createPendingEmailRoutes({
+      ctx: {
+        db: {
+          select: () => ({
+            from: () => ({
+              where: () => ({ limit: async () => [{ id: "i1" }] }),
+            }),
+          }),
+        } as unknown as Db,
+        auth: {} as unknown as Auth,
+      },
+      store: {
+        findByEmail: async () => null,
+        emailTakenByOther: async () => false,
+        lastVerificationSentAt: async () => null,
+        changeEmail: async () => undefined,
+      },
+    });
+    expect(await (await check(invitedApp, { email: "invitee@test.com" })).json()).toEqual({
+      exists: false,
+      invited: true,
+      allowed: true,
+    });
+  });
+
+  it("reports invited for a fresh-user invite", async () => {
+    const freshRow = { id: "f1", email: "fresh@test.com", consumedAt: null, expiresAt: new Date(Date.now() + 999999) };
+    const freshDb = {
+      select: () => ({ from: () => ({ where: () => ({ limit: async () => [freshRow] }) }) }),
+    } as unknown as Db;
+    const freshApp = createPendingEmailRoutes({
+      ctx: { db: freshDb, auth: {} as unknown as Auth },
+      store: {
+        findByEmail: async () => null,
+        emailTakenByOther: async () => false,
+        lastVerificationSentAt: async () => null,
+        changeEmail: async () => undefined,
+      },
+    });
+    expect(await (await check(freshApp, { email: "fresh@test.com" })).json()).toEqual({
+      exists: false,
+      invited: true,
+      allowed: true,
+    });
+  });
+
+  it("allows a superadmin seed email with no account or invitation", async () => {
+    const { app } = buildApp([]);
+    const res = await app.request(
+      "/api/account-exists",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "boss@test.com" }),
+      },
+      { ...ENV, SUPERADMIN_EMAILS: "boss@test.com" },
+    );
+    expect(await res.json()).toEqual({ exists: false, invited: false, allowed: true });
   });
 
   it("rejects invalid payloads", async () => {

@@ -71,7 +71,7 @@
  			"DEFAULT_TIMEZONE": "America/New_York",
  			"EXTRA_TRUSTED_ORIGINS": "https://growthsnipe-production.ccmohamedali.workers.dev",
 			"GOOGLE_CLIENT_ID": "980211207017-risgihuf4o6kqi8qc04cearg7svufpmr.apps.googleusercontent.com",
- 			"RESEND_FROM_EMAIL": "noreply@tradesmatic.com",
+ 			"RESEND_FROM_EMAIL": "<GrowthSnipe> noreply@tradesmatic.com",
 			"SAFEPAY_API_BASE": "https://sandbox.api.getsafepay.com",
 			"SAFEPAY_ENV": "sandbox",
 			"SUPERADMIN_EMAILS": "mfaizanzahid@gmail.com",

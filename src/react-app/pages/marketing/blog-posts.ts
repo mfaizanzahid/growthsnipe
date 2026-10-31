@@ -156,7 +156,7 @@ export const POSTS: BlogPostData[] = [
     relatedLinks: [
       { label: "SNIPE Intelligence™", to: "/features" },
       { label: "How it works", to: "/how-it-works" },
-      { label: "Start the free trial", to: "/pricing" },
+      { label: "Book a call", to: "/book" },
     ],
     sections: [
       {

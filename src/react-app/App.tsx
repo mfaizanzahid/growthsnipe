@@ -1,16 +1,12 @@
 import { useEffect } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { Toaster } from "./components/ui/sonner";
 import { Protected } from "./components/Protected";
 import { AppShell } from "./components/shell/AppShell";
 import { Login } from "./pages/Login";
-import { Signup } from "./pages/Signup";
 import { MagicLink } from "./pages/MagicLink";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { ResetPassword } from "./pages/ResetPassword";
-import { VerifyEmail } from "./pages/VerifyEmail";
 import { Onboarding } from "./pages/Onboarding";
 import { Dashboard } from "./pages/Dashboard";
 import { Billing } from "./pages/Billing";
@@ -34,11 +30,12 @@ import { NotFound } from "./pages/NotFound";
 export const router = createBrowserRouter([
   ...MARKETING_ROUTES.map(({ path, Component }) => ({ path, element: <Component /> })),
   { path: "/login", element: <Login /> },
-  { path: "/signup", element: <Signup /> },
   { path: "/magic", element: <MagicLink /> },
-  { path: "/forgot-password", element: <ForgotPassword /> },
-  { path: "/reset-password", element: <ResetPassword /> },
-  { path: "/verify-email", element: <VerifyEmail /> },
+  // Invite-only: public signup and password flows are retired. Old links land on Book.
+  { path: "/signup", element: <Navigate to="/book" replace /> },
+  { path: "/forgot-password", element: <Navigate to="/login" replace /> },
+  { path: "/reset-password", element: <Navigate to="/login" replace /> },
+  { path: "/verify-email", element: <Navigate to="/login" replace /> },
   {
     path: "/onboarding",
     element: (

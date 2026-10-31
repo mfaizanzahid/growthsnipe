@@ -9,6 +9,7 @@ import { createOrgRoutes } from "./routes/orgs";
 import { createSuperadminRoutes } from "./routes/superadmin";
 import { createPlansRoutes } from "./routes/plans";
 import { createContactRoutes } from "./routes/contact";
+import { createBookRoutes } from "./routes/book";
 import { createPendingEmailRoutes } from "./routes/pending-email";
 import { createBillingRoutes } from "./routes/billing";
 import { createSidekickRoutes } from "./routes/sidekick";
@@ -131,6 +132,7 @@ export function createApp() {
   app.route("/", createSuperadminRoutes());
   app.route("/", createPlansRoutes());
   app.route("/", createContactRoutes());
+  app.route("/", createBookRoutes());
   app.route("/", createPendingEmailRoutes());
   app.route("/", createBillingRoutes());
   app.route("/", createSidekickRoutes());

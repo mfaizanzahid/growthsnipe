@@ -72,7 +72,7 @@ export function BusinessProfile() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Business profile</h1>
-        <p className="text-sm text-muted-foreground">How your business appears across briefings, snapshots, and AI answers for {activeOrg?.name}.</p>
+        <p className="text-sm text-muted-foreground">How we describe your business in reports for {activeOrg?.name}.</p>
       </div>
       <Card>
         <CardHeader>

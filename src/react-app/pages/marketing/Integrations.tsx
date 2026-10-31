@@ -102,7 +102,7 @@ export function Integrations() {
 
       <CtaBand
         title="Your calendar is the integration"
-        body="Start the free SNIPE Intelligence™ trial and see your own numbers in one scorecard."
+        body="Book a call and see your own numbers in one scorecard."
       />
     </MarketingLayout>
   );

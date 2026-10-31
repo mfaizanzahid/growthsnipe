@@ -32,7 +32,7 @@ function AuthLinks({ signedIn, onNavigate }: { signedIn: boolean; onNavigate?: (
         <Link to="/login">Sign in</Link>
       </Button>
       <Button size="sm" asChild onClick={onNavigate}>
-        <Link to="/signup">Start free trial</Link>
+        <Link to="/book">Book A Call</Link>
       </Button>
     </>
   );
@@ -76,8 +76,8 @@ const PRODUCT_LINKS = [
 const COMPANY_LINKS = [
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
+  { to: "/book", label: "Book A Call" },
   { to: "/login", label: "Sign in" },
-  { to: "/signup", label: "Start free trial" },
 ];
 
 const RESOURCE_LINKS = [

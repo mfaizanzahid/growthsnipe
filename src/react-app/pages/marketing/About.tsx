@@ -77,7 +77,7 @@ export function About() {
 
       <CtaBand
         title="Bring us the numbers"
-        body="Book a discovery call. We will show you the leak before we ask for a card."
+        body="Book a call. We will show you the leak before we ask for anything."
       />
     </MarketingLayout>
   );

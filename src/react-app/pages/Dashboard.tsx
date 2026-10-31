@@ -194,12 +194,12 @@ function SeedProgress({ sync, title = "Syncing your history" }: { sync: SyncStat
  * (whole history while live). */
 function BasketSyncing({ coverage }: { coverage: { orders: number; withServices: number } }) {
   if (coverage.orders === 0) {
-    return <p className="text-sm text-muted-foreground">No orders in this period yet.</p>;
+    return <p className="text-sm text-muted-foreground">No jobs in this period yet.</p>;
   }
   const pct = Math.min(100, Math.round((coverage.withServices / coverage.orders) * 100));
-  const line = `${formatCount(coverage.withServices)} of ${formatCount(coverage.orders)} orders have service detail`;
+  const line = `${formatCount(coverage.withServices)} of ${formatCount(coverage.orders)} jobs list services`;
   return (
-    <div className="space-y-3 py-2" aria-label="Loading service mix">
+                        <div className="space-y-3 py-2" aria-label="Loading services">
       <p className="flex items-center gap-2 text-sm font-medium">
         <ArrowPathIcon className="size-4 animate-spin text-muted-foreground" />
         Syncing service detail
@@ -647,7 +647,7 @@ export function Dashboard() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">SNIPE Intelligence™</h1>
-          <p className="text-sm text-muted-foreground">Revenue, jobs, agents, and inspector load from your synced orders.</p>
+          <p className="text-sm text-muted-foreground">Revenue, jobs, agents, and inspector load from your synced jobs.</p>
         </div>
         <div className="flex flex-col items-end gap-0.5">
           <div className="flex flex-wrap gap-2">
@@ -656,7 +656,7 @@ export function Dashboard() {
               size="sm"
               onClick={() => void manualRefresh()}
               disabled={syncDisabled}
-              title={syncDisabled && !refreshing ? "Syncing in progress — runs automatically" : undefined}
+              title={syncDisabled && !refreshing ? "Syncing. Runs on its own." : undefined}
             >
               <ArrowPathIcon className={`size-4 ${refreshing ? "animate-spin" : ""}`} /> {refreshing ? "Syncing" : "Sync now"}
             </Button>
@@ -673,7 +673,7 @@ export function Dashboard() {
           <ExclamationTriangleIcon className="size-4" />
           <AlertTitle>No provider connected</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
-            Connect Spectora or ISN to start the seeded analytics warehouse.
+            Connect Spectora or ISN to load your jobs.
             <Button variant="outline" size="sm" asChild><Link to="/connections">Connect <ArrowRightIcon className="size-4" /></Link></Button>
           </AlertDescription>
         </Alert>
@@ -695,7 +695,7 @@ export function Dashboard() {
 
       {trialDaysLeft !== null && (
         <Alert>
-          <AlertTitle>SNIPE Intelligence™ trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left</AlertTitle>
+          <AlertTitle>Trial: {trialDaysLeft} day{trialDaysLeft === 1 ? "" : "s"} left</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
             Full access until the trial ends. No card required yet.
             <Button variant="outline" size="sm" asChild><Link to="/billing">Subscribe <ArrowRightIcon className="size-4" /></Link></Button>
@@ -792,7 +792,7 @@ export function Dashboard() {
                   <ArrowPathIcon className="size-5 animate-spin text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Syncing your history</p>
-                    <p className="text-xs text-muted-foreground">Charts unlock automatically when the seed completes. Progress is shown above.</p>
+                    <p className="text-xs text-muted-foreground">Charts show when your jobs finish loading. Progress is shown above.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -955,7 +955,7 @@ export function Dashboard() {
 
               {visible.includes("inspectors") && (
                 <Card>
-                  <CardHeader><CardTitle>Inspector performance and utilization</CardTitle><CardDescription>Utilization equals jobs divided by active days times your jobs per day target. Set targets inline.</CardDescription></CardHeader>
+                  <CardHeader><CardTitle>Inspector performance and utilization</CardTitle><CardDescription>How busy each inspector was against the daily target you set.</CardDescription></CardHeader>
                   <CardContent>
                     {overview.inspectors.length === 0 ? <p className="text-sm text-muted-foreground">No inspector attributions in this period.</p> : (
                       <div className="overflow-x-auto">
@@ -1007,7 +1007,7 @@ export function Dashboard() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="space-y-1.5">
                         <CardTitle>Basket mix of services</CardTitle>
-                        <CardDescription>Top 10 services in period by jobs, with penetration (share of period orders containing each service). ISN detail fills newest first; very old orders may still lack service detail.</CardDescription>
+                        <CardDescription>Your top 10 services by jobs. Penetration means how many jobs included that service.</CardDescription>
                       </div>
                     </div>
                   </CardHeader>
@@ -1016,7 +1016,7 @@ export function Dashboard() {
                       sync?.state === "backfilling" && overview.serviceCoverage ? (
                         <BasketSyncing coverage={overview.serviceCoverage} />
                       ) : sync?.state === "backfilling" ? (
-                        <div className="space-y-3 py-2" aria-label="Loading service mix">
+    <div className="space-y-3 py-2" aria-label="Loading services">
                           <div className="flex items-center gap-2">
                             <ArrowPathIcon className="size-4 animate-spin text-muted-foreground" />
                             <p className="text-sm font-medium">Syncing service detail</p>
@@ -1026,7 +1026,7 @@ export function Dashboard() {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground">No service mix recorded for this period.</p>
+                        <p className="text-sm text-muted-foreground">No services listed for this period.</p>
                       )
                     ) : (
                       (() => {
@@ -1043,7 +1043,7 @@ export function Dashboard() {
                                 <BarChart data={rows} layout="vertical" margin={{ left: 8, right: 52 }}>
                                   <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                                   <XAxis type="number" allowDecimals={false} />
-                                  <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 12 }} />
+                                  <YAxis type="category" dataKey="name" width={10} tick={false} tickLine={false} axisLine={false} />
                                   <Tooltip
                                     formatter={(v) => {
                                       const jobs = typeof v === "number" ? v : 0;
@@ -1086,7 +1086,7 @@ export function Dashboard() {
             </div>
           ) : (
             <Card>
-              <CardHeader><CardTitle>No synced orders yet</CardTitle><CardDescription>{connections.length > 0 ? "Backfill is running. Use Sync now to pull the next chunk." : "Connect a platform to start seeding."}</CardDescription></CardHeader>
+              <CardHeader><CardTitle>No synced jobs yet</CardTitle><CardDescription>{connections.length > 0 ? "We are loading your jobs. Use Sync now to load more." : "Connect Spectora or ISN to start."}</CardDescription></CardHeader>
               <CardContent>
                 <Button variant="outline" size="sm" onClick={() => void manualRefresh()} disabled={syncDisabled}>
                   <ArrowPathIcon className={`size-4 ${refreshing ? "animate-spin" : ""}`} /> Sync now

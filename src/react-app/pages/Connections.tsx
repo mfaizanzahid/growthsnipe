@@ -59,7 +59,7 @@ export function Connections() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Connections</h1>
-        <p className="text-sm text-muted-foreground">Link your field-service platform. Credentials are encrypted at rest and never shown again.</p>
+        <p className="text-sm text-muted-foreground">Link your field-service platform. Your login is saved safely and hidden after this.</p>
       </div>
 
       <Card>
@@ -67,7 +67,7 @@ export function Connections() {
           <div className="space-y-1.5">
             <CardTitle>Connected platforms</CardTitle>
             <CardDescription>
-              One platform per workspace. Credentials are encrypted at rest and never shown again.
+              One platform per workspace. Your login is saved safely and hidden after this.
             </CardDescription>
           </div>
           <Button
@@ -111,8 +111,7 @@ export function Connections() {
           <DialogHeader>
             <DialogTitle>Connect a platform</DialogTitle>
             <DialogDescription>
-              One platform per workspace. Spectora connects with an API key. ISN connects with your
-              company key, host, and access keys (Settings → My Access Keys in ISN).
+              One platform per workspace. Spectora uses an API key. ISN uses your company key, web address, and access keys (in ISN, go to Settings, My Access Keys).
             </DialogDescription>
           </DialogHeader>
           {connections.length > 0 ? (

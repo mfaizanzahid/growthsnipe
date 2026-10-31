@@ -4,7 +4,16 @@ import type { Env } from "../types";
 import { contextMiddleware, createContextMiddleware, requireSession, requireSuperadmin, sessionGuard } from "../middleware";
 import type { SessionResolver, MemberStore } from "../middleware";
 import type { Auth } from "../auth";
-import { drizzleStore, type BillingStore } from "../repositories/billing";
+import {
+  createFreshInvite,
+  drizzleStore,
+  emailHasWorkspace,
+  getFreshInviteById,
+  getValidFreshInvite,
+  listFreshInvites,
+  revokeFreshInvite,
+  type BillingStore,
+} from "../repositories/billing";
 import { dbIdempotency, type IdempotencyBackend } from "../lib/idempotency";
 import { safepayGateway, type Gateway } from "../billing/gateway";
 import { processDueSubscriptions } from "../billing/renewals";
@@ -335,6 +344,150 @@ export function createSuperadminRoutes(deps: {
       const e = errResponse(err);
       return c.json({ error: e.message }, e.status as 400);
     }
+  });
+
+  // Send a long-live (7-day) magic link to a member or invitee
+  // (invite-only sign-in; the link doubles as the invite route for new users).
+  routes.post("/api/superadmin/clients/:orgId/members/magic-link", guard, gate, async (c) => {
+    const body = (await c.req.json().catch(() => undefined)) as { email?: string } | undefined;
+    if (!body?.email) return c.json({ error: "email is required" }, 422);
+    try {
+      const auth = c.get("auth");
+      if (!auth) return c.json({ error: "Auth is unavailable" }, 500);
+      await auth.api.signInMagicLink({
+        body: {
+          email: body.email,
+          callbackURL: "/dashboard",
+          newUserCallbackURL: "/onboarding",
+        },
+        headers: c.req.raw.headers,
+      });
+      await logOrgEvent(c, {
+        event: "org.magic_link_sent",
+        message: `Sent sign-in link to ${body.email}`,
+        orgId: c.req.param("orgId"),
+        detail: { email: body.email },
+      });
+      return c.json({ ok: true }, 200);
+    } catch (err) {
+      const e = errResponse(err);
+      return c.json({ error: e.message }, e.status as 400);
+    }
+  });
+
+  // Send a long-live (7-day) magic link to any address (fresh users included).
+  async function sendInviteLink(auth: Auth | undefined, headers: Headers, email: string): Promise<void> {
+    if (!auth) throw new Error("Auth is unavailable");
+    await auth.api.signInMagicLink({
+      body: {
+        email,
+        callbackURL: "/dashboard",
+        newUserCallbackURL: "/onboarding",
+      },
+      headers,
+    });
+  }
+
+  // Fresh-user invites for invite-only signup: pre-approve an email with no
+  // workspace yet. The invitee signs in with the auto-sent magic link, names
+  // their own workspace in onboarding (becoming its admin), and the invite is
+  // consumed on first org creation. No subscription is created here.
+  routes.post("/api/superadmin/invites", guard, gate, async (c) => {
+    const user = c.get("user") as SessionUser;
+    const body = (await c.req.json().catch(() => undefined)) as { email?: string } | undefined;
+    const email = (body?.email ?? "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return c.json({ error: "email must be a valid address" }, 422);
+    const store = c.get("db") as Db;
+    try {
+      if (await getValidFreshInvite(store, email)) {
+        return c.json({ error: "This email is already invited — resend the link from the list below." }, 409);
+      }
+      if (await emailHasWorkspace(store, email)) {
+        return c.json({ error: "This email already belongs to a workspace — invite them from that client instead." }, 409);
+      }
+      const invite = await createFreshInvite(store, {
+        id: crypto.randomUUID(),
+        email,
+        inviterId: user.id,
+      });
+      await sendInviteLink(c.get("auth") as Auth | undefined, c.req.raw.headers, email);
+      if (c.env.DB) {
+        await writeAppLog(c.get("db"), {
+          level: "info",
+          event: "user.fresh_invited",
+          surface: "superadmin",
+          message: `Fresh invite sent to ${email}`,
+          userId: user.id ?? null,
+          userEmail: user.email ?? null,
+          path: c.req.path,
+          method: c.req.method,
+          statusCode: 200,
+          detail: { email, inviteId: invite.id },
+        });
+      }
+      return c.json({ ok: true, invite }, 201);
+    } catch (err) {
+      const e = errResponse(err);
+      return c.json({ error: e.message }, e.status as 400);
+    }
+  });
+
+  // Pending fresh invites, newest first.
+  routes.get("/api/superadmin/invites", guard, gate, async (c) => {
+    return c.json({ invites: await listFreshInvites(c.get("db") as Db) });
+  });
+
+  // Re-send the magic link for a pending fresh invite.
+  routes.post("/api/superadmin/invites/:id/resend", guard, gate, async (c) => {
+    const user = c.get("user") as SessionUser;
+    const store = c.get("db") as Db;
+    const invite = await getFreshInviteById(store, c.req.param("id"));
+    if (!invite || invite.consumedAt || invite.expiresAt.getTime() <= Date.now()) {
+      return c.json({ error: "Invite not found or no longer valid" }, 404);
+    }
+    try {
+      await sendInviteLink(c.get("auth") as Auth | undefined, c.req.raw.headers, invite.email);
+      if (c.env.DB) {
+        await writeAppLog(c.get("db"), {
+          level: "info",
+          event: "user.fresh_invite_resent",
+          surface: "superadmin",
+          message: `Fresh invite re-sent to ${invite.email}`,
+          userId: user.id ?? null,
+          userEmail: user.email ?? null,
+          path: c.req.path,
+          method: c.req.method,
+          statusCode: 200,
+          detail: { email: invite.email, inviteId: invite.id },
+        });
+      }
+      return c.json({ ok: true });
+    } catch (err) {
+      const e = errResponse(err);
+      return c.json({ error: e.message }, e.status as 400);
+    }
+  });
+
+  // Revoke a fresh invite (it stops working for login and org creation).
+  routes.delete("/api/superadmin/invites/:id", guard, gate, async (c) => {
+    const user = c.get("user") as SessionUser;
+    const revoked = await revokeFreshInvite(c.get("db") as Db, c.req.param("id"));
+    if (!revoked) return c.json({ error: "Invite not found" }, 404);
+    if (c.env.DB) {
+      await writeAppLog(c.get("db"), {
+        level: "info",
+        event: "user.fresh_invite_revoked",
+        surface: "superadmin",
+        message: `Fresh invite ${c.req.param("id")} revoked`,
+        userId: user.id ?? null,
+        userEmail: user.email ?? null,
+        path: c.req.path,
+        method: c.req.method,
+        statusCode: 200,
+        detail: { inviteId: c.req.param("id") },
+      });
+    }
+    return c.json({ ok: true });
   });
 
   // Change a member's role (never demote the last active admin).

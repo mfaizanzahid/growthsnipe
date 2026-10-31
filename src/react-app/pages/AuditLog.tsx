@@ -48,7 +48,7 @@ export function AuditLog() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Audit log</h1>
-        <p className="text-sm text-muted-foreground">Every provider write attempted through MCP, with actor and outcome.</p>
+        <p className="text-sm text-muted-foreground">A list of changes tried, who tried them, and if they worked.</p>
       </div>
       <Card>
         <CardHeader>
@@ -60,7 +60,7 @@ export function AuditLog() {
           ) : denied ? (
             <p className="text-sm text-muted-foreground">Only org admins can view the audit log.</p>
           ) : events.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No write actions recorded yet. Data-tool reads are not logged.</p>
+            <p className="text-sm text-muted-foreground">No changes yet.</p>
           ) : (
             <ul className="space-y-2">
               {events.map((e) => (
