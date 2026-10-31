@@ -109,40 +109,24 @@ export function createAnalyticsRoutes(deps: {
       return c.json({ status: { state: "idle", provider: null, totalFetched: 0, cursorDate: null, lastSyncedAt: null, seedStartedAt: null, totalEstimate: null, backfillChunksDone: idle.done, backfillChunksTotal: idle.total } });
     }
     const progress = backfillProgress(s.cursorDate, s.status, Date.now());
-    // Global enrichment backlog (all history, no date filter): distinct
-    // non-cancelled orders versus those already carrying service rows.
-    // Computed only while live — during backfilling the seeding banner
-    // covers progress and this scan is saved. The dashboard keeps its
-    // progress banner up until withServices catches orders.
+    // Global enrichment backlog (all history, no date filter), served from
+    // the O(1) coverage counters on the state row (migration 0040) — never a
+    // live scan. The writers maintain them incrementally (seed listings bump
+    // newly-served orders, enrichment bumps newly-resolved ones, both
+    // atomically), so this handler runs one indexed row read and zero
+    // aggregates: the per-poll COUNT(DISTINCT ...) scan this replaced
+    // exceeded the 10ms free-plan CPU budget past ~30k orders and 503d the
+    // dashboard poller mid-enrichment (exceededCpu). Computed only while
+    // live — during backfilling the seeding banner covers progress.
+    // The dashboard keeps its progress banner up until withServices catches
+    // orders. Clamp guards stale counters (manual SQL purges bypass the
+    // writers; a reseed resets both, same as total_fetched). orders_total
+    // mirrors total_fetched, so it includes cancelled orders the old scan
+    // excluded — the banner denominator is marginally larger by design.
     let enrichment: { orders: number; withServices: number } | null = null;
     if (s.status === "live") {
-      // The coverage scan races enrichment writes; under contention the read
-      // throws and takes the whole status down with it (then the tab driver
-      // stalls on 500s and an unhandled-error row lands in the logs). A few
-      // quick retries cover both lock errors and transient backend hiccups;
-      // a persistent failure still throws and logs after the last attempt.
-      let cov: Array<{ orders: number; withServices: number }> | undefined;
-      for (let attempt = 0; ; attempt += 1) {
-        try {
-          cov = await db
-            .select({
-              orders: sql<number>`count(distinct ${orgOrders.id})`,
-              withServices: sql<number>`count(distinct case when ${orgOrderServices.orderId} is not null then ${orgOrders.id} end)`,
-            })
-            .from(orgOrders)
-            .leftJoin(
-              orgOrderServices,
-              and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
-            )
-            .where(and(eq(orgOrders.organizationId, orgId), ne(orgOrders.status, "cancelled")))
-            .limit(1);
-          break;
-        } catch (err) {
-          if (attempt >= 2) throw err;
-          await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
-        }
-      }
-      enrichment = { orders: Number(cov[0]?.orders ?? 0), withServices: Number(cov[0]?.withServices ?? 0) };
+      const orders = s.ordersTotal ?? 0;
+      enrichment = { orders, withServices: Math.min(s.ordersWithServices ?? 0, orders) };
     }
     return c.json({ status: { state: s.status, provider: s.provider, totalFetched: s.totalFetched, cursorDate: s.cursorDate, lastSyncedAt: s.lastSyncedAt, error: s.errorText, seedStartedAt: s.seedStartedAt, totalEstimate: s.totalEstimate, backfillChunksDone: progress.done, backfillChunksTotal: progress.total, enrichment } });
   });

@@ -29,6 +29,7 @@ const MIG_0035 = readFileSync(new URL("../db/migrations/0035_org_orders_perf_idx
 const MIG_0036 = readFileSync(new URL("../db/migrations/0036_org_order_inspectors.sql", import.meta.url), "utf8");
 const MIG_0037 = readFileSync(new URL("../db/migrations/0037_org_order_inspectors_backfill.sql", import.meta.url), "utf8");
 const MIG_0039 = readFileSync(new URL("../db/migrations/0039_drop_redundant_warehouse.sql", import.meta.url), "utf8");
+const MIG_0040 = readFileSync(new URL("../db/migrations/0040_sync_coverage_counters.sql", import.meta.url), "utf8");
 
 const BASE_DDL = `
   CREATE TABLE org_orders (
@@ -128,6 +129,39 @@ describe("migrations 0035/0036", () => {
         expect(t).toMatch(/IF EXISTS/);
       }
     }
+  });
+
+  it("0040 adds coverage counters and backfills them from the warehouse", () => {
+    const { sqlite } = memoryDb();
+    sqlite.exec(`
+      CREATE TABLE org_sync_state (
+        organization_id TEXT PRIMARY KEY, provider TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'backfilling', cursor_date TEXT,
+        last_synced_at INTEGER, total_fetched INTEGER NOT NULL DEFAULT 0,
+        error_text TEXT, updated_at INTEGER NOT NULL,
+        seed_started_at INTEGER, total_estimate INTEGER
+      );
+      INSERT INTO org_sync_state (organization_id, provider, status, updated_at) VALUES
+        ('o1', 'isn', 'live', 1),
+        ('o2', 'isn', 'live', 1);
+      INSERT INTO org_orders (id, organization_id, provider, provider_order_id, status, scheduled_at, synced_at) VALUES
+        ('o1:isn:1', 'o1', 'isn', '1', 'completed', '2026-01-01T10:00:00Z', 1),
+        ('o1:isn:2', 'o1', 'isn', '2', 'completed', '2026-01-02T10:00:00Z', 1),
+        ('o1:isn:3', 'o1', 'isn', '3', 'cancelled', '2026-01-03T10:00:00Z', 1);
+      INSERT INTO org_order_services (id, organization_id, order_id, name, kind) VALUES
+        ('o1:isn:1:svc:0', 'o1', 'o1:isn:1', 'General Home Inspection', 'base'),
+        ('xeno', 'o2', 'o1:isn:1', 'Sneaky Service', 'base');
+    `);
+    sqlite.exec(MIG_0040);
+    const cols = (sqlite.prepare(`PRAGMA table_info(org_sync_state)`).all() as Array<{ name: string }>).map((r) => r.name);
+    expect(cols).toContain("orders_total");
+    expect(cols).toContain("orders_with_services");
+    const rows = sqlite.prepare(`SELECT organization_id AS org, orders_total AS total, orders_with_services AS covered FROM org_sync_state ORDER BY org`).all() as Array<{ org: string; total: number; covered: number }>;
+    // Cancelled excluded, cross-org service rows never leak in: 2 in scope, 1 covered. Empty org stays zero.
+    expect(rows).toEqual([
+      { org: "o1", total: 2, covered: 1 },
+      { org: "o2", total: 0, covered: 0 },
+    ]);
   });
 
   it("is re-runnable for indexes and junction (column add is single-apply, like all repo migrations)", () => {
@@ -359,7 +393,9 @@ describe("route hardening", () => {
         status TEXT NOT NULL DEFAULT 'backfilling', cursor_date TEXT,
         last_synced_at INTEGER, total_fetched INTEGER NOT NULL DEFAULT 0,
         error_text TEXT, updated_at INTEGER NOT NULL,
-        seed_started_at INTEGER, total_estimate INTEGER
+        seed_started_at INTEGER, total_estimate INTEGER,
+        orders_total INTEGER NOT NULL DEFAULT 0,
+        orders_with_services INTEGER NOT NULL DEFAULT 0
       );
     `);
     const db = drizzle(
@@ -464,12 +500,12 @@ describe("route hardening", () => {
     expect(body.status.backfillChunksDone).toBe(expected);
   });
 
-  it("status reports the enrichment backlog while live, null while backfilling", async () => {
+  it("status serves enrichment coverage from counters, null while backfilling", async () => {
     const { db, sqlite } = routeDb();
     const nowSec = Math.floor(Date.now() / 1000);
     sqlite.exec(`
-      INSERT INTO org_sync_state (organization_id, provider, status, cursor_date, last_synced_at, total_fetched, updated_at)
-      VALUES ('o1', 'spectora', 'live', '2021-01-01T00:00:00.000Z', ${nowSec}, 3, ${nowSec});
+      INSERT INTO org_sync_state (organization_id, provider, status, cursor_date, last_synced_at, total_fetched, updated_at, orders_total, orders_with_services)
+      VALUES ('o1', 'spectora', 'live', '2021-01-01T00:00:00.000Z', ${nowSec}, 3, ${nowSec}, 2, 1);
       INSERT INTO org_orders (id, organization_id, provider, provider_order_id, status, scheduled_at, synced_at) VALUES
         ('o1:spectora:1', 'o1', 'spectora', '1', 'completed', '2026-03-05T10:00:00Z', 1),
         ('o1:spectora:2', 'o1', 'spectora', '2', 'completed', '2026-03-06T10:00:00Z', 1),
@@ -480,8 +516,14 @@ describe("route hardening", () => {
     const app = buildApp(db);
     const live = await app.request("/api/analytics/status?orgId=o1", {}, ENV);
     expect(live.status).toBe(200);
-    // Cancelled excluded: 2 in scope, 1 with detail.
+    // Counters say 2 in scope, 1 with detail: served verbatim, no scan —
+    // the rows above exist only to prove the handler never reads them.
     expect((await live.json()) as unknown).toMatchObject({ status: { state: "live", enrichment: { orders: 2, withServices: 1 } } });
+    // Stale counters (manual purges bypass the writers) clamp instead of
+    // reporting more covered than exist.
+    sqlite.exec(`UPDATE org_sync_state SET orders_with_services = 9 WHERE organization_id = 'o1'`);
+    const stale = await app.request("/api/analytics/status?orgId=o1", {}, ENV);
+    expect((await stale.json()) as unknown).toMatchObject({ status: { enrichment: { orders: 2, withServices: 2 } } });
     sqlite.exec(`UPDATE org_sync_state SET status = 'backfilling' WHERE organization_id = 'o1'`);
     const filling = await app.request("/api/analytics/status?orgId=o1", {}, ENV);
     expect((await filling.json()) as unknown).toMatchObject({ status: { enrichment: null } });

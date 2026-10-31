@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "../repositories/db";
 import { deleteSetting, getSetting, setSetting } from "../repositories";
 import type { Env } from "../lib/env";
@@ -449,7 +449,7 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
     state = fresh[0]!;
   }
   if (state.provider !== conn.provider) {
-    await db.update(orgSyncState).set({ provider: conn.provider, status: "backfilling", cursorDate: null, totalFetched: 0, errorText: null, updatedAt: Math.floor(nowMs / 1000) }).where(eq(orgSyncState.organizationId, orgId));
+    await db.update(orgSyncState).set({ provider: conn.provider, status: "backfilling", cursorDate: null, totalFetched: 0, ordersTotal: 0, ordersWithServices: 0, errorText: null, updatedAt: Math.floor(nowMs / 1000) }).where(eq(orgSyncState.organizationId, orgId));
     state = { ...state, provider: conn.provider, status: "backfilling", cursorDate: null as string | null, totalFetched: 0 };
   }
 
@@ -510,8 +510,8 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
     const nextFetched = mergeSyncFetched(cur?.totalFetched, fetched);
     await db
       .insert(orgSyncState)
-      .values({ organizationId: orgId, provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate })
-      .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate } });
+      .values({ organizationId: orgId, provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, ordersTotal: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate })
+      .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, ordersTotal: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate } });
   };
 
   // Head first: the latest window syncs on EVERY run (incremental head),
@@ -533,7 +533,8 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
         (o) => !o.scheduledAt || (o.scheduledAt >= headFrom && o.scheduledAt <= headTo),
       );
       if (windowed.length > 0) {
-        await upsertOrders(db, orgId, conn.provider, windowed, nowSec, missing);
+        const up = await upsertOrders(db, orgId, conn.provider, windowed, nowSec, missing);
+        await bumpServicesCovered(db, orgId, up.newlyServiced);
         rowsUpserted += windowed.length;
       }
       chunksSynced += 1;
@@ -592,7 +593,8 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
         continue;
       }
       emptyStreak = 0;
-      await upsertOrders(db, orgId, conn.provider, orders, nowSec, missing);
+      const up = await upsertOrders(db, orgId, conn.provider, orders, nowSec, missing);
+      await bumpServicesCovered(db, orgId, up.newlyServiced);
       rowsUpserted += orders.length;
       chunksSynced += 1;
       backDone += 1;
@@ -671,8 +673,8 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
   const finalStatus = mergeSyncStatus(fcur?.status, state.status, status);
   await db
     .insert(orgSyncState)
-    .values({ organizationId: orgId, provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate })
-    .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate } });
+    .values({ organizationId: orgId, provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, ordersTotal: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate })
+    .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, ordersTotal: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate } });
 
   return { orgId, provider: conn.provider, status: finalStatus, chunksSynced, rowsUpserted, enriched, enrichFailed, cursorDate: finalCursor, finished, error };
 }
@@ -866,16 +868,45 @@ export async function fetchEnrichBatch(
   return { results, failed, firstError };
 }
 
+/** Atomic coverage increment (migration 0040): a single-statement UPDATE, so
+ * overlapping runs (links, leaves, ticks, clicks) can never lose each
+ * other's deltas the way read-merge-write totals can. Skipped when zero so
+ * hot paths that resolve nothing issue no write at all. */
+async function bumpServicesCovered(db: Db, orgId: string, n: number): Promise<void> {
+  if (n < 1) return;
+  await db
+    .update(orgSyncState)
+    .set({ ordersWithServices: sql`${orgSyncState.ordersWithServices} + ${n}` })
+    .where(eq(orgSyncState.organizationId, orgId));
+}
+
 /** Replace-per-order service writes for fetched results (busy-retried by
  * callers that need it). Zero-amount lines are ignored; orders resolving to
  * nothing chargeable get the no-charge marker (counts as complete, never
  * re-claimed); failed reads were never fetched into results and retry
- * later. Returns orders resolved. */
+ * later. Returns orders resolved AND newly covered (the existence probe
+ * keeps step retries idempotent: re-writing already-served orders bumps
+ * nothing). */
 export async function writeEnrichBatch(
   db: Db,
   orgId: string,
   results: EnrichOrderResult[],
-): Promise<{ done: number }> {
+): Promise<{ done: number; newlyResolved: number }> {
+  // Newly-covered orders only: the probe is 90-sliced indexed reads (same
+  // discipline as the enrichment claim check) and keeps the counter exact
+  // across retried steps and overlapping drains.
+  const have = new Set<string>();
+  const orderIds = results.map((r) => r.orderId);
+  for (let i = 0; i < orderIds.length; i += 90) {
+    const slice = orderIds.slice(i, i + 90);
+    if (slice.length === 0) break;
+    const found = await db
+      .select({ orderId: orgOrderServices.orderId })
+      .from(orgOrderServices)
+      .where(and(eq(orgOrderServices.organizationId, orgId), inArray(orgOrderServices.orderId, slice)));
+    for (const r of found) have.add(r.orderId);
+  }
+  const newlyResolved = results.filter((r) => !have.has(r.orderId)).length;
   const stmts: unknown[] = [];
   for (const result of results) {
     const charged = result.items.filter((item) => item.amountMinor !== 0);
@@ -893,7 +924,8 @@ export async function writeEnrichBatch(
     }
   }
   await runBatch(db, stmts);
-  return { done: results.length };
+  await bumpServicesCovered(db, orgId, newlyResolved);
+  return { done: results.length, newlyResolved };
 }
 
 async function enrichMissingServices(
@@ -1039,7 +1071,7 @@ async function upsertOrders(
   orders: OrderRecord[],
   nowSec: number,
   missing?: Array<{ providerOrderId: string; scheduledAt: string | null }>,
-): Promise<void> {
+): Promise<{ newlyServiced: number }> {
   // Change detection: steady-state heads re-fetch thousands of unchanged
   // rows every run, and each upsert costs ~7 D1 writes (row + indexes).
   // Bulk-read the stored fingerprints first (90-sliced IN queries — reads
@@ -1115,6 +1147,11 @@ async function upsertOrders(
   // chunks (thousands of writes) take minutes on D1. Order is preserved, so
   // each order's service delete still precedes its inserts.
   const stmts: unknown[] = [];
+  // Orders whose listing carries charged services AND had no service rows
+  // stored: the seed resolves them, so they count as covered (the
+  // enrichment claim probe skips served orders, keeping this exact across
+  // re-seeds; unchanged rows `continue` above before reaching this).
+  let newlyServiced = 0;
   for (const o of orders) {
     const inspectors = splitPeople(o.inspectorName);
     const scheduledAt = typeof o.scheduledAt === "string" ? o.scheduledAt : null;
@@ -1218,6 +1255,7 @@ async function upsertOrders(
     // to enrichment (which marks) instead of writing marker rows itself
     // (`charged` computed above for the change-detection signature).
     if (charged.length > 0) {
+      if (!storedBasket.has(id)) newlyServiced += 1;
       stmts.push(db.delete(orgOrderServices).where(and(eq(orgOrderServices.organizationId, orgId), eq(orgOrderServices.orderId, id))));
       charged.forEach((item, svcIdx) => {
         // Do-nothing on conflict: concurrent runs (tab driver plus cron) may
@@ -1231,6 +1269,7 @@ async function upsertOrders(
     }
   }
   await runBatch(db, stmts);
+  return { newlyServiced };
   void orgDashboardLayouts;
   void orgInspectorTargets;
 }

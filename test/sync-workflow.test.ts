@@ -52,7 +52,9 @@ function memoryDb(): Db {
       status TEXT NOT NULL DEFAULT 'backfilling', cursor_date TEXT,
       last_synced_at INTEGER, total_fetched INTEGER NOT NULL DEFAULT 0,
       error_text TEXT, updated_at INTEGER NOT NULL,
-      seed_started_at INTEGER, total_estimate INTEGER
+      seed_started_at INTEGER, total_estimate INTEGER,
+      orders_total INTEGER NOT NULL DEFAULT 0,
+      orders_with_services INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE org_orders (
       id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, provider TEXT NOT NULL,
@@ -386,17 +388,44 @@ describe("enrich leaf tasks", () => {
       { orderId: "o1:isn:a", items: [{ name: "General Home Inspection", kind: "base", amountMinor: 38900 }] },
       { orderId: "o1:isn:b", items: [] },
     ];
-    expect(await writeEnrichBatch(db, ORG, batch)).toEqual({ done: 2 });
+    expect(await writeEnrichBatch(db, ORG, batch)).toEqual({ done: 2, newlyResolved: 2 });
     let rows = await db.select().from(schema.orgOrderServices);
     expect(rows).toHaveLength(2);
     const marker = rows.find((r) => r.orderId === "o1:isn:b");
     expect(marker).toMatchObject({ name: "__no_charge__", amountMinor: 0 });
     const charged = rows.find((r) => r.orderId === "o1:isn:a");
     expect(charged).toMatchObject({ name: "General Home Inspection", amountMinor: 38900 });
-    // Repeat: delete+insert converges, never duplicates.
-    expect(await writeEnrichBatch(db, ORG, batch)).toEqual({ done: 2 });
+    // Repeat: delete+insert converges, never duplicates, and the coverage
+    // probe finds both already served, so the counter bump is zero.
+    expect(await writeEnrichBatch(db, ORG, batch)).toEqual({ done: 2, newlyResolved: 0 });
     rows = await db.select().from(schema.orgOrderServices);
     expect(rows).toHaveLength(2);
+  });
+
+  it("bumps the coverage counter only for newly resolved orders", async () => {
+    const db = memoryDb();
+    await db.insert(schema.orgSyncState).values({
+      organizationId: ORG, provider: "isn", status: "live", updatedAt: 1,
+    });
+    // One order already served before this batch runs.
+    await db.insert(schema.orgOrderServices).values({
+      id: "o1:isn:old:svc:0", organizationId: ORG, orderId: "o1:isn:old", name: "Prior", kind: "base", amountMinor: 100,
+    });
+    const out = await writeEnrichBatch(db, ORG, [
+      { orderId: "o1:isn:old", items: [{ name: "Prior", kind: "base", amountMinor: 100 }] },
+      { orderId: "o1:isn:new", items: [{ name: "Fresh", kind: "base", amountMinor: 200 }] },
+    ]);
+    expect(out).toEqual({ done: 2, newlyResolved: 1 });
+    const state = await db.select().from(schema.orgSyncState);
+    expect(state[0]?.ordersWithServices).toBe(1);
+    // Full retry: everything served, counter stays put (atomic increments
+    // would otherwise double-count overlapping drains).
+    expect(await writeEnrichBatch(db, ORG, [
+      { orderId: "o1:isn:old", items: [{ name: "Prior", kind: "base", amountMinor: 100 }] },
+      { orderId: "o1:isn:new", items: [{ name: "Fresh", kind: "base", amountMinor: 200 }] },
+    ])).toEqual({ done: 2, newlyResolved: 0 });
+    const again = await db.select().from(schema.orgSyncState);
+    expect(again[0]?.ordersWithServices).toBe(1);
   });
 });
 

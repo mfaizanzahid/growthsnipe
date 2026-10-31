@@ -28,7 +28,9 @@ function memoryDb(): Db {
       status TEXT NOT NULL DEFAULT 'backfilling', cursor_date TEXT,
       last_synced_at INTEGER, total_fetched INTEGER NOT NULL DEFAULT 0,
       error_text TEXT, updated_at INTEGER NOT NULL,
-      seed_started_at INTEGER, total_estimate INTEGER
+      seed_started_at INTEGER, total_estimate INTEGER,
+      orders_total INTEGER NOT NULL DEFAULT 0,
+      orders_with_services INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE org_orders (
       id TEXT PRIMARY KEY, organization_id TEXT NOT NULL, provider TEXT NOT NULL,
