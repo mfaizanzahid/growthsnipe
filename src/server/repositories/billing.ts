@@ -8,6 +8,8 @@ import {
   invitations,
   invoices,
   members,
+  oneTimeOrders,
+  oneTimeProducts,
   organizations,
   orgSubscriptions,
   paymentMethods,
@@ -29,6 +31,8 @@ export type PlanRow = typeof plans.$inferSelect;
 export type CouponRow = typeof coupons.$inferSelect;
 export type SubscriptionRow = typeof orgSubscriptions.$inferSelect;
 export type PaymentMethodRow = typeof paymentMethods.$inferSelect;
+export type OneTimeProductRow = typeof oneTimeProducts.$inferSelect;
+export type OneTimeOrderRow = typeof oneTimeOrders.$inferSelect;
 export type InvoiceRow = typeof invoices.$inferSelect;
 export type TransactionRow = typeof transactions.$inferSelect;
 
@@ -870,6 +874,91 @@ export async function emailHasWorkspace(db: Db, email: string): Promise<boolean>
     .where(eq(members.userId, found[0]!.id))
     .limit(1);
   return memberships.length > 0;
+}
+
+/* One-time product checkout (guest-capable, not org-scoped) */
+
+export async function listOneTimeProducts(db: Db): Promise<OneTimeProductRow[]> {
+  return db.select().from(oneTimeProducts).where(eq(oneTimeProducts.active, 1)).orderBy(asc(oneTimeProducts.amountMinor));
+}
+
+export async function getOneTimeProductBySlug(db: Db, slug: string): Promise<OneTimeProductRow | null> {
+  const rows = await db.select().from(oneTimeProducts).where(eq(oneTimeProducts.slug, slug)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getOneTimeProduct(db: Db, id: string): Promise<OneTimeProductRow | null> {
+  const rows = await db.select().from(oneTimeProducts).where(eq(oneTimeProducts.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createOneTimeOrder(
+  db: Db,
+  row: {
+    id: string;
+    productId: string;
+    email: string;
+    name?: string | null;
+    phone?: string | null;
+    businessName?: string | null;
+    trade?: string | null;
+    amountMinor: number;
+    currency: string;
+    tracker?: string | null;
+    idempotencyKey: string;
+    now: number;
+  },
+): Promise<OneTimeOrderRow> {
+  await db.insert(oneTimeOrders).values({
+    id: row.id,
+    productId: row.productId,
+    email: row.email.trim().toLowerCase(),
+    name: row.name ?? null,
+    phone: row.phone ?? null,
+    businessName: row.businessName ?? null,
+    trade: row.trade ?? null,
+    amountMinor: row.amountMinor,
+    currency: row.currency,
+    status: "pending",
+    tracker: row.tracker ?? null,
+    chargeId: null,
+    idempotencyKey: row.idempotencyKey,
+    receiptSentAt: null,
+    intakeSentAt: null,
+    createdAt: row.now,
+    updatedAt: row.now,
+    paidAt: null,
+  });
+  const created = await db.select().from(oneTimeOrders).where(eq(oneTimeOrders.id, row.id)).limit(1);
+  if (!created[0]) throw new Error("One-time order insert failed");
+  return created[0];
+}
+
+export async function getOneTimeOrder(db: Db, id: string): Promise<OneTimeOrderRow | null> {
+  const rows = await db.select().from(oneTimeOrders).where(eq(oneTimeOrders.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function findOneTimeOrderByTracker(db: Db, tracker: string): Promise<OneTimeOrderRow | null> {
+  const rows = await db.select().from(oneTimeOrders).where(eq(oneTimeOrders.tracker, tracker)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function findOneTimeOrderByIdempotencyKey(db: Db, key: string): Promise<OneTimeOrderRow | null> {
+  const rows = await db.select().from(oneTimeOrders).where(eq(oneTimeOrders.idempotencyKey, key)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateOneTimeOrder(
+  db: Db,
+  id: string,
+  patch: Partial<Pick<OneTimeOrderRow, "status" | "tracker" | "chargeId" | "receiptSentAt" | "intakeSentAt" | "paidAt" | "updatedAt">>,
+): Promise<void> {
+  await db.update(oneTimeOrders).set(patch).where(eq(oneTimeOrders.id, id));
+}
+
+export async function listOneTimeOrders(db: Db, limit = 100): Promise<OneTimeOrderRow[]> {
+  return db.select().from(oneTimeOrders).orderBy(desc(oneTimeOrders.createdAt)).limit(limit);
 }
 
 export async function getUser(

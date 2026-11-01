@@ -2,12 +2,11 @@
 
 Public marketing site (unauthenticated):
 
-- `/` marketing landing
-- `/features`, `/how-it-works`, `/integrations`, `/who-we-help`, `/case-studies`, `/blog`
-- `/pricing` renders active plans dynamically from `GET /api/plans` (never hard-coded)
+- `/` marketing home, plus offers (`/blueprint`, `/diagnostic`, `/loop-library`, `/engine`), industry pages, capability pages, `/how-it-works`, `/snipe-system`, `/case-studies`, `/resources`, `/about`, `/faq`, `/book`, `/checkout/*`, `/thank-you/*`, `/results-disclaimer`, `/blog`
+- Offer prices render only from `src/lib/offers.ts` (never hard-coded); SaaS plans render from `GET /api/plans`
 - `/privacy`, `/terms`, `/contact`
-- `/login`, `/signup`, `/magic`, `/forgot-password`, `/reset-password`, `/verify-email`
-- `/onboarding` starts the SNIPE Intelligence trial, then profile and connections
+- `/login` (magic-link + Google, invite-only), `/magic`; `/signup`, `/forgot-password`, `/reset-password`, `/verify-email` redirect away (no public signup)
+- `/onboarding` workspace setup for invited users (trial flow as provisioned)
 
 App dashboard (authenticated, org-scoped via top-left org switcher):
 

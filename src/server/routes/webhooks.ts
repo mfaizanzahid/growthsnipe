@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import type { Env } from "../types";
 import type { Db } from "../repositories/db";
 import type { Auth } from "../auth";
-import { drizzleStore, type BillingStore } from "../repositories/billing";
+import { drizzleStore, findOneTimeOrderByTracker, type BillingStore } from "../repositories/billing";
+import { completeOneTimePaidOrder, failOneTimeOrder } from "../billing/one-time";
 import { handleSafepayWebhook } from "../billing/webhooks";
 import { createDb } from "../repositories/db";
 import { clientIp, requestId, writeAppLog } from "../lib/app-logs";
@@ -26,7 +27,27 @@ export function createWebhookRoutes(deps: {
       return c.json({ error: "Not configured" }, 500);
     }
     const store = deps.billing ?? drizzleStore(db as Db);
-    const outcome = await handleSafepayWebhook(c.env, store, rawBody, signature);
+    const oneTimeDb = (deps.ctx?.db ?? null) as Db | null;
+    const outcome = await handleSafepayWebhook(
+      c.env,
+      store,
+      rawBody,
+      signature,
+      undefined,
+      oneTimeDb
+        ? {
+            findByTracker: (tracker) => findOneTimeOrderByTracker(oneTimeDb, tracker),
+            completePaid: async (orderId, chargeId) => {
+              const { transitioned } = await completeOneTimePaidOrder(oneTimeDb, c.env as Env, orderId, chargeId).catch(() => ({
+                transitioned: false as const,
+                order: null,
+              }));
+              return { transitioned };
+            },
+            markFailed: (orderId) => failOneTimeOrder(oneTimeDb, orderId).catch(() => false),
+          }
+        : undefined,
+    );
     if (outcome.httpStatus === 401) {
       if (c.env.DB) {
         await writeAppLog(createDb(c.env.DB), {

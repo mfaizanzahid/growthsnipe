@@ -279,6 +279,75 @@ export const paymentMethods = sqliteTable("payment_methods", {
   updatedAt: integer("updated_at").notNull(),
 });
 
+/* One-time product checkout (guest-capable, not org-scoped) */
+
+export const oneTimeProducts = sqliteTable("one_time_products", {
+  id: text("id").primaryKey(),
+  slug: text("slug").unique().notNull(),
+  name: text("name").notNull(),
+  amountMinor: integer("amount_minor").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  active: integer("active").notNull().default(1),
+  createdAt: integer("created_at").notNull(),
+});
+
+export const oneTimeOrders = sqliteTable("one_time_orders", {
+  id: text("id").primaryKey(),
+  productId: text("product_id").notNull(),
+  email: text("email").notNull(),
+  name: text("name"),
+  phone: text("phone"),
+  businessName: text("business_name"),
+  trade: text("trade"),
+  amountMinor: integer("amount_minor").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  status: text("status").notNull().default("pending"),
+  tracker: text("tracker").unique(),
+  chargeId: text("charge_id"),
+  idempotencyKey: text("idempotency_key").unique().notNull(),
+  receiptSentAt: integer("receipt_sent_at"),
+  intakeSentAt: integer("intake_sent_at"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+  paidAt: integer("paid_at"),
+});
+
+/* Loop Library capture + marketing automation (pre-auth, never org-scoped) */
+export const loopLibraryLeads = sqliteTable("loop_library_leads", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  firstName: text("first_name").notNull(),
+  businessName: text("business_name").notNull(),
+  trade: text("trade").notNull(),
+  software: text("software"),
+  monthlyVolume: text("monthly_volume"),
+  consentAt: integer("consent_at").notNull(),
+  consentTextVersion: text("consent_text_version").notNull().default("v1"),
+  unsubscribedAt: integer("unsubscribed_at"),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const marketingSends = sqliteTable("marketing_sends", {
+  id: text("id").primaryKey(),
+  leadId: text("lead_id"),
+  email: text("email").notNull(),
+  sequence: text("sequence").notNull(),
+  stepKey: text("step_key").notNull(),
+  dueAt: integer("due_at").notNull(),
+  sentAt: integer("sent_at"),
+  status: text("status").notNull().default("pending"),
+  error: text("error"),
+  attempts: integer("attempts").notNull().default(0),
+  createdAt: integer("created_at").notNull(),
+});
+
+export const marketingSuppressions = sqliteTable("marketing_suppressions", {
+  email: text("email").primaryKey(),
+  reason: text("reason").notNull().default("unsubscribe"),
+  createdAt: integer("created_at").notNull(),
+});
+
 /* Invoices + items + gateway transactions */
 
 export const invoices = sqliteTable("invoices", {

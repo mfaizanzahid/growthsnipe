@@ -481,7 +481,7 @@ export function CtaBand({ title, body }: { title: string; body: string }) {
           <p className="mx-auto mt-3 max-w-xl opacity-90">{body}</p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" variant="secondary" asChild>
-              <Link to="/book">Book A Call</Link>
+              <Link to="/book">Book a Free Growth Fit Call</Link>
             </Button>
             <Button
               size="lg"
@@ -489,7 +489,7 @@ export function CtaBand({ title, body }: { title: string; body: string }) {
               className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
               asChild
             >
-              <Link to="/pricing">See plans</Link>
+              <Link to="/engine">See plans</Link>
             </Button>
           </div>
           <p className="mt-4 text-xs opacity-75">We reply within one business day</p>

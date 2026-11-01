@@ -8,8 +8,9 @@
  * Data policy (matches docs/agent-rules + portal rules):
  * - Portal brand uses static fallbacks (GrowthSnipe, no support email row);
  *   the client hydrates and patches from GET /api/portal within milliseconds.
- * - Pricing emits its static shell copy only — plans always render live from
- *   GET /api/plans after hydration. Never bake prices/names here.
+ * - Offer pages render canonical prices from src/lib/offers.ts (single source
+ *   of truth); SaaS subscription plans always render live from GET /api/plans
+ *   after hydration. Never bake subscription plan prices/names here.
  * - Signed-out auth UI is rendered (session effects don't run server-side).
  */
 import type { ComponentType } from "react";
@@ -27,6 +28,7 @@ import {
 } from "../src/react-app/pages/marketing/integration-pages";
 import { TRADE_PAGES, getTradePage } from "../src/react-app/pages/marketing/trade-pages";
 import { POSTS, getPost } from "../src/react-app/pages/marketing/blog-posts";
+import { OFFERS } from "../src/lib/offers";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -204,8 +206,13 @@ function main(): void {
       if (!html.includes(`data-prerender-path="${target.url}"`)) {
         failures.push(`${target.url}: prerender-path stamp missing (route-aware hydration)`);
       }
-      if (target.url === "/pricing" && /\$\d/.test(html)) {
-        failures.push("/pricing: baked price literal — plans must stay API-driven");
+      const expectedOfferPrice: Record<string, string> = {
+        "/checkout/diagnostic": OFFERS.diagnostic.price.label,
+        "/checkout/blueprint": OFFERS.blueprint.price.label,
+      };
+      const expected = expectedOfferPrice[target.url];
+      if (expected && !html.includes(expected)) {
+        failures.push(`${target.url}: missing canonical offer price ${expected} — checkout must render src/lib/offers.ts values`);
       }
       const file =
         target.url === "/" ? templatePath : path.join(OUT_DIR, target.url, "index.html");

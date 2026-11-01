@@ -18,6 +18,7 @@ import { AdminClients } from "./pages/admin/Clients";
 import { AdminInvoices } from "./pages/admin/Invoices";
 import { AdminPlans } from "./pages/admin/Plans";
 import { AdminCoupons } from "./pages/admin/Coupons";
+import { AdminLeads } from "./pages/admin/Leads";
 import { AdminLogs } from "./pages/admin/Logs";
 import { AdminSettings } from "./pages/admin/SettingsPage";
 import { ClientProfile } from "./pages/ClientProfile";
@@ -33,6 +34,11 @@ export const router = createBrowserRouter([
   { path: "/magic", element: <MagicLink /> },
   // Invite-only: public signup and password flows are retired. Old links land on Book.
   { path: "/signup", element: <Navigate to="/book" replace /> },
+  // Retired marketing pages redirect to their strategy replacements.
+  { path: "/features", element: <Navigate to="/snipe-system" replace /> },
+  { path: "/integrations", element: <Navigate to="/how-it-works" replace /> },
+  { path: "/who-we-help", element: <Navigate to="/home-inspectors" replace /> },
+  { path: "/pricing", element: <Navigate to="/engine" replace /> },
   { path: "/forgot-password", element: <Navigate to="/login" replace /> },
   { path: "/reset-password", element: <Navigate to="/login" replace /> },
   { path: "/verify-email", element: <Navigate to="/login" replace /> },
@@ -70,7 +76,8 @@ export const router = createBrowserRouter([
       { path: "/superadmin/clients", element: <AdminClients /> },
       { path: "/superadmin/invoices", element: <AdminInvoices /> },
       { path: "/superadmin/plans", element: <AdminPlans /> },
-      { path: "/superadmin/coupons", element: <AdminCoupons /> },
+        { path: "/superadmin/coupons", element: <AdminCoupons /> },
+        { path: "/superadmin/leads", element: <AdminLeads /> },
       { path: "/superadmin/logs", element: <AdminLogs /> },
       { path: "/superadmin/settings", element: <AdminSettings /> },
       { path: "/superadmin/clients/:orgId", element: <ClientProfile /> },

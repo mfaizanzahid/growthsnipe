@@ -11,9 +11,24 @@ import {
   getFreshInviteById,
   getValidFreshInvite,
   listFreshInvites,
+  listOneTimeOrders,
   revokeFreshInvite,
   type BillingStore,
 } from "../repositories/billing";
+import {
+  getLoopLead,
+  listLoopLeads,
+  listMarketingSendsForLead,
+  resetMarketingSend,
+  scheduleMarketingSends
+} from "../repositories/marketing";
+import {
+  BP_CREDIT_SEQUENCE,
+  BP_CREDIT_SEQUENCE_KEY,
+  DIAG_CREDIT_SEQUENCE,
+  DIAG_CREDIT_SEQUENCE_KEY,
+  stepsFor,
+} from "../marketing/sequences";
 import { dbIdempotency, type IdempotencyBackend } from "../lib/idempotency";
 import { safepayGateway, type Gateway } from "../billing/gateway";
 import { processDueSubscriptions } from "../billing/renewals";
@@ -529,6 +544,82 @@ export function createSuperadminRoutes(deps: {
   // All invoices newest-first (superadmin console table).
   routes.get("/api/superadmin/invoices", guard, gate, async (c) => {
     return c.json({ invoices: await billingStoreFor(c).listAllInvoicesWithOrgs() });
+  });
+
+  // Loop Library leads + per-lead send ledger.
+  routes.get("/api/superadmin/loop-leads", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
+    return c.json({ leads: await listLoopLeads(db) });
+  });
+
+  routes.get("/api/superadmin/loop-leads/:id", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
+    const lead = await getLoopLead(db, c.req.param("id"));
+    if (!lead) return c.json({ error: "Lead not found" }, 404);
+    return c.json({ lead, sends: await listMarketingSendsForLead(db, lead.id) });
+  });
+
+  // Re-send one sequence step now (resets it to pending, due immediately).
+  routes.post("/api/superadmin/loop-leads/resend", guard, gate, async (c) => {
+    const user = c.get("user") as SessionUser;
+    const body = (await c.req.json().catch(() => undefined)) as { sendId?: string } | undefined;
+    if (!body?.sendId) return c.json({ error: "sendId is required" }, 422);
+    const db = c.get("db") as Db;
+    if (!(await resetMarketingSend(db, body.sendId))) return c.json({ error: "Send not found" }, 404);
+    if (c.env.DB) {
+      await writeAppLog(c.get("db"), {
+        level: "info",
+        event: "marketing.resent",
+        surface: "superadmin",
+        message: "Marketing step re-queued",
+        userId: user.id ?? null,
+        userEmail: user.email ?? null,
+        path: c.req.path,
+        method: c.req.method,
+        statusCode: 200,
+        detail: { sendId: body.sendId },
+      });
+    }
+    return c.json({ ok: true });
+  });
+
+  // Manual buyer-reminder trigger: schedules the Diagnostic or Blueprint
+  // credit-check-in sequence anchored at the readout/presentation date.
+  routes.post("/api/superadmin/buyer-reminders", guard, gate, async (c) => {
+    const user = c.get("user") as SessionUser;
+    const body = (await c.req.json().catch(() => undefined)) as { email?: string; kind?: string; anchorDate?: string } | undefined;
+    const email = (body?.email ?? "").trim().toLowerCase();
+    const anchorMs = body?.anchorDate ? Date.parse(body.anchorDate) : NaN;
+    const validKind = body?.kind === "diagnostic" || body?.kind === "blueprint";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !validKind || !Number.isFinite(anchorMs)) {
+      return c.json({ error: "email, kind (diagnostic|blueprint), and anchorDate (ISO) are required" }, 422);
+    }
+    const db = c.get("db") as Db;
+    const sequence = body!.kind === "diagnostic" ? DIAG_CREDIT_SEQUENCE : BP_CREDIT_SEQUENCE;
+    const key = body!.kind === "diagnostic" ? DIAG_CREDIT_SEQUENCE_KEY : BP_CREDIT_SEQUENCE_KEY;
+    await scheduleMarketingSends(db, { leadId: null, email, sequence: key, steps: stepsFor(sequence, anchorMs), now: Date.now() });
+    if (c.env.DB) {
+      await writeAppLog(c.get("db"), {
+        level: "info",
+        event: "marketing.buyer_triggered",
+        surface: "superadmin",
+        message: `Buyer reminders scheduled for ${email}`,
+        userId: user.id ?? null,
+        userEmail: user.email ?? null,
+        path: c.req.path,
+        method: c.req.method,
+        statusCode: 201,
+        detail: { email, kind: body!.kind, anchorDate: body!.anchorDate },
+      });
+    }
+    return c.json({ ok: true }, 201);
+  });
+
+  // One-time orders newest-first (guest checkout has no org).
+  routes.get("/api/superadmin/one-time-orders", guard, gate, async (c) => {
+    const limitRaw = Number(c.req.query("limit") ?? 100);
+    const limit = Number.isFinite(limitRaw) ? Math.min(500, Math.max(1, Math.floor(limitRaw))) : 100;
+    return c.json({ orders: await listOneTimeOrders(c.get("db") as Db, limit) });
   });
 
   // Usage charges (create invoice + charge now).

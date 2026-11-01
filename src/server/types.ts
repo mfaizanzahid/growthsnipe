@@ -36,6 +36,8 @@ export interface Env {
   DEFAULT_TIMEZONE?: string;
   /** Days to keep platform application logs (default 90). */
   LOG_RETENTION_DAYS?: string;
+  /** HMAC secret for marketing unsubscribe / library-access tokens. Falls back to BETTER_AUTH_SECRET. */
+  MARKETING_TOKEN_SECRET?: string;
 }
 
 export type OrgRole = "admin" | "user" | "viewer";

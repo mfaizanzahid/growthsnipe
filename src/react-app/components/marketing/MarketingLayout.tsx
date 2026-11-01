@@ -13,6 +13,7 @@ import {
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import { BrandLogo } from "../BrandLogo";
+import { OFFERS } from "../../../lib/offers";
 import { usePortal } from "../../hooks/usePortalName";
 import { useSession } from "../../lib/auth-client";
 import { PAGE_META } from "./page-meta";
@@ -32,7 +33,7 @@ function AuthLinks({ signedIn, onNavigate }: { signedIn: boolean; onNavigate?: (
         <Link to="/login">Sign in</Link>
       </Button>
       <Button size="sm" asChild onClick={onNavigate}>
-        <Link to="/book">Book A Call</Link>
+        <Link to="/book">Book a Free Growth Fit Call</Link>
       </Button>
     </>
   );
@@ -40,51 +41,81 @@ function AuthLinks({ signedIn, onNavigate }: { signedIn: boolean; onNavigate?: (
 
 const NAV_MENUS = [
   {
-    label: "Product",
+    label: "Solutions",
     links: [
-      { to: "/how-it-works", label: "How it works" },
-      { to: "/features", label: "Features" },
-      { to: "/integrations", label: "Integrations" },
-      { to: "/who-we-help", label: "Who we help" },
-      { to: "/pricing", label: "Pricing" },
+      { to: "/home-inspectors", label: "Home Inspectors" },
+      { to: "/hvac", label: "HVAC" },
+      { to: "/plumbing", label: "Plumbing" },
+      { to: "/electrical", label: "Electrical" },
+      { to: "/roofing", label: "Roofing" },
+      { to: "/contractors", label: "General Contractors" },
+    ],
+  },
+  {
+    label: "Growth System",
+    links: [
+      { to: "/snipe-system", label: "The SNIPE System" },
+      { to: "/how-it-works", label: "How It Works" },
+      { to: "/paid-ads", label: "Paid Ads" },
+      { to: "/crm", label: "SNIPE CRM™" },
+      { to: "/intelligence", label: "SNIPE Intelligence™" },
+      { to: "/voiceiq", label: "SNIPE VoiceIQ™" },
+    ],
+  },
+  {
+    label: "Offers",
+    links: [
+      { to: "/diagnostic", label: OFFERS.diagnostic.name },
+      { to: "/blueprint", label: OFFERS.blueprint.name },
+      { to: "/engine", label: "SNIPE Engine" },
+      { to: "/loop-library", label: "Free Loop Library" },
     ],
   },
   {
     label: "Resources",
     links: [
+      { to: "/resources", label: "Resources" },
       { to: "/blog", label: "Blog" },
       { to: "/case-studies", label: "Case studies" },
     ],
   },
   {
     label: "Company",
-    links: [
-      { to: "/about", label: "About" },
-      { to: "/contact", label: "Contact" },
-    ],
+    links: [{ to: "/about", label: "About" }],
   },
 ];
 
-const PRODUCT_LINKS = [
-  { to: "/how-it-works", label: "How it works" },
-  { to: "/features", label: "Features" },
-  { to: "/integrations", label: "Integrations" },
-  { to: "/who-we-help", label: "Who we help" },
-  { to: "/pricing", label: "Pricing" },
+const SOLUTIONS_LINKS = [
+  { to: "/home-inspectors", label: "Home Inspectors" },
+  { to: "/hvac", label: "HVAC" },
+  { to: "/plumbing", label: "Plumbing" },
+  { to: "/electrical", label: "Electrical" },
+  { to: "/roofing", label: "Roofing" },
+  { to: "/contractors", label: "General Contractors" },
+];
+
+const SYSTEM_LINKS = [
+  { to: "/snipe-system", label: "The SNIPE System" },
+  { to: "/how-it-works", label: "How It Works" },
+  { to: "/paid-ads", label: "Paid Ads" },
+  { to: "/crm", label: "SNIPE CRM™" },
+  { to: "/intelligence", label: "SNIPE Intelligence™" },
+  { to: "/voiceiq", label: "SNIPE VoiceIQ™" },
+];
+
+const OFFERS_LINKS = [
+  { to: "/diagnostic", label: OFFERS.diagnostic.name },
+  { to: "/blueprint", label: OFFERS.blueprint.name },
+  { to: "/engine", label: "SNIPE Engine" },
+  { to: "/loop-library", label: "Free Loop Library" },
+  { to: "/faq", label: "FAQ" },
 ];
 
 const COMPANY_LINKS = [
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
-  { to: "/book", label: "Book A Call" },
+  { to: "/book", label: "Book a Free Growth Fit Call" },
   { to: "/login", label: "Sign in" },
-];
-
-const RESOURCE_LINKS = [
-  { to: "/blog", label: "Blog" },
-  { to: "/case-studies", label: "Case studies" },
-  { to: "/privacy", label: "Privacy" },
-  { to: "/terms", label: "Terms" },
 ];
 
 // Owner to supply real social profile URLs later — "#" placeholders for now.
@@ -197,10 +228,15 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
                 </div>
-                {menu.label === "Product" && (
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to="/pricing">Pricing</Link>
-                  </Button>
+                {menu.label === "Offers" && (
+                  <>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="/resources">Resources</Link>
+                    </Button>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="/about">About</Link>
+                    </Button>
+                  </>
                 )}
               </Fragment>
             ))}
@@ -256,7 +292,7 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                         </div>
                       )}
                       </div>
-                      {menu.label === "Product" && (
+                      {menu.label === "Offers" && (
                         <div className="border-b last:border-b-0">
                           <Button
                             variant="ghost"
@@ -264,7 +300,15 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                             asChild
                             onClick={() => setDrawer(false)}
                           >
-                            <Link to="/pricing">Pricing</Link>
+                            <Link to="/resources">Resources</Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                            asChild
+                            onClick={() => setDrawer(false)}
+                          >
+                            <Link to="/about">About</Link>
                           </Button>
                         </div>
                       )}
@@ -282,15 +326,47 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t">
         <div className="mx-auto w-full max-w-6xl px-4 py-10 text-sm text-muted-foreground">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <FooterColumn title="Product" links={PRODUCT_LINKS} />
-            <FooterColumn title="Company" links={COMPANY_LINKS} />
-            <FooterColumn title="Resources" links={RESOURCE_LINKS} />
+            <FooterColumn title="Solutions" links={SOLUTIONS_LINKS} />
+            <FooterColumn title="Growth System" links={SYSTEM_LINKS} />
+            <FooterColumn title="Offers" links={OFFERS_LINKS} />
             <div>
-              <h3 className="text-sm font-semibold text-foreground">Contact</h3>
+              <h3 className="text-sm font-semibold text-foreground">Company</h3>
               <ul className="mt-3 space-y-2">
+                {COMPANY_LINKS.map((l) => (
+                  <li key={l.to}>
+                    <Link className="hover:underline" to={l.to}>
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
                 <li>
-                  <Link className="hover:underline" to="/contact">
-                    Contact us
+                  <Link className="hover:underline" to="/resources">
+                    Resources
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:underline" to="/blog">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:underline" to="/case-studies">
+                    Case studies
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:underline" to="/privacy">
+                    Privacy
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:underline" to="/terms">
+                    Terms
+                  </Link>
+                </li>
+                <li>
+                  <Link className="hover:underline" to="/results-disclaimer">
+                    Results Disclaimer
                   </Link>
                 </li>
                 {supportEmail && (

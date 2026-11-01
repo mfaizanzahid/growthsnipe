@@ -36,6 +36,8 @@ export interface CronPlan {
   runAnalytics: boolean;
   /** Platform-log retention purge. */
   runRetentionPurge: boolean;
+  /** Marketing email sequences (welcome + buyer reminders). Day-granular. */
+  runMarketing: boolean;
 }
 
 export function planCron(input: CronPlanInput): CronPlan {
@@ -58,5 +60,8 @@ export function planCron(input: CronPlanInput): CronPlan {
     runAnalytics: !isDaily,
     // Retention is a once-a-day sweep.
     runRetentionPurge: isDaily,
+    // Marketing sequences are day-granular like billing: daily trigger, or
+    // any other trigger as catch-up when the daily run has not happened yet.
+    runMarketing: isDaily || input.lastBillingDay !== input.today,
   };
 }

@@ -15,28 +15,29 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 - Voice: direct, plain, numerate, calm. Lead with the problem in dollars. Short sentences. Second person. No hype, no income or ranking guarantees, no implied endorsements. One CTA per asset. About an 8th-grade reading level.
 - **No em dashes in customer copy.** Use commas, periods, or colons.
 - Illustrative case studies and testimonials are allowed when realistic and clearly labeled illustrative. Label retail-equivalent value estimates as estimates.
-- Official product names: **SNIPE Intelligence™**, **SNIPE VoiceIQ™**, **SNIPE Engine Core**, **SNIPE Engine Command**, **SNIPE System**. Use the trademark on first mention per page where practical.
+- Official product names: **SNIPE Intelligence™**, **SNIPE VoiceIQ™**, **SNIPE CRM™**, **SNIPE Engine Core**, **SNIPE Engine Command**, **SNIPE System**. Use the trademark on first mention per page where practical.
 - ICP (V1): home inspectors, solo or 1 to 5 team, on Spectora or ISN, already experimenting with ChatGPT or Claude. Roadmap: HVAC, plumbing, electrical, roofing on ServiceTitan, Housecall Pro, Jobber.
 
 ## Offer ladder and pricing display (hard rule)
 
 - Revenue Leak Scorecard: free.
-- Workbooks and webinar: free.
-- Discovery call: free.
-- Loop Library: $97.
-- Snipe Diagnostic: $497.
-- Snipe Blueprint: $999.
-- SNIPE Engine Core: $1,999/mo plus $2,999 setup.
-- SNIPE Engine Command: $3,999/mo plus $4,999 setup.
-- **SNIPE Intelligence™: $199/mo, 30-day free trial, no card.**
-- **Only SNIPE Intelligence™ may display a price in the app or public UI.** Every other plan or tier renders no price and a "Contact us for pricing" CTA to `/contact`. All prices must come from `GET /api/plans`, never hard-coded in JSX or constants.
-- Plans are data, superadmin-managed. Contact-only plans carry `contactOnly=1`, have price fields at 0, are excluded from the max-4 active self-serve count, and are refused by checkout, signup, and plan-change endpoints with a 422.
+- Loop Library: free.
+- Discovery call (Growth Fit Call): free.
+- SNIPE Diagnostic: $199 one-time.
+- SNIPE Blueprint: $999 one-time.
+- SNIPE Engine Core: $2,999 setup plus $1,999/mo.
+- SNIPE Engine Command: $4,999 setup plus $3,999/mo.
+- **SNIPE Intelligence™: $199/mo, 30-day free trial, no card** (dashboard product; not promoted on the public site).
+- **Offer prices may display on the public marketing pages listed in `docs/copy-content-website-strategy.md`** (offer, Engine, FAQ, checkout, and thank-you pages). Everywhere else, plans and tiers render no price.
+- **Single source of truth:** all offer prices and credit rules live in `src/lib/offers.ts`. Never hard-code price literals (`$199`, `$999`, `$1,999`, `$2,999`, `$3,999`, `$4,999`) in JSX or other constants. SaaS subscription plans still come from `GET /api/plans`, never hard-coded.
+- Credit-forward rules (also in `src/lib/offers.ts`): $199 Diagnostic credited toward a Blueprint within 14 days (remaining $800); $999 Blueprint credited toward Engine setup within 30 days of presentation (remaining $2,000 Core / $4,000 Command).
+- Subscription plans are data, superadmin-managed. Contact-only plans carry `contactOnly=1`, have price fields at 0, are excluded from the max-4 active self-serve count, and are refused by checkout, signup, and plan-change endpoints with a 422.
 - Commercial terms (reference only, not UI): six-month minimum for Engine; setup paid 50/50; first 10 clients get a 12-month price lock; Command includes up to 100 combined human hours per month, extra hours $500 per 20-hour block; Core human intake pack $799/mo. Engine Core delivery guarantee: live in 30 days or the next management month is free. Optimization extension until agreed targets are met.
 - Intake rule: Voice AI is always fallback. On Core the client's team answers first. On Command our live team answers first.
 
 ## Product surfaces
 
-1. **Public marketing site**: landing, features, how it works, integrations, who we help, case studies, blog, pricing (dynamic), privacy, terms, contact, login, signup, onboarding.
+1. **Public marketing site**: home, offers (blueprint, diagnostic, loop-library, engine), six industry pages, four capability pages (paid-ads, crm, intelligence, voiceiq), how it works, snipe-system, case studies, resources, about, faq, book, checkout (diagnostic/blueprint), thank-you pages, results-disclaimer, plus blog, privacy, terms, contact, login, onboarding.
 2. **SNIPE Intelligence™ dashboard** (authenticated, org-scoped via top-left switcher): scorecard overview, connections, business profile, billing and payments, audit log, org settings, profile. MCP access, AI Employees, and briefings are hidden for now.
 3. **Superadmin area**: all-tenant clients, invoices, usage/one-time charges, refunds, plans (including contact-only), coupons, portal settings.
 4. **Dormant (code retained, UI hidden)**: remote MCP endpoint `/mcp` with org-scoped bearer tokens, provider adapters, briefing schedules and Crons.
@@ -65,7 +66,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 
 ## Dashboard map
 
-- `/` landing, `/features`, `/how-it-works`, `/integrations`, `/who-we-help`, `/case-studies`, `/blog`, `/pricing` (dynamic), `/privacy`, `/terms`, `/contact`, `/login`, `/signup`, `/onboarding`.
+- `/` home, offers, six industry pages, four capability pages, `/how-it-works`, `/snipe-system`, `/case-studies`, `/resources`, `/about`, `/faq`, `/book`, `/checkout/*`, `/thank-you/*`, `/results-disclaimer`, plus `/blog`, `/privacy`, `/terms`, `/contact`, `/login`, `/onboarding`. Retired (redirect): `/features`, `/integrations`, `/who-we-help`, `/pricing`.
 - `/dashboard` SNIPE Intelligence™ scorecard, `/connections`, `/business-profile`, `/billing`, `/settings`, `/profile`. Hidden for now: `/mcp-access`, `/employees`, `/briefings-schedules`.
 - `/superadmin` clients, invoices, usage charges, refunds, plans, coupons, settings.
 
@@ -89,7 +90,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 - Plans: max 4 active self-serve enforced; contact-only plans are not purchasable; delete blocked while referenced; archive hides from pricing and signup; pricing renders only active plans from the API; no setup fees or plan-level trials.
 - Trial: start on SNIPE Intelligence, no card; reminders once each; expiry flip; subscribe convert and prepaid trial behavior; renewal Cron never charges trialing.
 - Access gating and daily auto-retry caps. Dunning schedule. Coupon math never below zero. Invoice numbering and PDF. Webhook authenticity and replay.
-- Marketing copy: no hard-coded plan names or prices; only SNIPE Intelligence priced; no em dashes in customer copy.
+- Marketing copy: no hard-coded plan names or prices; only SNIPE Intelligence priced (dashboard only) and strategy offers priced via `src/lib/offers.ts`; no em dashes in customer copy.
 - Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
 ## Deployment
@@ -114,4 +115,4 @@ Use `.opencode/agents/*.md`. Prefer `implementation-planner` first, then the spe
 
 ## Completion rule
 
-An implementation may be claimed complete only after typecheck, tests, and build pass; migrations apply on a fresh local D1; no secrets are committed; no hard-coded plan names or prices appear in UI; payment mutations are idempotent; and the relevant docs are updated.
+An implementation may be claimed complete only after typecheck, tests, and build pass; migrations apply on a fresh local D1; no secrets are committed; no hard-coded plan names or prices appear in UI (offer prices only via `src/lib/offers.ts`); payment mutations are idempotent; and the relevant docs are updated.

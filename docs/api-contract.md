@@ -8,7 +8,8 @@ Base: same origin (Worker serves the SPA). Auth: Better Auth session cookie on e
 - Errors: `{ "error": "<message>" }` with HTTP status. Never leak secrets, tokens, or gateway internals.
 - Mutations: accept `Idempotency-Key` header; duplicates return the original result.
 - Money: integer minor units + `currency` (USD). Dates: UTC seconds.
-- Plans are data: the pricing page, signup picker, and onboarding plan step all render from `GET /api/plans` (active only). Never hard-code plans/prices in UI. Each plan carries `contactOnly` (0/1); contact-only plans return price fields at 0, are excluded from the max-4 active self-serve count, and are refused by checkout, signup, and plan change with a 422. Only SNIPE Intelligence™ may display a price.
+- Plans are data: SaaS subscription surfaces render from `GET /api/plans` (active only). Never hard-code subscription plans/prices in UI. Each plan carries `contactOnly` (0/1); contact-only plans return price fields at 0, are excluded from the max-4 active self-serve count, and are refused by checkout, signup, and plan change with a 422.
+- One-time offer prices (Diagnostic $199, Blueprint $999, Engine setup/monthly) may display on the marketing pages listed in `docs/copy-content-website-strategy.md`, sourced only from `src/lib/offers.ts`. One-time checkout uses dedicated `POST /api/one-time/*` endpoints (guest-capable, idempotent); subscription billing stays org-scoped and unchanged.
 
 ## Routes (implemented)
 

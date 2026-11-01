@@ -59,6 +59,13 @@ describe("planCron", () => {
     expect(plan.runBilling).toBe(true);
   });
 
+  it("runs marketing sequences on the daily trigger and on catch-up ticks", () => {
+    expect(planCron(input(DAILY)).runMarketing).toBe(true);
+    expect(planCron(input(TICK, "2026-10-19")).runMarketing).toBe(true);
+    expect(planCron(input(TICK)).runMarketing).toBe(false);
+    expect(planCron(input("15 2 * * *")).runMarketing).toBe(false);
+  });
+
   it("does not run the retention purge on the tick", () => {
     const plan = planCron(input(TICK, "2026-10-19"));
     expect(plan.runRetentionPurge).toBe(false);

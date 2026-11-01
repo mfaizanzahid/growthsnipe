@@ -90,19 +90,53 @@ export function Book() {
   return (
     <MarketingLayout>
       <PageHero
-        eyebrow="Book A Call"
-        title="Book a call"
-        lede="Tell us about the business. We size the leak in dollars on the call and agree the scope before anything is sold."
+        eyebrow="Book a Free Growth Fit Call"
+        title="Let's find out whether GrowthSnipe is the right growth partner for your business."
+        lede="This is a focused 20-minute conversation to understand how your business gets customers today, where the growth process feels stuck and what you want to achieve next. We will recommend the most sensible next step. If there is not a fit, we will say so."
       />
+      <section className="mx-auto w-full max-w-6xl px-4 pb-8">
+        <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">What we will cover</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                <li>Your trade, service area and business model.</li>
+                <li>Current annual revenue range and team capacity.</li>
+                <li>How new enquiries arrive today.</li>
+                <li>What happens after a call, form or estimate request.</li>
+                <li>Your growth goal over the next 12 months.</li>
+                <li>Whether you need a diagnosis, a plan or implementation support.</li>
+              </ul>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Before we talk</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>
+                GrowthSnipe is designed for established home-service businesses that are ready to improve their growth process. The information helps us prepare for a useful conversation.
+              </p>
+              <p>It is not used to automatically reject a business based on one answer.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
       <section className="mx-auto w-full max-w-2xl px-4 pb-14">
         <Card>
           <CardHeader>
             <CardTitle>{sent ? "Request received" : "Request a call"}</CardTitle>
-            {!sent && <CardDescription>We usually reply within one business day.</CardDescription>}
+            {!sent && <CardDescription>Choose a time by telling us about the business. We usually reply within one business day.</CardDescription>}
           </CardHeader>
           <CardContent>
             {sent ? (
-              <p className="text-sm text-muted-foreground">Thanks. Check your inbox for our reply.</p>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p className="font-semibold text-foreground">Your call is booked in principle.</p>
+                <p>You will receive a calendar confirmation and meeting details by email. Before the call, think about one question: <span className="font-medium text-foreground">What is the biggest thing stopping your business from growing right now?</span></p>
+                <p>Bring the honest answer. That is where we will start.</p>
+              </div>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
                 <Field label="Name" htmlFor="book-name">

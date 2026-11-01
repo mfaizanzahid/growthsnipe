@@ -1,5 +1,6 @@
 # GrowthSnipe Website Strategy & Conversion Copy
 
+**Status: APPROVED — implementation in progress (Nov 2026).** See `docs/decision-log.md` (2026-11-01 entry) for the pricing-policy reversal. Offer prices live in `src/lib/offers.ts`.
 **Working website content draft — October 2026**  
 **Positioning:** Plan-to-Booked Growth Partner for owner-operated home-service businesses  
 **Primary conversion:** Qualified strategy calls and purchases of SNIPE Diagnostic / SNIPE Blueprint  

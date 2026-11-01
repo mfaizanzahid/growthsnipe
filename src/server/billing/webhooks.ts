@@ -33,12 +33,20 @@ interface Envelope {
  * - Unknown event types are acknowledged and ignored (we use no native
  *   subscriptions, so subscription.* events carry nothing for us).
  */
+/** Optional one-time-order reconciler (guest checkout has no invoice row). */
+export interface OneTimeReconciler {
+  findByTracker(tracker: string): Promise<{ id: string; status: string } | null>;
+  completePaid(orderId: string, chargeId: string): Promise<{ transitioned: boolean }>;
+  markFailed(orderId: string): Promise<boolean>;
+}
+
 export async function handleSafepayWebhook(
   env: Env,
   store: BillingStore,
   rawBody: string,
   signature: string | null,
   now = nowSec(),
+  oneTime?: OneTimeReconciler,
 ): Promise<WebhookOutcome> {
   const verified = await verifySafepaySignature(rawBody, signature, env.SAFEPAY_WEBHOOK_SECRET);
   if (!verified) return { httpStatus: 401, ack: "unauthorized" };
@@ -66,10 +74,10 @@ export async function handleSafepayWebhook(
   const data = envelope.data && typeof envelope.data === "object" ? envelope.data : {};
   switch (type) {
     case "payment.succeeded":
-      await reconcileSucceeded(env, store, data, now);
+      await reconcileSucceeded(env, store, data, now, oneTime);
       return { httpStatus: 200, ack: "reconciled" };
     case "payment.failed":
-      await reconcileFailed(env, store, data, now);
+      await reconcileFailed(env, store, data, now, oneTime);
       return { httpStatus: 200, ack: "reconciled" };
     case "payment.refunded":
       await reconcileRefunded(env, store, data);
@@ -96,11 +104,20 @@ async function reconcileSucceeded(
   store: BillingStore,
   data: Record<string, unknown>,
   now: number,
+  oneTime?: OneTimeReconciler,
 ): Promise<void> {
   const tracker = trackerOf(data);
   if (!tracker) return;
   const invoice = await store.findInvoiceByTracker(tracker);
-  if (!invoice) return;
+  if (!invoice) {
+    // Guest one-time order: conservative pending → paid transition only.
+    const order = oneTime ? await oneTime.findByTracker(tracker).catch(() => null) : null;
+    if (order && order.status === "pending") {
+      const chargeId = typeof data.charge === "string" ? data.charge : tracker;
+      await oneTime!.completePaid(order.id, chargeId).catch(() => undefined);
+    }
+    return;
+  }
   if (invoice.status !== "due" && invoice.status !== "failed") return;
   await store.insertTransaction({
     orgId: invoice.orgId,
@@ -140,11 +157,19 @@ async function reconcileFailed(
   store: BillingStore,
   data: Record<string, unknown>,
   now: number,
+  oneTime?: OneTimeReconciler,
 ): Promise<void> {
   const tracker = trackerOf(data);
   if (!tracker) return;
   const invoice = await store.findInvoiceByTracker(tracker);
-  if (!invoice || invoice.status !== "due") return;
+  if (!invoice) {
+    const order = oneTime ? await oneTime.findByTracker(tracker).catch(() => null) : null;
+    if (order && order.status === "pending") {
+      await oneTime!.markFailed(order.id).catch(() => undefined);
+    }
+    return;
+  }
+  if (invoice.status !== "due") return;
   await store.updateInvoice(invoice.id, { status: "failed", reminderCount: 1, lastReminderAt: now });
   await store.insertTransaction({
     orgId: invoice.orgId,

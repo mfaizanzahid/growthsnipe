@@ -9,24 +9,24 @@ GrowthSnipe is a productized growth company for owner-operated home-service busi
 One-liner: GrowthSnipe finds the revenue leak in a home-service business, fixes it, and shows the owner the booked jobs.
 
 Two ways to buy:
-1. **SNIPE Intelligence™**: the analytics and VoiceIQ product. $199/mo, 30-day free trial, no card. Month to month after the trial.
+1. **One-time offers**: SNIPE Diagnostic ($199) and SNIPE Blueprint ($999), sold on the public site with credit-forward rules.
 2. **Engine Core and Engine Command**: plan-plus-operator engagements. We build the system, launch it, and run it with the client's team or ours.
+3. **SNIPE Intelligence™**: the analytics and VoiceIQ product. $199/mo, 30-day free trial, no card (dashboard product; not promoted on the public site).
 
 ## Offer ladder
 
 | Offer | Purpose | Price display |
 | --- | --- | --- |
 | Revenue Leak Scorecard | Free diagnostic that sizes the gap | Free |
-| Workbooks and webinar | Education and lead nurture | Free |
-| Discovery call | Fit and scoping conversation | Free |
-| Loop Library | Reusable growth playbooks | Contact us for pricing |
-| Snipe Diagnostic | Paid data teardown and Leak Map | Contact us for pricing |
-| Snipe Blueprint | Written growth plan | Contact us for pricing |
-| SNIPE Engine Core | Build plus operator, client team answers first | Contact us for pricing |
-| SNIPE Engine Command | Build plus operator, our live team answers first | Contact us for pricing |
-| SNIPE Intelligence™ | Analytics and VoiceIQ dashboard | $199/mo, 30-day free trial |
+| Loop Library | Reusable growth playbooks | Free |
+| Discovery call (Growth Fit Call) | Fit and scoping conversation | Free |
+| SNIPE Diagnostic | Paid data teardown and Leak Map | $199 one-time |
+| SNIPE Blueprint | Written growth plan | $999 one-time |
+| SNIPE Engine Core | Build plus operator, client team answers first | $2,999 setup + $1,999/mo |
+| SNIPE Engine Command | Build plus operator, our live team answers first | $4,999 setup + $3,999/mo |
+| SNIPE Intelligence™ | Analytics and VoiceIQ dashboard | $199/mo, 30-day free trial (dashboard only) |
 
-Hard rule: only SNIPE Intelligence™ may display a price in the app or public UI. Every other plan or tier renders no price and a "Contact us for pricing" CTA to `/contact`. All prices come from `GET /api/plans`.
+Hard rule: offer prices may display on the public marketing pages listed in `docs/copy-content-website-strategy.md`. Everywhere else, plans and tiers render no price. All offer prices and credit rules live in `src/lib/offers.ts`, never hard-coded elsewhere. SaaS subscription plans come from `GET /api/plans`.
 
 ## Commercial terms (internal reference, not UI)
 
@@ -68,7 +68,7 @@ Flag any call under 70, or any booking-intent call without a confirmed next step
 
 - Days 1 to 3: technical ingestion.
 - Days 4 to 8: booking platform overhaul.
-- Days 9 to 14: GoHighLevel, telephony, live answer routing, Voice AI fallback.
+- Days 9 to 14: SNIPE CRM™, telephony, live answer routing, Voice AI fallback.
 - Days 15 to 21: launch and verification.
 - Days 22 to 90: optimize and ramp.
 
@@ -92,7 +92,7 @@ Illustrative case studies and testimonials are allowed when realistic and clearl
 
 ## App surfaces
 
-Public: `/`, `/features`, `/how-it-works`, `/integrations`, `/who-we-help`, `/case-studies`, `/blog`, `/pricing`, `/privacy`, `/terms`, `/contact`, `/login`, `/signup`, `/onboarding`.
+Public: `/`, offers, industry and capability pages, `/how-it-works`, `/snipe-system`, `/case-studies`, `/resources`, `/about`, `/faq`, `/book`, `/checkout/*`, `/thank-you/*`, `/results-disclaimer`, `/blog`, `/privacy`, `/terms`, `/contact`, `/login`, `/onboarding`. Retired (redirect): `/features`, `/integrations`, `/who-we-help`, `/pricing`, `/signup`.
 
 Dashboard: `/dashboard` scorecard, `/connections`, `/business-profile`, `/billing`, `/settings`, `/profile`.
 

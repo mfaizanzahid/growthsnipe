@@ -10,6 +10,7 @@ import {
   CreditCardIcon,
   DocumentTextIcon,
   CubeIcon,
+  EnvelopeIcon,
   HomeIcon,
   MoonIcon,
   ShieldCheckIcon,
@@ -49,6 +50,7 @@ const NAV = [
 const ADMIN_NAV = [
   { to: "/superadmin", label: "Dashboard", icon: ChartBarIcon, end: true },
   { to: "/superadmin/clients", label: "Clients", icon: UsersIcon, end: false },
+  { to: "/superadmin/leads", label: "Leads", icon: EnvelopeIcon, end: false },
   { to: "/superadmin/invoices", label: "Invoices", icon: DocumentTextIcon, end: false },
   { to: "/superadmin/plans", label: "Plans", icon: CubeIcon, end: false },
   { to: "/superadmin/coupons", label: "Coupons", icon: TicketIcon, end: false },

@@ -12,6 +12,7 @@ import { createProviderAdapter } from "../src/server/providers/registry";
 import { buildBusinessSidekickServer } from "../src/server/mcp/server";
 import { sidekickEmployeeStates, sidekickPolicies } from "../src/server/db/schema";
 import { runDueSchedules } from "../src/server/scheduler/scheduler";
+import { runDueMarketing } from "../src/server/marketing/runner";
 import { createDb } from "../src/server/repositories/db";
 import { drizzleStore } from "../src/server/repositories/billing";
 import { getSetting, setSetting } from "../src/server/repositories";
@@ -424,6 +425,34 @@ const workerHandlers = {
         })(),
       );
       }
+    }
+
+    // Marketing sequences: welcome series + buyer reminders, once a day.
+    if (plan.runMarketing) {
+      jobs.push(
+        runDueMarketing(db, env, now).then(
+          async (r) => {
+            console.log(`[cron] marketing: ${JSON.stringify(r)}`);
+            await writeAppLog(db, {
+              level: "info",
+              event: "cron.marketing",
+              surface: "cron",
+              message: `Marketing run: ${r.sent} sent, ${r.skipped} skipped, ${r.failed} failed of ${r.checked} due`,
+              detail: r,
+            });
+          },
+          async (err) => {
+            console.error("[cron] marketing failed", err);
+            await writeAppLog(db, {
+              level: "error",
+              event: "cron.marketing_failed",
+              surface: "cron",
+              message: err instanceof Error ? err.message : "Marketing run failed",
+              detail: err,
+            });
+          },
+        ),
+      );
     }
 
     // Retention sweep: platform logs older than the window are deleted once a

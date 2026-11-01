@@ -4,49 +4,148 @@
  */
 export const PAGE_META: Record<string, { title: string; description: string }> = {
   "/": {
-    title: "GrowthSnipe | Growth, with the math done",
+    title: "GrowthSnipe | Plan-to-Booked Growth for Home-Service Companies",
     description:
-      "GrowthSnipe finds the revenue leak in your home-service business, fixes it, and shows you the booked jobs. SNIPE Intelligence™ analytics and SNIPE VoiceIQ™ call auditing.",
+      "More than leads. GrowthSnipe builds and runs the plan, marketing systems, call handling and follow-up that turn demand into booked home-service jobs.",
   },
-  "/features": {
-    title: "Features: Scorecard, VoiceIQ, and Paid Media | GrowthSnipe",
+  "/blueprint": {
+    title: "SNIPE Blueprint | Your 12-Month Home-Service Growth Plan",
     description:
-      "One weekly scorecard, call scoring, and paid media judged on cost per booked inspection. See what SNIPE Intelligence™ and SNIPE VoiceIQ™ measure.",
+      "Get a personalized 12-month growth plan built around your business numbers, pricing, capacity, marketing channels and customer journey.",
+  },
+  "/diagnostic": {
+    title: "SNIPE Diagnostic | Find the Leaks in Your Home-Service Business",
+    description:
+      "Get a 12-month performance review, quantified Leak Map and 60-minute readout to identify where your home-service growth process is losing opportunities.",
+  },
+  "/loop-library": {
+    title: "Free Loop Library | Home-Service Follow-Up & Automation Recipes",
+    description:
+      "Get free follow-up scripts, automation recipes and customer lifecycle workflows for home inspectors, HVAC, plumbing, electrical, roofing and contractors.",
+  },
+  "/engine": {
+    title: "SNIPE Engine | Managed Growth Marketing & Operations for Home Services",
+    description:
+      "Choose Engine Core or Command for a connected growth system covering paid acquisition, CRM, call handling, follow-up, revenue loops and analytics.",
+  },
+  "/home-inspectors": {
+    title: "Home Inspection Marketing & Growth Systems | GrowthSnipe",
+    description:
+      "Grow your home inspection business with agent-partner development, better booking capture, inspection add-ons, customer follow-up and performance intelligence.",
+  },
+  "/hvac": {
+    title: "HVAC Marketing & Growth Systems | GrowthSnipe",
+    description:
+      "Turn HVAC enquiries, service calls, estimates and maintenance opportunities into a more connected growth and follow-up system.",
+  },
+  "/plumbing": {
+    title: "Plumbing Marketing & Growth Systems | GrowthSnipe",
+    description:
+      "Improve plumbing lead capture, call handling, estimate follow-up, service packaging and repeat customer growth with GrowthSnipe.",
+  },
+  "/electrical": {
+    title: "Electrical Contractor Marketing & Growth Systems | GrowthSnipe",
+    description:
+      "Build a stronger electrical contractor pipeline with better enquiry capture, estimate follow-up, local marketing and customer lifecycle automation.",
+  },
+  "/roofing": {
+    title: "Roofing Marketing & Growth Systems | GrowthSnipe",
+    description:
+      "Turn roofing enquiries and inspections into a better-managed estimate pipeline with lead capture, persistent follow-up and performance reporting.",
+  },
+  "/contractors": {
+    title: "General Contractor & Remodeling Marketing Systems | GrowthSnipe",
+    description:
+      "Build a stronger remodeling and contractor pipeline with project qualification, estimate nurture, referral development and growth intelligence.",
+  },
+  "/paid-ads": {
+    title: "Paid Ads for Home-Service Companies | GrowthSnipe",
+    description:
+      "Home-service paid advertising managed around qualified enquiries, booked work, acquisition cost and business capacity, not clicks alone.",
+  },
+  "/crm": {
+    title: "SNIPE CRM™ | Lead Capture, Follow-Up & Customer Growth System",
+    description:
+      "SNIPE CRM brings your leads, calls, customer records and follow-up workflows into one connected home-service growth system.",
+  },
+  "/intelligence": {
+    title: "SNIPE Intelligence™ | Home-Service Growth Analytics & Scorecards",
+    description:
+      "See the numbers behind your home-service growth: lead sources, response, bookings, job value, campaign performance and operating priorities.",
+  },
+  "/voiceiq": {
+    title: "SNIPE VoiceIQ™ | Call Coverage & Conversation Quality for Home Services",
+    description:
+      "Improve home-service call capture and quality with configured Voice AI fallback, call routing, conversation insights and follow-up workflows.",
   },
   "/how-it-works": {
-    title: "How It Works: Live in 21 Days | GrowthSnipe",
+    title: "How It Works | From Growth Plan to Booked Jobs",
     description:
-      "Connect your systems, rebuild the booking path, launch capture and campaigns, then optimize against one scorecard. The 21-day GrowthSnipe runway.",
+      "See how GrowthSnipe diagnoses your business, builds a 12-month growth plan, installs the system and operates the growth process with you.",
   },
-  "/integrations": {
-    title: "Integrations: We Work Inside Your Stack | GrowthSnipe",
+  "/snipe-system": {
+    title: "The SNIPE System | Growth Method for Home-Service Companies",
     description:
-      "GrowthSnipe works with Spectora, ISN, ServiceTitan, Housecall Pro, Jobber, GoHighLevel, Google, and Meta. Nothing migrates.",
+      "Explore the five-pillar SNIPE System: Size the Gap, Net-Ticket Architecture, Instant Capture, Pipeline Engine, Expand and Evaluate.",
   },
   "/about": {
-    title: "About GrowthSnipe | Plan Plus Operator",
+    title: "About GrowthSnipe | Plan It. Install It. Run It.",
     description:
-      "Why GrowthSnipe starts with the leak: a productized growth company that sizes the gap, builds the system, and stays to run it.",
-  },
-  "/pricing": {
-    title: "Pricing: Engine Plans, Scoped on a Call | GrowthSnipe",
-    description:
-      "Every GrowthSnipe plan is scoped with you on a call. Compare the offer ladder and Engine Core and Command engagements.",
-  },
-  "/book": {
-    title: "Book A Call | GrowthSnipe",
-    description:
-      "Book a call with GrowthSnipe. We size the revenue leak in dollars and agree the scope before anything is sold.",
-  },
-  "/who-we-help": {
-    title: "Who We Help: Home-Service Owners | GrowthSnipe",
-    description:
-      "Built for owner-operated home-service businesses, starting with home inspectors on Spectora and ISN, then HVAC, plumbing, electrical, and roofing.",
+      "Meet GrowthSnipe, the Plan-to-Booked Growth Partner helping owner-operated home-service businesses connect strategy, marketing and operations.",
   },
   "/case-studies": {
-    title: "Case Studies: What the Work Looks Like | GrowthSnipe",
+    title: "GrowthSnipe Case Studies & Growth Breakdowns",
     description:
-      "Illustrative GrowthSnipe engagements: missed calls, flat average ticket, and paid media without a cost per booked job.",
+      "Explore examples of how the SNIPE System analyzes lead capture, booking, ticket size, referrals and repeat revenue for home-service businesses.",
+  },
+  "/resources": {
+    title: "Home-Service Growth Resources | GrowthSnipe",
+    description:
+      "Practical guides, calculators, scripts and growth frameworks for home inspectors, HVAC contractors, plumbers, electricians, roofers and general contractors.",
+  },
+  "/faq": {
+    title: "GrowthSnipe FAQ | Pricing, Process & Services",
+    description:
+      "Answers about GrowthSnipe pricing, SNIPE Diagnostic, SNIPE Blueprint, SNIPE Engine, advertising, integrations and working together.",
+  },
+  "/book": {
+    title: "Book a Free Growth Fit Call | GrowthSnipe",
+    description:
+      "Book a 20-minute Growth Fit Call to discuss your home-service business, growth goals and the right next step with GrowthSnipe.",
+  },
+  "/loop-library/access": {
+    title: "Your Loop Library | GrowthSnipe",
+    description: "Your free Loop Library access: follow-up workflows and scripts for your home-service business.",
+  },
+  "/unsubscribe": {
+    title: "Unsubscribe | GrowthSnipe",
+    description: "Opt out of GrowthSnipe marketing emails.",
+  },
+  "/checkout/diagnostic": {
+    title: "Get Your SNIPE Diagnostic | GrowthSnipe",
+    description:
+      "Purchase the SNIPE Diagnostic: a 12-month performance review with a quantified Leak Map and 60-minute readout.",
+  },
+  "/checkout/blueprint": {
+    title: "Get Your SNIPE Blueprint | GrowthSnipe",
+    description:
+      "Purchase the SNIPE Blueprint: a personalized 12-month growth plan with a 90-minute presentation.",
+  },
+  "/thank-you/diagnostic": {
+    title: "Your Diagnostic Is Underway | GrowthSnipe",
+    description: "Thank you for purchasing the SNIPE Diagnostic. Next steps for your data checklist and readout.",
+  },
+  "/thank-you/blueprint": {
+    title: "Let's Build Your Growth Plan | GrowthSnipe",
+    description: "Thank you for purchasing the SNIPE Blueprint. Next steps for intake and your presentation.",
+  },
+  "/thank-you/loop-library": {
+    title: "Your Loop Library Is Ready | GrowthSnipe",
+    description: "Check your inbox for access to the free Loop Library of follow-up workflows and scripts.",
+  },
+  "/results-disclaimer": {
+    title: "Results Disclaimer | GrowthSnipe",
+    description: "How to read GrowthSnipe case studies, illustrations and planning figures.",
   },
   "/blog": {
     title: "Blog: Straight Talk for Home-Service Owners | GrowthSnipe",

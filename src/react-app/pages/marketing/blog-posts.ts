@@ -27,7 +27,7 @@ export const POSTS: BlogPostData[] = [
       "Why home-service owners should fix missed calls and ticket consistency before increasing paid ad spend. A practical order of operations.",
     relatedLinks: [
       { label: "How it works", to: "/how-it-works" },
-      { label: "Pricing", to: "/pricing" },
+      { label: "Engine plans", to: "/engine" },
       { label: "Get a Leak Scorecard", to: "/contact" },
     ],
     sections: [
@@ -110,7 +110,7 @@ export const POSTS: BlogPostData[] = [
       "How to judge home-service paid ads on cost per booked inspection, set a sane guardrail, and decide when to scale or pause.",
     relatedLinks: [
       { label: "Features", to: "/features" },
-      { label: "Pricing", to: "/pricing" },
+      { label: "Engine plans", to: "/engine" },
       { label: "Book a discovery call", to: "/contact" },
     ],
     sections: [
