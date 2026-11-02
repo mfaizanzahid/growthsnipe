@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DatabaseSync } from "node:sqlite";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import * as schema from "../db/schema";
 import type { Db } from "../src/server/repositories/db";
@@ -473,6 +474,12 @@ describe("enrichment parent ensure", () => {
         syncedAt: 1,
       });
     }
+    // Counter contract: bare rows count only via orders_total (the backlog
+    // boolean never scans the tables).
+    await db.insert(schema.orgSyncState).values({
+      organizationId: ORG, provider: "isn", status: "live", updatedAt: 1,
+      ordersTotal: n, ordersWithServices: 0,
+    });
   }
 
   async function beat(db: Db, ageMs: number, event = "sync.parent_cycle") {
@@ -598,6 +605,7 @@ describe("workflow supervisor", () => {
       status: "completed", scheduledAt: "2026-03-01T10:00:00Z", syncedAt: 1,
     });
     await liveState(db, 1);
+    await db.update(schema.orgSyncState).set({ ordersTotal: 1 }).where(eq(schema.orgSyncState.organizationId, ORG));
     const binding = fakeBinding();
     const heads: string[] = [];
     const out = await runWorkflowSupervisor(binding, ENV, db, NOW, async (orgId) => {

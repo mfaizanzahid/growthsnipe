@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DatabaseSync } from "node:sqlite";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import * as schema from "../db/schema";
 import type { Db } from "../src/server/repositories/db";
@@ -955,25 +956,65 @@ describe("analytics sync resilience", () => {
     expect(rows.map((r) => r.providerOrderId).sort()).toEqual(["fresh", "nodate"]);
   });
 
-  it("reports an enrichment backlog only for bare non-cancelled orders", async () => {    // The per-minute tick gates live workspaces on this: hourly throttle
-    // stands only when enrichment is complete.
+  it("answers the enrichment backlog from counters, never a scan", async () => {
+    // The per-minute tick gates live workspaces on this: hourly throttle
+    // stands only when enrichment is complete. One indexed row read — the
+    // LEFT JOIN probe this replaced scanned ~95k rows per call in prod.
     const db = memoryDb();
     await seedConnection(db, "isn");
+    // No state row yet (nothing seeded): no backlog, same as the old probe
+    // on an empty warehouse.
     expect(await hasEnrichmentBacklog(db, ORG)).toBe(false);
+    await db.insert(schema.orgSyncState).values({
+      organizationId: ORG, provider: "isn", status: "live", updatedAt: 1,
+    });
+    // 0/0 reads as drained.
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(false);
+    // Bare rows exist only as far as the counters say: the order/service
+    // tables below are never read (proving no scan), only the counters.
     await db.insert(schema.orgOrders).values([
       { id: `${ORG}:isn:bare`, organizationId: ORG, provider: "isn", providerOrderId: "bare", status: "completed", scheduledAt: "2026-01-01T10:00:00Z", syncedAt: 1 },
-      { id: `${ORG}:isn:done`, organizationId: ORG, provider: "isn", providerOrderId: "done", status: "completed", scheduledAt: "2026-01-01T10:00:00Z", syncedAt: 1 },
       { id: `${ORG}:isn:gone`, organizationId: ORG, provider: "isn", providerOrderId: "gone", status: "cancelled", scheduledAt: "2026-01-01T10:00:00Z", syncedAt: 1 },
     ]);
-    await db.insert(schema.orgOrderServices).values({
-      id: `${ORG}:isn:done:svc:0`, organizationId: ORG, orderId: `${ORG}:isn:done`, name: "General Home Inspection", kind: "base",
-    });
-    expect(await hasEnrichmentBacklog(db, ORG)).toBe(true);
-    await db.insert(schema.orgOrderServices).values({
-      id: `${ORG}:isn:bare:svc:0`, organizationId: ORG, orderId: `${ORG}:isn:bare`, name: "General Home Inspection", kind: "base",
-    });
-    // Only the cancelled bare row remains: no backlog.
     expect(await hasEnrichmentBacklog(db, ORG)).toBe(false);
+    await db.update(schema.orgSyncState).set({ ordersTotal: 2 }).where(eq(schema.orgSyncState.organizationId, ORG));
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(true);
+    await db.update(schema.orgSyncState).set({ ordersWithServices: 2 }).where(eq(schema.orgSyncState.organizationId, ORG));
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(false);
+  });
+
+  it("tracks orders_total for non-cancelled rows across re-syncs and status flips", async () => {
+    // The backlog boolean reads covered < total, so the total must exclude
+    // cancelled rows exactly: deltas fire only for rows actually written
+    // (identical re-processing skips before reaching them).
+    const db = memoryDb();
+    await seedConnection(db, "isn");
+    const at = new Date(NOW - 86400000).toISOString();
+    const statuses: Record<string, string> = { a: "completed", b: "completed", c: "cancelled" };
+    const adapter = fakeAdapter({
+      async searchOrders() {
+        return {
+          items: Object.entries(statuses).map(([id, status]) => ({
+            id, status, scheduledAt: at, total: 50000, currency: "USD", details: {},
+          })) as OrderRecord[],
+        };
+      },
+    });
+    const total = async () => (await db.select().from(schema.orgSyncState))[0]?.ordersTotal;
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW, adapter });
+    // Two in scope; the cancelled row never counts.
+    expect(await total()).toBe(2);
+    expect(await hasEnrichmentBacklog(db, ORG)).toBe(true);
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW + 3600000, adapter });
+    // Identical re-processing changes nothing.
+    expect(await total()).toBe(2);
+    statuses["a"] = "cancelled";
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW + 7200000, adapter });
+    expect(await total()).toBe(1);
+    statuses["a"] = "completed";
+    statuses["c"] = "completed";
+    await runAnalyticsSyncForOrg(env, db, ORG, { maxChunks: 1, nowMs: NOW + 10800000, adapter });
+    expect(await total()).toBe(3);
   });
 
   it("leases sync runs so overlapping ticks skip busy orgs", async () => {

@@ -33,29 +33,25 @@ const EMPTY_CHUNKS_TO_FINISH = 2;
 const MAX_BACKFILL_CHUNKS = Math.ceil(((SYNC_HISTORY_YEARS + 1) * 366) / SYNC_CHUNK_DAYS);
 
 /**
- * Whether any of the org's orders still lack service rows. The per-minute
- * tick uses this to decide if a live workspace may skip its hourly gate:
- * the gate stands only when enrichment is complete, otherwise live orgs run
- * every tick until drained. Cancelled orders never count (enrichment skips
- * them too). One indexed existence probe.
+ * Whether any of the org's orders still lack service rows. Answered from
+ * the O(1) coverage counters on the state row (migration 0040), never a
+ * table scan: the per-minute tick and supervisor call this constantly, and
+ * the LEFT JOIN + IS NULL probe it replaced scanned ~95k rows per call past
+ * ~30k orders (97% of prod D1 read burn, then the daily budget itself).
+ * Cancelled orders never count: orders_total only tracks non-cancelled rows
+ * (see upsertOrders deltas), so a fully drained org reads covered == total.
  */
 export async function hasEnrichmentBacklog(db: Db, orgId: string): Promise<boolean> {
   const rows = await db
-    .select({ orderId: orgOrders.id })
-    .from(orgOrders)
-    .leftJoin(
-      orgOrderServices,
-      and(eq(orgOrderServices.orderId, orgOrders.id), eq(orgOrderServices.organizationId, orgId)),
-    )
-    .where(
-      and(
-        eq(orgOrders.organizationId, orgId),
-        ne(orgOrders.status, "cancelled"),
-        isNull(orgOrderServices.orderId),
-      ),
-    )
+    .select({ total: orgSyncState.ordersTotal, covered: orgSyncState.ordersWithServices })
+    .from(orgSyncState)
+    .where(eq(orgSyncState.organizationId, orgId))
     .limit(1);
-  return rows.length > 0;
+  const s = rows[0];
+  // No state row yet means nothing seeded: same answer as the old probe on
+  // an empty warehouse (no rows, no bare rows).
+  if (!s) return false;
+  return (s.covered ?? 0) < (s.total ?? 0);
 }
 
 /**
@@ -508,10 +504,14 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
     const cur = current[0];
     const nextCursor = mergeSyncCursor(cur?.cursorDate ?? null, cursor);
     const nextFetched = mergeSyncFetched(cur?.totalFetched, fetched);
+    // ordersTotal is deliberately NOT written here: it is delta-maintained
+    // by upsertOrders (new rows / status transitions), so a checkpoint must
+    // preserve it, not mirror total_fetched (which includes cancelled rows
+    // the backlog boolean must never count).
     await db
       .insert(orgSyncState)
-      .values({ organizationId: orgId, provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, ordersTotal: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate })
-      .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, ordersTotal: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate } });
+      .values({ organizationId: orgId, provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate })
+      .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: state.status, cursorDate: nextCursor, lastSyncedAt: nowSec, totalFetched: nextFetched, errorText: null, updatedAt: nowSec, seedStartedAt, totalEstimate } });
   };
 
   // Head first: the latest window syncs on EVERY run (incremental head),
@@ -534,7 +534,7 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
       );
       if (windowed.length > 0) {
         const up = await upsertOrders(db, orgId, conn.provider, windowed, nowSec, missing);
-        await bumpServicesCovered(db, orgId, up.newlyServiced);
+        await bumpCoverageCounters(db, orgId, up.newlyServiced, up.totalDelta);
         rowsUpserted += windowed.length;
       }
       chunksSynced += 1;
@@ -594,7 +594,7 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
       }
       emptyStreak = 0;
       const up = await upsertOrders(db, orgId, conn.provider, orders, nowSec, missing);
-      await bumpServicesCovered(db, orgId, up.newlyServiced);
+      await bumpCoverageCounters(db, orgId, up.newlyServiced, up.totalDelta);
       rowsUpserted += orders.length;
       chunksSynced += 1;
       backDone += 1;
@@ -671,10 +671,12 @@ export async function runAnalyticsSyncForOrg(env: Env, db: Db, orgId: string, op
   const finalCursor = mergeSyncCursor(fcur?.cursorDate ?? null, cursorDate);
   const finalFetched = mergeSyncFetched(fcur?.totalFetched, totalFetched);
   const finalStatus = mergeSyncStatus(fcur?.status, state.status, status);
+  // Same preservation rule as checkpoints: the final write carries the
+  // merged cursor/totals but never ordersTotal (delta-maintained).
   await db
     .insert(orgSyncState)
-    .values({ organizationId: orgId, provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, ordersTotal: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate })
-    .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, ordersTotal: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate } });
+    .values({ organizationId: orgId, provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate })
+    .onConflictDoUpdate({ target: orgSyncState.organizationId, set: { provider: conn.provider, status: finalStatus, cursorDate: finalCursor, lastSyncedAt: Math.floor(nowMs / 1000), totalFetched: finalFetched, errorText: error ?? null, updatedAt: Math.floor(nowMs / 1000), seedStartedAt, totalEstimate } });
 
   return { orgId, provider: conn.provider, status: finalStatus, chunksSynced, rowsUpserted, enriched, enrichFailed, cursorDate: finalCursor, finished, error };
 }
@@ -868,16 +870,26 @@ export async function fetchEnrichBatch(
   return { results, failed, firstError };
 }
 
-/** Atomic coverage increment (migration 0040): a single-statement UPDATE, so
+/** Atomic coverage increments (migration 0040): single-statement UPDATEs, so
  * overlapping runs (links, leaves, ticks, clicks) can never lose each
- * other's deltas the way read-merge-write totals can. Skipped when zero so
- * hot paths that resolve nothing issue no write at all. */
-async function bumpServicesCovered(db: Db, orgId: string, n: number): Promise<void> {
-  if (n < 1) return;
+ * other's deltas the way read-merge-write totals can. Skipped when both are
+ * zero so hot paths that resolve nothing issue no write at all. The total
+ * is floored at zero: transitions are balanced, but a floor keeps a stale
+ * counter from inverting the backlog boolean. */
+async function bumpCoverageCounters(db: Db, orgId: string, serviced: number, total: number): Promise<void> {
+  if (serviced < 1 && total === 0) return;
   await db
     .update(orgSyncState)
-    .set({ ordersWithServices: sql`${orgSyncState.ordersWithServices} + ${n}` })
+    .set({
+      ...(serviced > 0 ? { ordersWithServices: sql`${orgSyncState.ordersWithServices} + ${serviced}` } : {}),
+      ...(total !== 0 ? { ordersTotal: sql`max(${orgSyncState.ordersTotal} + ${total}, 0)` } : {}),
+    })
     .where(eq(orgSyncState.organizationId, orgId));
+}
+
+/** Back-compat wrapper: the enrichment writer only ever grows coverage. */
+async function bumpServicesCovered(db: Db, orgId: string, n: number): Promise<void> {
+  await bumpCoverageCounters(db, orgId, n, 0);
 }
 
 /** Replace-per-order service writes for fetched results (busy-retried by
@@ -1071,7 +1083,7 @@ async function upsertOrders(
   orders: OrderRecord[],
   nowSec: number,
   missing?: Array<{ providerOrderId: string; scheduledAt: string | null }>,
-): Promise<{ newlyServiced: number }> {
+): Promise<{ newlyServiced: number; totalDelta: number }> {
   // Change detection: steady-state heads re-fetch thousands of unchanged
   // rows every run, and each upsert costs ~7 D1 writes (row + indexes).
   // Bulk-read the stored fingerprints first (90-sliced IN queries — reads
@@ -1152,6 +1164,12 @@ async function upsertOrders(
   // enrichment claim probe skips served orders, keeping this exact across
   // re-seeds; unchanged rows `continue` above before reaching this).
   let newlyServiced = 0;
+  // orders_total tracks non-cancelled rows only (the backlog boolean reads
+  // covered < total): new rows count unless cancelled, status transitions
+  // adjust, unchanged rows `continue` above so re-processing never double
+  // counts. Manual SQL purges bypass this — a reseed resets both counters,
+  // same as total_fetched.
+  let totalDelta = 0;
   for (const o of orders) {
     const inspectors = splitPeople(o.inspectorName);
     const scheduledAt = typeof o.scheduledAt === "string" ? o.scheduledAt : null;
@@ -1180,7 +1198,8 @@ async function upsertOrders(
     // (enrichment owns those), so an empty incoming basket always compares
     // equal here regardless of stored rows.
     const basketSame = charged.length === 0 || (storedBasket.get(id) ?? "[]") === basketSig;
-    if (stored.get(String(o.id)) === fingerprint && basketSame) {
+    const prev = stored.get(String(o.id));
+    if (prev === fingerprint && basketSame) {
       // Unchanged: skip all writes for this row (order, junction, basket).
       // Bare ISN rows are still reported for enrichment: the existence probe
       // filters already-served ones, so this costs nothing downstream.
@@ -1188,6 +1207,22 @@ async function upsertOrders(
         missing?.push({ providerOrderId: String(o.id), scheduledAt });
       }
       continue;
+    }
+    // Coverage total delta (non-cancelled rows only): genuinely new rows
+    // count unless cancelled; a status flip adjusts. Reached only for rows
+    // that will actually be written, so identical re-processing (which
+    // `continue`s above) can never double-count.
+    const nowCancelled = (typeof o.status === "string" ? o.status.toLowerCase() : "scheduled") === "cancelled";
+    if (prev === undefined) {
+      if (!nowCancelled) totalDelta += 1;
+    } else {
+      try {
+        const wasCancelled = (JSON.parse(prev) as unknown[])[0] === "cancelled";
+        if (!wasCancelled && nowCancelled) totalDelta -= 1;
+        else if (wasCancelled && !nowCancelled) totalDelta += 1;
+      } catch {
+        // Fingerprint unreadable: leave the total alone rather than guess.
+      }
     }
     stmts.push(
       db
@@ -1269,7 +1304,7 @@ async function upsertOrders(
     }
   }
   await runBatch(db, stmts);
-  return { newlyServiced };
+  return { newlyServiced, totalDelta };
   void orgDashboardLayouts;
   void orgInspectorTargets;
 }
