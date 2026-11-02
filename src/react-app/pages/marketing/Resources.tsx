@@ -61,12 +61,12 @@ export function Resources() {
       <PageHero
         eyebrow="Resources"
         title="Better growth decisions start with better questions."
-        lede="Explore practical guides for improving lead response, booking, job value, referral relationships, customer follow-up and business performance. Start with the free Loop Library, then go deeper where it counts."
+        lede="Explore practical guides for improving lead response, booking, job value, referral relationships, customer follow-up and business performance. Start with free SNIPE Loops™, then go deeper where it counts."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <div className="text-center">
           <Button size="lg" asChild>
-            <Link to="/loop-library">Get the Free Loop Library</Link>
+            <Link to="/loop-library">Download SNIPE Loops™</Link>
           </Button>
         </div>
       </section>
@@ -91,7 +91,7 @@ export function Resources() {
           ))}
         </div>
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted-foreground">
-          Full guides publish to the <Link className="underline" to="/blog">blog</Link> as they are released. The fastest way to get value now is the Loop Library.
+          Full guides publish to the <Link className="underline" to="/blog">blog</Link> as they are released. The fastest way to get value now is SNIPE Loops™.
         </p>
       </section>
 
@@ -99,12 +99,12 @@ export function Resources() {
         <div className="mx-auto w-full max-w-3xl px-4 py-16 text-center">
           <SectionHeading
             eyebrow="Featured lead magnet"
-            title="Get the Loop Library free."
+            title="Get SNIPE Loops™ free."
             body="Practical recipes and scripts for the follow-up your team never has enough time to build."
           />
           <div className="mt-6">
             <Button size="lg" asChild>
-              <Link to="/loop-library">Get Free Access</Link>
+              <Link to="/loop-library">Download SNIPE Loops™</Link>
             </Button>
           </div>
         </div>

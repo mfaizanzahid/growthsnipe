@@ -45,7 +45,7 @@ const STEPS = [
   "Receive the data checklist and secure submission instructions.",
   "Share the agreed business exports and contact details.",
   "We review the available information and conduct the response-time test.",
-  "Join the 60-minute readout and decide whether to execute independently or build a full SNIPE Blueprint.",
+  "Join the 60-minute readout and decide whether to execute independently or build a full SNIPE Blueprint™.",
 ];
 
 const FAQS = [
@@ -59,7 +59,7 @@ const FAQS = [
   },
   {
     q: "Does the Diagnostic include implementation?",
-    a: "No. It is a paid analysis and readout. Implementation is available through the Blueprint and SNIPE Engine.",
+    a: "No. It is a paid analysis and readout. Implementation is available through the Blueprint and SNIPE Engine™.",
   },
 ];
 
@@ -69,7 +69,7 @@ export function Diagnostic() {
       <PageHero
         eyebrow="Find the leaks before you spend more"
         title="Where is your business losing the growth it has already paid to create?"
-        lede="The SNIPE Diagnostic reviews your last 12 months of business performance and maps the friction between enquiries, conversations, bookings, job value and repeat opportunities. You will receive a clear view of what the numbers say, what may be holding the business back and where to investigate first."
+        lede="The SNIPE Diagnostic™ reviews your last 12 months of business performance and maps the friction between enquiries, conversations, bookings, job value and repeat opportunities. You will receive a clear view of what the numbers say, what may be holding the business back and where to investigate first."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <Card className="mx-auto max-w-2xl text-center">
@@ -85,7 +85,7 @@ export function Diagnostic() {
                 "A business-specific Leak Map with quantified opportunities where the data supports it.",
                 "A response-time test of your current enquiry experience.",
                 "A 60-minute findings and recommendations call.",
-                "100% credited toward a SNIPE Blueprint purchased within 14 days.",
+                "100% credited toward a SNIPE Blueprint™ purchased within 14 days.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
@@ -94,7 +94,7 @@ export function Diagnostic() {
               ))}
             </ul>
             <Button size="lg" className="w-full sm:w-auto" asChild>
-              <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic</Link>
+              <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic™</Link>
             </Button>
           </CardContent>
         </Card>
@@ -165,7 +165,7 @@ export function Diagnostic() {
         <div className="mt-6">
           <Button size="lg" asChild>
             <Link to={OFFERS.diagnostic.checkoutPath}>
-              Start My SNIPE Diagnostic, {OFFERS.diagnostic.price.label}
+              Start My SNIPE Diagnostic™, {OFFERS.diagnostic.price.label}
             </Link>
           </Button>
         </div>

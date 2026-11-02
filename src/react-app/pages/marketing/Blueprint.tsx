@@ -23,7 +23,7 @@ const STEPS = [
   { title: "Share your business information", body: "Provide the agreed booking, revenue, lead-source, marketing and capacity data. We will tell you what is needed and what can be substituted if a report is unavailable." },
   { title: "We build the plan", body: "The 10-business-day delivery window begins once the required information is complete." },
   { title: "Walk through the decisions", body: "Join a 90-minute presentation to review the plan, assumptions, priorities and economics." },
-  { title: "Put the plan to work", body: "Use it independently or move into SNIPE Engine. The Blueprint fee is credited toward Engine setup if you sign within 30 days of the presentation." },
+  { title: "Put the plan to work", body: "Use it independently or move into SNIPE Engine™. The Blueprint fee is credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation." },
 ];
 
 const FOR = [
@@ -48,11 +48,11 @@ const FAQS = [
   },
   {
     q: "Do you implement the plan?",
-    a: "You can use it with your own team or move into SNIPE Engine for implementation and ongoing operation.",
+    a: "You can use it with your own team or move into SNIPE Engine™ for implementation and ongoing operation.",
   },
   {
     q: "Do I need to be a GrowthSnipe client?",
-    a: "No. The SNIPE Blueprint is available as a standalone product.",
+    a: "No. The SNIPE Blueprint™ is available as a standalone product.",
   },
   {
     q: "Are the projections guaranteed?",
@@ -66,7 +66,7 @@ export function Blueprint() {
       <PageHero
         eyebrow="The strategy before the spend"
         title="Stop buying marketing tactics. Get the growth plan they should be following."
-        lede="The SNIPE Blueprint is a practical, numbers-led 12-month growth plan for your business. It shows what the next stage of growth requires, where revenue is leaking, which channels deserve investment and what needs to happen across marketing, sales and operations."
+        lede="The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your business. It shows what the next stage of growth requires, where revenue is leaking, which channels deserve investment and what needs to happen across marketing, sales and operations."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <Card className="mx-auto max-w-2xl text-center">
@@ -82,7 +82,7 @@ export function Blueprint() {
                 "Delivered within 10 business days after complete intake and data receipt.",
                 "90-minute presentation and walkthrough.",
                 "30 days of follow-up questions.",
-                "100% of the Blueprint fee credited toward SNIPE Engine setup if you sign within 30 days of the presentation.",
+                "100% of the Blueprint fee credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
@@ -91,7 +91,7 @@ export function Blueprint() {
               ))}
             </ul>
             <Button size="lg" className="w-full sm:w-auto" asChild>
-              <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint</Link>
+              <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint™</Link>
             </Button>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ export function Blueprint() {
           <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">{OFFER_CREDITS.blueprintToEngine.text}</p>
           <div className="mt-6">
             <Button size="lg" asChild>
-              <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint, {OFFERS.blueprint.price.label}</Link>
+              <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint™, {OFFERS.blueprint.price.label}</Link>
             </Button>
             <p className="mt-3 text-xs text-muted-foreground">
               You will receive an intake checklist after checkout. Work begins when the required information is received.

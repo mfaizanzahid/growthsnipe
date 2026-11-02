@@ -130,7 +130,7 @@ export function OneTimeCheckout({
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Payment could not be confirmed");
-      toast.success("Payment successful — check your inbox for next steps.");
+      toast.success("Payment successful. Check your inbox for next steps.");
       navigate(`${thankYouPath}?order=${session.orderId}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment could not be confirmed");
@@ -159,7 +159,7 @@ export function OneTimeCheckout({
             <CardHeader>
               <CardTitle>Order summary</CardTitle>
               <CardDescription>
-                {product.name} — {formatMoney(product.amountMinor, product.currency)} one-time
+                {product.name}, {formatMoney(product.amountMinor, product.currency)} one-time
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -239,7 +239,7 @@ export function OneTimeCheckout({
                     </span>
                   </label>
                   <Button type="submit" className="w-full" disabled={pending || !agreed || !billingAddressValid(billingAddress, countryCode)}>
-                    {pending ? "Starting payment…" : `Continue to payment — ${formatMoney(product.amountMinor, product.currency)}`}
+                    {pending ? "Starting payment…" : `Continue to payment, ${formatMoney(product.amountMinor, product.currency)}`}
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">{checkoutNote}</p>
                 </form>

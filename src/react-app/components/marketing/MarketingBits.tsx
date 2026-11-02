@@ -378,9 +378,6 @@ export function BriefingMockup() {
             </ul>
           </div>
         </div>
-        <p className="text-center text-xs text-muted-foreground">
-          Illustrative briefing: shown with sample figures.
-        </p>
       </CardContent>
     </Card>
   );

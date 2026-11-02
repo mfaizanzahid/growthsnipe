@@ -9,8 +9,8 @@ GrowthSnipe is a productized growth company for owner-operated home-service busi
 One-liner: GrowthSnipe finds the revenue leak in a home-service business, fixes it, and shows the owner the booked jobs.
 
 Two ways to buy:
-1. **One-time offers**: SNIPE Diagnostic ($199) and SNIPE Blueprint ($999), sold on the public site with credit-forward rules.
-2. **Engine Core and Engine Command**: plan-plus-operator engagements. We build the system, launch it, and run it with the client's team or ours.
+1. **One-time offers**: SNIPE Diagnostic™ ($199) and SNIPE Blueprint™ ($999), sold on the public site with credit-forward rules.
+2. **SNIPE Engine™ Core and SNIPE Engine™ Command**: plan-plus-operator engagements. We build the system, launch it, and run it with the client's team or ours.
 3. **SNIPE Intelligence™**: the analytics and VoiceIQ product. $199/mo, 30-day free trial, no card (dashboard product; not promoted on the public site).
 
 ## Offer ladder
@@ -18,12 +18,12 @@ Two ways to buy:
 | Offer | Purpose | Price display |
 | --- | --- | --- |
 | Revenue Leak Scorecard | Free diagnostic that sizes the gap | Free |
-| Loop Library | Reusable growth playbooks | Free |
+| SNIPE Loops™ | Reusable growth playbooks | Free |
 | Discovery call (Growth Fit Call) | Fit and scoping conversation | Free |
-| SNIPE Diagnostic | Paid data teardown and Leak Map | $199 one-time |
-| SNIPE Blueprint | Written growth plan | $999 one-time |
-| SNIPE Engine Core | Build plus operator, client team answers first | $2,999 setup + $1,999/mo |
-| SNIPE Engine Command | Build plus operator, our live team answers first | $4,999 setup + $3,999/mo |
+| SNIPE Diagnostic™ | Paid data teardown and Leak Map | $199 one-time |
+| SNIPE Blueprint™ | Written growth plan | $999 one-time |
+| SNIPE Engine™ Core | Build plus operator, client team answers first | $2,999 setup + $1,999/mo |
+| SNIPE Engine™ Command | Build plus operator, our live team answers first | $4,999 setup + $3,999/mo |
 | SNIPE Intelligence™ | Analytics and VoiceIQ dashboard | $199/mo, 30-day free trial (dashboard only) |
 
 Hard rule: offer prices may display on the public marketing pages listed in `docs/copy-content-website-strategy.md`. Everywhere else, plans and tiers render no price. All offer prices and credit rules live in `src/lib/offers.ts`, never hard-coded elsewhere. SaaS subscription plans come from `GET /api/plans`.
@@ -88,7 +88,7 @@ Judge every campaign on cost per booked inspection. Guardrail: spend no more tha
 - One CTA per asset.
 - About an 8th-grade reading level.
 
-Illustrative case studies and testimonials are allowed when realistic and clearly labeled illustrative. Label retail-equivalent value estimates as estimates.
+Case studies and testimonials must read as realistic customer language. Do not attach illustrative labels. Label retail-equivalent value estimates as estimates.
 
 ## App surfaces
 

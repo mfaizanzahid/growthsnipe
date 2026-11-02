@@ -11,19 +11,19 @@ const STEPS = [
   },
   {
     title: "Diagnose the leaks",
-    body: "The SNIPE Diagnostic reviews the available performance data and customer journey. We identify friction in acquisition, response, booking, ticket size, repeat revenue and referral activity.",
+    body: "The SNIPE Diagnostic™ reviews the available performance data and customer journey. We identify friction in acquisition, response, booking, ticket size, repeat revenue and referral activity.",
   },
   {
     title: "Build the Blueprint",
-    body: "The SNIPE Blueprint turns the findings into a 12-month growth plan: targets, economics, channel mix, workflows, revenue opportunities, capacity considerations and execution priorities.",
+    body: "The SNIPE Blueprint™ turns the findings into a 12-month growth plan: targets, economics, channel mix, workflows, revenue opportunities, capacity considerations and execution priorities.",
   },
   {
     title: "Install the system",
-    body: "If you choose SNIPE Engine, we configure the customer pipeline, call handling, workflows, tracking, campaigns and reporting. The setup includes a 21-day launch runway, subject to access, approvals and third-party dependencies.",
+    body: "If you choose SNIPE Engine™, we configure the customer pipeline, call handling, workflows, tracking, campaigns and reporting. The setup includes a 21-day launch runway, subject to access, approvals and third-party dependencies.",
   },
   {
     title: "Run and improve",
-    body: "We work to the agreed plan, review performance, address issues and adjust priorities as the business and market change. The selected Engine plan determines the cadence and level of live operational support.",
+    body: "We work to the agreed plan, review performance, address issues and adjust priorities as the business and market change. The selected SNIPE Engine™ plan determines the cadence and level of live operational support.",
   },
 ];
 
@@ -64,17 +64,17 @@ export function HowItWorks() {
             title="Pick the entry point that fits."
           />
           <ul className="mx-auto mt-6 max-w-2xl space-y-2 text-left text-muted-foreground">
-            <li>Need ideas you can implement yourself? Start with the free Loop Library.</li>
+            <li>Need ideas you can implement yourself? Start with free SNIPE Loops™.</li>
             <li>Need to understand where the process is leaking? Start with the Diagnostic.</li>
             <li>Need a complete plan? Get the Blueprint.</li>
-            <li>Need a partner to implement and operate the system? Explore SNIPE Engine.</li>
+            <li>Need a partner to implement and operate the system? Explore SNIPE Engine™.</li>
           </ul>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
               <Link to="/book">Find My Best Starting Point</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/loop-library">Get the Free Loop Library</Link>
+              <Link to="/loop-library">Download SNIPE Loops™</Link>
             </Button>
           </div>
         </div>

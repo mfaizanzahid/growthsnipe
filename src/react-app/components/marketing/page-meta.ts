@@ -9,24 +9,24 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
       "More than leads. GrowthSnipe builds and runs the plan, marketing systems, call handling and follow-up that turn demand into booked home-service jobs.",
   },
   "/blueprint": {
-    title: "SNIPE Blueprint | Your 12-Month Home-Service Growth Plan",
+    title: "SNIPE Blueprint™ | Your 12-Month Home-Service Growth Plan",
     description:
       "Get a personalized 12-month growth plan built around your business numbers, pricing, capacity, marketing channels and customer journey.",
   },
   "/diagnostic": {
-    title: "SNIPE Diagnostic | Find the Leaks in Your Home-Service Business",
+    title: "SNIPE Diagnostic™ | Find the Leaks in Your Home-Service Business",
     description:
       "Get a 12-month performance review, quantified Leak Map and 60-minute readout to identify where your home-service growth process is losing opportunities.",
   },
   "/loop-library": {
-    title: "Free Loop Library | Home-Service Follow-Up & Automation Recipes",
+    title: "Free SNIPE Loops™ | Home-Service Follow-Up & Automation Recipes",
     description:
       "Get free follow-up scripts, automation recipes and customer lifecycle workflows for home inspectors, HVAC, plumbing, electrical, roofing and contractors.",
   },
   "/engine": {
-    title: "SNIPE Engine | Managed Growth Marketing & Operations for Home Services",
+    title: "SNIPE Engine™ | Managed Growth Marketing & Operations for Home Services",
     description:
-      "Choose Engine Core or Command for a connected growth system covering paid acquisition, CRM, call handling, follow-up, revenue loops and analytics.",
+      "Choose SNIPE Engine™ Core or Command for a connected growth system covering paid acquisition, CRM, call handling, follow-up, revenue loops and analytics.",
   },
   "/home-inspectors": {
     title: "Home Inspection Marketing & Growth Systems | GrowthSnipe",
@@ -106,7 +106,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   "/faq": {
     title: "GrowthSnipe FAQ | Pricing, Process & Services",
     description:
-      "Answers about GrowthSnipe pricing, SNIPE Diagnostic, SNIPE Blueprint, SNIPE Engine, advertising, integrations and working together.",
+      "Answers about GrowthSnipe pricing, SNIPE Diagnostic™, SNIPE Blueprint™, SNIPE Engine™, advertising, integrations and working together.",
   },
   "/book": {
     title: "Book a Free Growth Fit Call | GrowthSnipe",
@@ -114,34 +114,34 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
       "Book a 20-minute Growth Fit Call to discuss your home-service business, growth goals and the right next step with GrowthSnipe.",
   },
   "/loop-library/access": {
-    title: "Your Loop Library | GrowthSnipe",
-    description: "Your free Loop Library access: follow-up workflows and scripts for your home-service business.",
+    title: "Your SNIPE Loops™ | GrowthSnipe",
+    description: "Your free SNIPE Loops™ access: follow-up workflows and scripts for your home-service business.",
   },
   "/unsubscribe": {
     title: "Unsubscribe | GrowthSnipe",
     description: "Opt out of GrowthSnipe marketing emails.",
   },
   "/checkout/diagnostic": {
-    title: "Get Your SNIPE Diagnostic | GrowthSnipe",
+    title: "Get Your SNIPE Diagnostic™ | GrowthSnipe",
     description:
-      "Purchase the SNIPE Diagnostic: a 12-month performance review with a quantified Leak Map and 60-minute readout.",
+      "Purchase the SNIPE Diagnostic™: a 12-month performance review with a quantified Leak Map and 60-minute readout.",
   },
   "/checkout/blueprint": {
-    title: "Get Your SNIPE Blueprint | GrowthSnipe",
+    title: "Get Your SNIPE Blueprint™ | GrowthSnipe",
     description:
-      "Purchase the SNIPE Blueprint: a personalized 12-month growth plan with a 90-minute presentation.",
+      "Purchase the SNIPE Blueprint™: a personalized 12-month growth plan with a 90-minute presentation.",
   },
   "/thank-you/diagnostic": {
     title: "Your Diagnostic Is Underway | GrowthSnipe",
-    description: "Thank you for purchasing the SNIPE Diagnostic. Next steps for your data checklist and readout.",
+    description: "Thank you for purchasing the SNIPE Diagnostic™. Next steps for your data checklist and readout.",
   },
   "/thank-you/blueprint": {
     title: "Let's Build Your Growth Plan | GrowthSnipe",
-    description: "Thank you for purchasing the SNIPE Blueprint. Next steps for intake and your presentation.",
+    description: "Thank you for purchasing the SNIPE Blueprint™. Next steps for intake and your presentation.",
   },
   "/thank-you/loop-library": {
-    title: "Your Loop Library Is Ready | GrowthSnipe",
-    description: "Check your inbox for access to the free Loop Library of follow-up workflows and scripts.",
+    title: "Your SNIPE Loops™ Are Ready | GrowthSnipe",
+    description: "Check your inbox for access to free SNIPE Loops™ follow-up workflows and scripts.",
   },
   "/results-disclaimer": {
     title: "Results Disclaimer | GrowthSnipe",
@@ -155,7 +155,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   "/contact": {
     title: "Contact GrowthSnipe",
     description:
-      "Book a discovery call, ask for a Revenue Leak Scorecard, or ask about Engine Core and Engine Command.",
+      "Book a discovery call, ask for a Revenue Leak Scorecard, or ask about SNIPE Engine™ Core and SNIPE Engine™ Command.",
   },
   "/privacy": {
     title: "Privacy Policy | GrowthSnipe",

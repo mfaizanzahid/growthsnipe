@@ -41,7 +41,7 @@ function AuthLinks({ signedIn, onNavigate }: { signedIn: boolean; onNavigate?: (
 
 const NAV_MENUS = [
   {
-    label: "Solutions",
+    label: "Who We Help",
     links: [
       { to: "/home-inspectors", label: "Home Inspectors" },
       { to: "/hvac", label: "HVAC" },
@@ -63,12 +63,12 @@ const NAV_MENUS = [
     ],
   },
   {
-    label: "Offers",
+    label: "Solutions",
     links: [
+      { to: "/loop-library", label: "SNIPE Loops™" },
       { to: "/diagnostic", label: OFFERS.diagnostic.name },
       { to: "/blueprint", label: OFFERS.blueprint.name },
-      { to: "/engine", label: "SNIPE Engine" },
-      { to: "/loop-library", label: "Free Loop Library" },
+      { to: "/engine", label: "SNIPE Engine™" },
     ],
   },
   {
@@ -104,10 +104,10 @@ const SYSTEM_LINKS = [
 ];
 
 const OFFERS_LINKS = [
+  { to: "/loop-library", label: "SNIPE Loops™" },
   { to: "/diagnostic", label: OFFERS.diagnostic.name },
   { to: "/blueprint", label: OFFERS.blueprint.name },
-  { to: "/engine", label: "SNIPE Engine" },
-  { to: "/loop-library", label: "Free Loop Library" },
+  { to: "/engine", label: "SNIPE Engine™" },
   { to: "/faq", label: "FAQ" },
 ];
 
@@ -228,16 +228,6 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
                 </div>
-                {menu.label === "Offers" && (
-                  <>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to="/resources">Resources</Link>
-                    </Button>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to="/about">About</Link>
-                    </Button>
-                  </>
-                )}
               </Fragment>
             ))}
             <AuthLinks signedIn={signedIn} />
@@ -292,26 +282,6 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                         </div>
                       )}
                       </div>
-                      {menu.label === "Offers" && (
-                        <div className="border-b last:border-b-0">
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start"
-                            asChild
-                            onClick={() => setDrawer(false)}
-                          >
-                            <Link to="/resources">Resources</Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="w-full justify-start"
-                            asChild
-                            onClick={() => setDrawer(false)}
-                          >
-                            <Link to="/about">About</Link>
-                          </Button>
-                        </div>
-                      )}
                     </Fragment>
                   );
                 })}
@@ -326,9 +296,9 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t">
         <div className="mx-auto w-full max-w-6xl px-4 py-10 text-sm text-muted-foreground">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <FooterColumn title="Solutions" links={SOLUTIONS_LINKS} />
+            <FooterColumn title="Who We Help" links={SOLUTIONS_LINKS} />
             <FooterColumn title="Growth System" links={SYSTEM_LINKS} />
-            <FooterColumn title="Offers" links={OFFERS_LINKS} />
+            <FooterColumn title="Solutions" links={OFFERS_LINKS} />
             <div>
               <h3 className="text-sm font-semibold text-foreground">Company</h3>
               <ul className="mt-3 space-y-2">
@@ -352,21 +322,6 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 <li>
                   <Link className="hover:underline" to="/case-studies">
                     Case studies
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:underline" to="/privacy">
-                    Privacy
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:underline" to="/terms">
-                    Terms
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:underline" to="/results-disclaimer">
-                    Results Disclaimer
                   </Link>
                 </li>
                 {supportEmail && (
@@ -412,7 +367,16 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                 </a>
               </p>
             </div>
-            <p className="text-xs">© {year} {portalName}. All rights reserved.</p>
+            <div className="sm:text-right">
+              <p className="text-xs">© {year} {portalName}. All rights reserved.</p>
+              <p className="mt-2 text-xs">
+                <Link className="hover:underline" to="/terms">Terms of Service</Link>
+                {" · "}
+                <Link className="hover:underline" to="/privacy">Privacy Policy</Link>
+                {" · "}
+                <Link className="hover:underline" to="/results-disclaimer">Results Disclaimer</Link>
+              </p>
+            </div>
           </div>
         </div>
       </footer>

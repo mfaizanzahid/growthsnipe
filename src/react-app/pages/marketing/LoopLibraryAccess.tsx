@@ -56,7 +56,7 @@ export function LoopLibraryAccess() {
   return (
     <MarketingLayout>
       <PageHero
-        eyebrow="Free Loop Library"
+        eyebrow="Free SNIPE Loops™"
         title="Your growth loops, ready to install."
         lede={state === "ok" && firstName ? `Hi ${firstName}. Start with the loop that fixes your most obvious gap.` : "Start with the loop that fixes your most obvious gap."}
       />
@@ -65,9 +65,9 @@ export function LoopLibraryAccess() {
         {state === "denied" && (
           <Card className="mx-auto max-w-md text-center">
             <CardContent className="space-y-4 pt-6">
-              <p className="text-sm text-muted-foreground">This link is invalid or expired. Request a fresh one from the Loop Library page.</p>
+              <p className="text-sm text-muted-foreground">This link is invalid or expired. Request a fresh one from the SNIPE Loops™ page.</p>
               <Button asChild>
-                <Link to="/loop-library">Get the Free Loop Library</Link>
+                  <Link to="/loop-library">Download SNIPE Loops™</Link>
               </Button>
             </CardContent>
           </Card>
@@ -93,10 +93,10 @@ export function LoopLibraryAccess() {
           />
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild>
-              <Link to="/diagnostic">Get My SNIPE Diagnostic</Link>
+              <Link to="/diagnostic">Get My SNIPE Diagnostic™</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/blueprint">Get My SNIPE Blueprint</Link>
+              <Link to="/blueprint">Get My SNIPE Blueprint™</Link>
             </Button>
           </div>
         </section>

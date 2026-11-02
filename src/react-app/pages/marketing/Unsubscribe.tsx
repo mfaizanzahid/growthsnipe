@@ -37,7 +37,7 @@ export function Unsubscribe() {
       <PageHero
         eyebrow="Email preferences"
         title="Unsubscribe from marketing emails."
-        lede="This stops Loop Library and follow-up emails. Account, billing, and trial emails are unaffected."
+        lede="This stops SNIPE Loops™ and follow-up emails. Account, billing, and trial emails are unaffected."
       />
       <section className="mx-auto w-full max-w-md px-4 pb-14">
         <Card>
@@ -56,7 +56,7 @@ export function Unsubscribe() {
             {state === "sending" && <p className="text-sm text-muted-foreground">Working…</p>}
             {state === "done" && (
               <p className="text-sm text-muted-foreground">
-                {email ? `Done. No more marketing emails to ${email}.` : "Done. You will receive no further marketing emails."} If you rejoin the Loop Library later, you will be resubscribed with fresh consent.
+                {email ? `Done. No more marketing emails to ${email}.` : "Done. You will receive no further marketing emails."} If you rejoin SNIPE Loops™ later, you will be resubscribed with fresh consent.
               </p>
             )}
             {state === "invalid" && (

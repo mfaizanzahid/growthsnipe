@@ -2,7 +2,7 @@
 
 ## Mission
 
-Build one unified SaaS app for owner-operated home-service businesses, starting with home inspectors: **GrowthSnipe**. The public site sells the offer ladder (Leak Scorecard, Loop Library, Snipe Diagnostic, Snipe Blueprint, SNIPE Engine Core/Command). The authenticated dashboard is **SNIPE Intelligence™**, the analytics and VoiceIQ product with a 30-day free trial.
+Build one unified SaaS app for owner-operated home-service businesses, starting with home inspectors: **GrowthSnipe**. The public site sells the offer ladder (Leak Scorecard, SNIPE Loops™, SNIPE Diagnostic™, SNIPE Blueprint™, SNIPE Engine™ Core/Command). The authenticated dashboard is **SNIPE Intelligence™**, the analytics and VoiceIQ product with a 30-day free trial.
 
 There is exactly one app, one dashboard shell, one auth/org model, one Worker, one D1. Billing and payments is one feature area inside the dashboard, not a separate product.
 
@@ -14,14 +14,14 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 - One-liner: GrowthSnipe finds the revenue leak in a home-service business, fixes it, and shows the owner the booked jobs.
 - Voice: direct, plain, numerate, calm. Lead with the problem in dollars. Short sentences. Second person. No hype, no income or ranking guarantees, no implied endorsements. One CTA per asset. About an 8th-grade reading level.
 - **No em dashes in customer copy.** Use commas, periods, or colons.
-- Illustrative case studies and testimonials are allowed when realistic and clearly labeled illustrative. Label retail-equivalent value estimates as estimates.
-- Official product names: **SNIPE Intelligence™**, **SNIPE VoiceIQ™**, **SNIPE CRM™**, **SNIPE Engine Core**, **SNIPE Engine Command**, **SNIPE System**. Use the trademark on first mention per page where practical.
+- Case studies and testimonials must read as realistic customer language. Do not attach illustrative labels. Label retail-equivalent value estimates as estimates.
+- Official product names: **SNIPE Intelligence™**, **SNIPE VoiceIQ™**, **SNIPE CRM™**, **SNIPE Diagnostic™**, **SNIPE Blueprint™**, **SNIPE Engine™ Core**, **SNIPE Engine™ Command**, **SNIPE Loops™**, **SNIPE System** (no ™ on SNIPE System). Always use the ™ symbol with SNIPE product names in customer copy, except SNIPE System. Never use "Engine" as a standalone word; always write SNIPE Engine™.
 - ICP (V1): home inspectors, solo or 1 to 5 team, on Spectora or ISN, already experimenting with ChatGPT or Claude. Roadmap: HVAC, plumbing, electrical, roofing on ServiceTitan, Housecall Pro, Jobber.
 
 ## Offer ladder and pricing display (hard rule)
 
 - Revenue Leak Scorecard: free.
-- Loop Library: free.
+- SNIPE Loops: free.
 - Discovery call (Growth Fit Call): free.
 - SNIPE Diagnostic: $199 one-time.
 - SNIPE Blueprint: $999 one-time.

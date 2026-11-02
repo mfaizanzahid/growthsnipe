@@ -35,7 +35,7 @@ const CaptureBody = z.object({
   website: z.string().max(200).optional().default(""),
 });
 
-/** Public Loop Library capture: validates, upserts the lead, schedules the
+/** Public SNIPE Loops capture: validates, upserts the lead, schedules the
  * welcome sequence, and sends Day 0 inline (cron retries on failure). */
 export function createLoopLibraryRoutes(deps: {
   ctx?: { db?: Db; auth?: Auth };
@@ -79,7 +79,7 @@ export function createLoopLibraryRoutes(deps: {
           level: "info",
           event: "looplibrary.submitted",
           surface: "api",
-          message: `Loop Library request from ${lead.businessName}`,
+          message: `SNIPE Loops request from ${lead.businessName}`,
           path: "/api/loop-library",
           method: "POST",
           statusCode: 200,
@@ -100,9 +100,9 @@ export function createLoopLibraryRoutes(deps: {
     const env = c.env as Env;
     const secret = env.MARKETING_TOKEN_SECRET ?? env.BETTER_AUTH_SECRET ?? "";
     const leadId = await verifyLeadToken(secret, c.req.query("token") ?? "");
-    if (!leadId) return c.json({ error: "This link is invalid. Request a fresh one from the Loop Library page." }, 401);
+    if (!leadId) return c.json({ error: "This link is invalid. Request a fresh one from the SNIPE Loops page." }, 401);
     const lead = await getLoopLead(c.get("db") as Db, leadId);
-    if (!lead) return c.json({ error: "This link is invalid. Request a fresh one from the Loop Library page." }, 401);
+    if (!lead) return c.json({ error: "This link is invalid. Request a fresh one from the SNIPE Loops page." }, 401);
     return c.json({ ok: true, firstName: lead.firstName });
   });
 

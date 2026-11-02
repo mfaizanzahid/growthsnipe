@@ -78,13 +78,13 @@ export function Engine() {
       <PageHero
         eyebrow="The plan-to-booked operating partnership"
         title="We do not hand you a plan and disappear. We help run the system."
-        lede="SNIPE Engine turns your growth plan into a working operating system. We configure the infrastructure, manage the agreed marketing and follow-up activities, support call capture and keep performance visible, so the owner is not left coordinating a collection of disconnected vendors."
+        lede="SNIPE Engine™ turns your growth plan into a working operating system. We configure the infrastructure, manage the agreed marketing and follow-up activities, support call capture and keep performance visible, so the owner is not left coordinating a collection of disconnected vendors."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
           <Card className="text-center">
             <CardHeader>
-              <CardTitle>Engine Core</CardTitle>
+              <CardTitle>{OFFERS.engineCore.name}</CardTitle>
               <CardDescription>
                 {OFFERS.engineCore.setup.label} setup + {OFFERS.engineCore.monthly.label}/month
               </CardDescription>
@@ -92,7 +92,7 @@ export function Engine() {
           </Card>
           <Card className="text-center">
             <CardHeader>
-              <CardTitle>Engine Command</CardTitle>
+              <CardTitle>{OFFERS.engineCommand.name}</CardTitle>
               <CardDescription>
                 {OFFERS.engineCommand.setup.label} setup + {OFFERS.engineCommand.monthly.label}/month
               </CardDescription>
@@ -115,7 +115,7 @@ export function Engine() {
       <section className="border-t bg-muted/40">
         <div className="mx-auto w-full max-w-6xl px-4 py-16">
           <SectionHeading
-            eyebrow="What Engine connects"
+            eyebrow="What SNIPE Engine™ connects"
             title="One operating system for the whole growth process."
           />
           <ul className="mx-auto mt-8 max-w-3xl space-y-2">
@@ -132,12 +132,12 @@ export function Engine() {
       <section className="mx-auto w-full max-w-6xl px-4 py-16">
         <SectionHeading
           eyebrow="Choose your operating model"
-          title="Core or Command: pick the level of support you need."
+          title="SNIPE Engine™ Core or SNIPE Engine™ Command: pick the level of support you need."
         />
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
           <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle>Engine Core</CardTitle>
+              <CardTitle>{OFFERS.engineCore.name}</CardTitle>
               <CardDescription>For owner-led firms with someone on the team who can take live calls and callbacks.</CardDescription>
               <p className="pt-2 text-2xl font-bold">
                 {OFFERS.engineCore.setup.label} <span className="text-sm font-normal text-muted-foreground">one-time setup</span> + {OFFERS.engineCore.monthly.label}
@@ -157,13 +157,13 @@ export function Engine() {
                 ))}
               </ul>
               <Button className="mt-6 w-full" asChild>
-                <Link to="/book">See Whether Core Fits My Business</Link>
+                    <Link to="/book">See Whether SNIPE Engine™ Core Fits</Link>
               </Button>
             </CardContent>
           </Card>
           <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle>Engine Command</CardTitle>
+              <CardTitle>{OFFERS.engineCommand.name}</CardTitle>
               <CardDescription>For firms that want to delegate more of intake, booking, admin and growth follow-up.</CardDescription>
               <p className="pt-2 text-2xl font-bold">
                 {OFFERS.engineCommand.setup.label} <span className="text-sm font-normal text-muted-foreground">one-time setup</span> + {OFFERS.engineCommand.monthly.label}
@@ -183,7 +183,7 @@ export function Engine() {
                 ))}
               </ul>
               <Button className="mt-6 w-full" asChild>
-                <Link to="/book">See Whether Command Fits My Business</Link>
+                    <Link to="/book">See Whether SNIPE Engine™ Command Fits</Link>
               </Button>
             </CardContent>
           </Card>
@@ -194,15 +194,15 @@ export function Engine() {
         <div className="mx-auto w-full max-w-6xl px-4 py-16">
           <SectionHeading
             eyebrow="Side by side"
-            title="Core compared with Command."
+            title="SNIPE Engine™ Core compared with SNIPE Engine™ Command."
           />
           <div className="mt-8 overflow-x-auto">
             <table className="w-full min-w-160 text-sm">
               <thead>
                 <tr className="text-left text-muted-foreground">
                   <th className="py-2 pr-4">Included</th>
-                  <th className="py-2 pr-4">Engine Core</th>
-                  <th className="py-2">Engine Command</th>
+                    <th className="py-2 pr-4">{OFFERS.engineCore.name}</th>
+                    <th className="py-2">{OFFERS.engineCommand.name}</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,11 +236,11 @@ export function Engine() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Command hours and boundaries</CardTitle>
+              <CardTitle className="text-base">SNIPE Engine™ Command hours and boundaries</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <ul className="list-disc space-y-2 pl-5">
-                <li>Command includes up to 100 combined hours per month across live intake, booking and agreed admin activities.</li>
+                    <li>SNIPE Engine™ Command includes up to 100 combined hours per month across live intake, booking and agreed admin activities.</li>
                 <li>Unused hours do not roll over.</li>
                 <li>Additional hours are available in 20-hour blocks for {OFFER_EXTRAS.extraHoursBlock.label}, subject to availability and written agreement.</li>
                 <li>Included admin may cover appointment confirmations and reschedules, quote and invoice follow-up, CRM updates and partner scheduling.</li>
@@ -261,7 +261,7 @@ export function Engine() {
           />
           <ul className="mx-auto mt-6 max-w-2xl list-disc space-y-2 pl-5 text-sm text-muted-foreground">
             <li>Advertising spend is separate and paid directly by the client to the advertising platform.</li>
-            <li>Core campaign management covers up to {OFFERS.engineCore.adSpendCap.label}/month in client ad spend. Command covers up to {OFFERS.engineCommand.adSpendCap.label}/month. Spend above the plan limit is subject to the agreed incremental management fee.</li>
+                    <li>SNIPE Engine™ Core campaign management covers up to {OFFERS.engineCore.adSpendCap.label}/month in client ad spend. SNIPE Engine™ Command covers up to {OFFERS.engineCommand.adSpendCap.label}/month. Spend above the plan limit is subject to the agreed incremental management fee.</li>
             <li>Platform, telephony, messaging and other third-party usage charges should be listed clearly in the proposal or service agreement before onboarding.</li>
             <li>Any work outside the written scope is quoted separately.</li>
           </ul>

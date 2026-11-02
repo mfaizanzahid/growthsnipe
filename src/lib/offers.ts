@@ -16,21 +16,21 @@ export interface OfferPrice {
 export const OFFERS = {
   diagnostic: {
     id: "diagnostic",
-    name: "SNIPE Diagnostic",
+    name: "SNIPE Diagnostic™",
     price: { amountMinor: 19900, label: "$199" },
     kind: "one-time",
     checkoutPath: "/checkout/diagnostic",
   },
   blueprint: {
     id: "blueprint",
-    name: "SNIPE Blueprint",
+    name: "SNIPE Blueprint™",
     price: { amountMinor: 99900, label: "$999" },
     kind: "one-time",
     checkoutPath: "/checkout/blueprint",
   },
   engineCore: {
     id: "engine-core",
-    name: "Engine Core",
+    name: "SNIPE Engine™ Core",
     setup: { amountMinor: 299900, label: "$2,999" },
     monthly: { amountMinor: 199900, label: "$1,999" },
     adSpendCap: { amountMinor: 300000, label: "$3,000" },
@@ -39,7 +39,7 @@ export const OFFERS = {
   },
   engineCommand: {
     id: "engine-command",
-    name: "Engine Command",
+    name: "SNIPE Engine™ Command",
     setup: { amountMinor: 499900, label: "$4,999" },
     monthly: { amountMinor: 399900, label: "$3,999" },
     adSpendCap: { amountMinor: 1000000, label: "$10,000" },
@@ -59,10 +59,10 @@ export const OFFER_EXTRAS = {
 export const OFFER_CREDITS = {
   diagnosticToBlueprint: {
     days: 14,
-    text: "Your $199 Diagnostic fee is credited toward a Blueprint purchased within 14 days. Your remaining Blueprint payment is $800.",
+    text: "Your $199 SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days. Your remaining Blueprint payment is $800.",
   },
   blueprintToEngine: {
     days: 30,
-    text: "Your $999 Blueprint fee is credited toward SNIPE Engine setup if you sign within 30 days of your Blueprint presentation.",
+    text: "Your $999 SNIPE Blueprint™ fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your Blueprint presentation.",
   },
 } as const;

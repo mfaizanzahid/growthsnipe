@@ -75,10 +75,10 @@ export function PaidAds() {
         <div className="mx-auto w-full max-w-3xl px-4 py-16 text-center">
           <SectionHeading
             eyebrow="Pricing context"
-            title="Paid media lives inside Engine."
+            title="          Paid media lives inside SNIPE Engine™."
           />
           <p className="mt-4 text-muted-foreground">
-            Paid media management is included within SNIPE Engine plan limits. Core covers eligible LSA and Search campaign management for up to {OFFERS.engineCore.adSpendCap.label}/month in client ad spend. Command covers eligible LSA, Search and Meta campaign management for up to {OFFERS.engineCommand.adSpendCap.label}/month in client ad spend. Ad spend is paid directly by the client. Any additional management fees are confirmed in writing.
+            Paid media management is included within SNIPE Engine™ plan limits. Core covers eligible LSA and Search campaign management for up to {OFFERS.engineCore.adSpendCap.label}/month in client ad spend. Command covers eligible LSA, Search and Meta campaign management for up to {OFFERS.engineCommand.adSpendCap.label}/month in client ad spend. Ad spend is paid directly by the client. Any additional management fees are confirmed in writing.
           </p>
           <div className="mt-6">
             <Button size="lg" asChild>

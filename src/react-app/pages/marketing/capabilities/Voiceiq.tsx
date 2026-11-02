@@ -40,7 +40,7 @@ export function Voiceiq() {
           <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Engine Core</CardTitle>
+                <CardTitle className="text-base">SNIPE Engine™ Core</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 Your team answers first. Configured Voice AI provides fallback when your team is unavailable, busy or outside working hours.
@@ -48,7 +48,7 @@ export function Voiceiq() {
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Engine Command</CardTitle>
+                <CardTitle className="text-base">SNIPE Engine™ Command</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 The GrowthSnipe live team handles agreed live intake first, with configured Voice AI fallback for overflow, after-hours coverage or periods outside the live-team allocation.

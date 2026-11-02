@@ -110,7 +110,7 @@ describe("loop library capture", () => {
     expect(lead).toMatchObject({ firstName: "Ada", trade: "Home inspection" });
     expect((await listMarketingSendsForLead(db, lead!.id))).toHaveLength(5);
     expect(outbox).toHaveLength(1);
-    expect(outbox[0]?.subject).toContain("Loop Library is ready");
+    expect(outbox[0]?.subject).toContain("SNIPE Loops");
     expect(outbox[0]?.html).toContain("unsubscribe?token=");
   });
 

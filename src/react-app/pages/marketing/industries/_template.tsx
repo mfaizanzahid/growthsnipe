@@ -30,7 +30,7 @@ export function IndustryTemplate({ copy }: { copy: IndustryCopy }) {
             <Link to="/book">{copy.heroCta}</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
-            <Link to="/loop-library">Get the Free Loop Library</Link>
+            <Link to="/loop-library">Download SNIPE Loops™</Link>
           </Button>
         </div>
       </section>
@@ -71,7 +71,7 @@ export function IndustryTemplate({ copy }: { copy: IndustryCopy }) {
           <SectionHeading
             eyebrow="Offer pathway"
             title="Start where it makes sense."
-            body={`Start with the ${OFFERS.diagnostic.price.label} SNIPE Diagnostic to see where the business is leaking opportunities. Move into the ${OFFERS.blueprint.price.label} SNIPE Blueprint for a full 12-month plan, or choose SNIPE Engine when you are ready for an implementation partner.`}
+            body={`Start with the ${OFFERS.diagnostic.price.label} SNIPE Diagnostic™ to see where the business is leaking opportunities. Move into the ${OFFERS.blueprint.price.label} SNIPE Blueprint™ for a full 12-month plan, or choose SNIPE Engine™ when you are ready for an implementation partner.`}
           />
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild>

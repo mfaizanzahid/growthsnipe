@@ -157,7 +157,7 @@ export function oneTimeIntakeContent(input: {
       subject: "Let's build your growth plan — intake inside",
       html:
         `<p>Hi ${name},</p>` +
-        `<p>Thank you for purchasing the SNIPE Blueprint. Complete the intake and provide the requested business information. The 10-business-day delivery window begins once the required information is complete.</p>` +
+        `<p>Thank you for purchasing the SNIPE Blueprint™. Complete the intake and provide the requested business information. The 10-business-day delivery window begins once the required information is complete.</p>` +
         `<p>You will receive:</p><ul><li>Your intake checklist.</li><li>Secure data-submission instructions.</li><li>A confirmation when the information is complete.</li><li>A scheduling link for your 90-minute Blueprint presentation.</li></ul>`,
     };
   }
@@ -165,7 +165,7 @@ export function oneTimeIntakeContent(input: {
     subject: "Your Diagnostic is underway — data checklist inside",
     html:
       `<p>Hi ${name},</p>` +
-      `<p>Thank you for purchasing the SNIPE Diagnostic. The next step is to provide the business information needed for a useful review.</p>` +
+      `<p>Thank you for purchasing the SNIPE Diagnostic™. The next step is to provide the business information needed for a useful review.</p>` +
       `<p>Check your email for the data checklist and secure submission instructions. Gather the available reports and exports, submit them using the secure method provided, and we will confirm receipt and coordinate your 60-minute readout.</p>` +
       `<p><strong>If a data point is unavailable, tell us.</strong> We would rather identify a gap than fill it with a guess.</p>`,
   };
@@ -299,7 +299,7 @@ export interface RenewalReminderRecipient {
 
 export function marketingFooter(unsubscribeUrl: string): string {
   return (
-    `<p style="font-size:12px;color:#666;margin-top:24px">You are receiving this because you asked for the Loop Library or purchased a GrowthSnipe offer. <a href="${unsubscribeUrl}">Unsubscribe</a> at any time.</p>`
+    `<p style="font-size:12px;color:#666;margin-top:24px">You are receiving this because you asked for SNIPE Loops™ or purchased a GrowthSnipe offer. <a href="${unsubscribeUrl}">Unsubscribe</a> at any time.</p>`
   );
 }
 
@@ -315,11 +315,11 @@ export interface WelcomeEmailInput {
 export function loopWelcomeDay0(input: WelcomeEmailInput): { subject: string; html: string } {
   const name = escapeHtml(firstNameOf(input.firstName));
   return {
-    subject: "Your GrowthSnipe Loop Library is ready",
+    subject: "Your SNIPE Loops™ are ready",
     html:
       `<p>Hi ${name},</p>` +
-      `<p>Here is your access to the GrowthSnipe Loop Library.</p>` +
-      `<p><a href="${input.libraryLink}">Access the Loop Library</a></p>` +
+      `<p>Here is your access to SNIPE Loops™.</p>` +
+      `<p><a href="${input.libraryLink}">Access SNIPE Loops™</a></p>` +
       `<p>Start with the workflow that fixes the most obvious gap in your business. For many operators, that is missed-call follow-up, unbooked enquiries or quote follow-up.</p>` +
       `<p>Do not install everything at once. Pick one loop, adapt it to the way your team works, test it and measure what changes.</p>` +
       `<p>GrowthSnipe</p>` +
@@ -336,7 +336,7 @@ export function loopWelcomeDay2(input: WelcomeEmailInput): { subject: string; ht
       `<p>A new enquiry is only the beginning. Someone still has to respond, understand what the customer needs, make the next step clear and follow up if the customer does not book immediately.</p>` +
       `<p>Take one recent lead and trace what happened from the first contact to the final outcome. Where did it slow down? Was there a clear next action? Could another team member see the history?</p>` +
       `<p>That is the kind of leak the SNIPE System is built to uncover.</p>` +
-      `<p><a href="${input.libraryLink}">Explore the Loop Library</a></p>` +
+      `<p><a href="${input.libraryLink}">Explore SNIPE Loops™</a></p>` +
       `<p>GrowthSnipe</p>` +
       marketingFooter(input.unsubscribeUrl),
   };
@@ -351,8 +351,8 @@ export function loopWelcomeDay5(input: WelcomeEmailInput): { subject: string; ht
       `<p>Start with a simple calculation:</p>` +
       `<p><strong>Additional completed jobs × average completed job value = additional gross revenue.</strong></p>` +
       `<p>This is not profit, and it is not a forecast. It is a way to understand why booking conversion and average ticket deserve attention alongside lead volume.</p>` +
-      `<p>The SNIPE Diagnostic reviews the business data you have and identifies where the process deserves a closer look.</p>` +
-      `<p><a href="${input.diagnosticLink}">Get your SNIPE Diagnostic</a></p>` +
+      `<p>The SNIPE Diagnostic™ reviews the business data you have and identifies where the process deserves a closer look.</p>` +
+      `<p><a href="${input.diagnosticLink}">Get your SNIPE Diagnostic™</a></p>` +
       `<p>GrowthSnipe</p>` +
       marketingFooter(input.unsubscribeUrl),
   };
@@ -366,8 +366,8 @@ export function loopWelcomeDay8(input: WelcomeEmailInput): { subject: string; ht
       `<p>Hi ${name},</p>` +
       `<p>A workflow can remind someone to follow up. It cannot decide your growth target, tell you whether your acquisition costs make sense or work out whether the business has capacity for more jobs.</p>` +
       `<p>That takes a plan built around your numbers.</p>` +
-      `<p>The SNIPE Blueprint connects revenue targets, job volume, average ticket, channel economics, customer journeys and capacity into a 12-month plan.</p>` +
-      `<p><a href="${input.blueprintLink}">Explore the SNIPE Blueprint</a></p>` +
+      `<p>The SNIPE Blueprint™ connects revenue targets, job volume, average ticket, channel economics, customer journeys and capacity into a 12-month plan.</p>` +
+      `<p><a href="${input.blueprintLink}">Explore the SNIPE Blueprint™</a></p>` +
       `<p>GrowthSnipe</p>` +
       marketingFooter(input.unsubscribeUrl),
   };
@@ -380,7 +380,7 @@ export function loopWelcomeDay12(input: WelcomeEmailInput): { subject: string; h
     html:
       `<p>Hi ${name},</p>` +
       `<p>The free Growth Fit Call is a 20-minute conversation about your business, your next-stage goal and the biggest obstacle in the way.</p>` +
-      `<p>We will help determine whether your best next step is a Diagnostic or Blueprint, an Engine conversation, or simply more time with the free resources.</p>` +
+      `<p>We will help determine whether your best next step is a Diagnostic or Blueprint, a SNIPE Engine™ conversation, or simply more time with the free resources.</p>` +
       `<p><a href="${input.bookLink}">Book your Growth Fit Call</a></p>` +
       `<p>GrowthSnipe</p>` +
       marketingFooter(input.unsubscribeUrl),
@@ -402,7 +402,7 @@ export function buyerReminderContent(input: {
       subject: `Reminder: your Blueprint credit expires in ${daysLeft}`,
       html:
         `<p>Hi ${name},</p>` +
-        `<p>Your Diagnostic fee is credited toward a SNIPE Blueprint purchased within 14 days of your readout. That window closes on ${escapeHtml(input.deadlineDate)}.</p>` +
+        `<p>Your Diagnostic fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout. That window closes on ${escapeHtml(input.deadlineDate)}.</p>` +
         `<p><a href="${input.actionLink}">Get the Blueprint before the credit expires</a></p>` +
         `<p>GrowthSnipe</p>` +
         marketingFooter(input.unsubscribeUrl),
@@ -410,12 +410,12 @@ export function buyerReminderContent(input: {
   }
   const isCheckIn = input.step === "bp-d14";
   return {
-    subject: isCheckIn ? "Two weeks in: how is the Blueprint landing?" : "Reminder: your Engine setup credit expires soon",
+    subject: isCheckIn ? "Two weeks in: how is the Blueprint landing?" : "Reminder: your SNIPE Engine™ setup credit expires soon",
     html:
       `<p>Hi ${name},</p>` +
       (isCheckIn
         ? `<p>It has been two weeks since your Blueprint presentation. Reply to this email with your implementation questions and we will help you through them.</p>`
-        : `<p>Your Blueprint fee is credited toward SNIPE Engine setup if you sign within 30 days of your presentation, which ends on ${escapeHtml(input.deadlineDate)}.</p><p><a href="${input.actionLink}">Compare Engine plans</a></p>`) +
+        : `<p>Your Blueprint fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your presentation, which ends on ${escapeHtml(input.deadlineDate)}.</p><p><a href="${input.actionLink}">Compare SNIPE Engine™ plans</a></p>`) +
       `<p>GrowthSnipe</p>` +
       marketingFooter(input.unsubscribeUrl),
   };

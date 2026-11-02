@@ -75,7 +75,7 @@ export function LoopLibrary() {
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) throw new Error(data?.error ?? "Could not send your request");
       setSent(true);
-      toast.success("Check your inbox for access to the Loop Library.");
+      toast.success("Check your inbox for access to SNIPE Loops™.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not send your request");
     } finally {
@@ -88,12 +88,12 @@ export function LoopLibrary() {
       <PageHero
         eyebrow="Free tools for owners who want a better system"
         title="Stop letting good customers disappear after the first interaction."
-        lede="Get practical automation recipes, follow-up scripts and customer lifecycle ideas you can adapt to your home-service business. The Loop Library is designed to help you capture more of the opportunities already around you, without starting with a complicated software project."
+        lede="Get practical automation recipes, follow-up scripts and customer lifecycle ideas you can adapt to your home-service business. SNIPE Loops™ is designed to help you capture more of the opportunities already around you, without starting with a complicated software project."
       />
       <section className="mx-auto w-full max-w-2xl px-4 pb-14">
         <Card>
           <CardHeader>
-            <CardTitle>{sent ? "Check your inbox" : "Send me the Loop Library"}</CardTitle>
+            <CardTitle>{sent ? "Check your inbox" : "Send me SNIPE Loops™"}</CardTitle>
             {!sent && <CardDescription>Get free access. We usually reply within one business day.</CardDescription>}
           </CardHeader>
           <CardContent>
@@ -145,10 +145,10 @@ export function LoopLibrary() {
                   </Select>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  By submitting, you agree to receive the Loop Library and related GrowthSnipe emails. Unsubscribe at any time. See our <Link className="underline" to="/privacy">Privacy Policy</Link>.
+                  By submitting, you agree to receive SNIPE Loops™ and related GrowthSnipe emails. Unsubscribe at any time. See our <Link className="underline" to="/privacy">Privacy Policy</Link>.
                 </p>
                 <Button type="submit" className="w-full" disabled={pending}>
-                  {pending ? "Sending…" : "Get Free Access"}
+                  {pending ? "Sending…" : "Download SNIPE Loops™"}
                 </Button>
               </form>
             )}

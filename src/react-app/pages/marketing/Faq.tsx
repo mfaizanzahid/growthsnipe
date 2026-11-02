@@ -36,59 +36,59 @@ const GENERAL = [
 
 const PRICING = [
   {
-    q: "How much does the SNIPE Diagnostic cost?",
-    a: `The SNIPE Diagnostic is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 60-minute readout.`,
+    q: "How much does the SNIPE Diagnostic™ cost?",
+    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 60-minute readout.`,
   },
   {
-    q: "How much does the SNIPE Blueprint cost?",
-    a: `The SNIPE Blueprint is ${OFFERS.blueprint.price.label} one-time. It includes a personalized 25 to 35-page plan, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.`,
+    q: "How much does the SNIPE Blueprint™ cost?",
+    a: `The SNIPE Blueprint™ is ${OFFERS.blueprint.price.label} one-time. It includes a personalized 25 to 35-page plan, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.`,
   },
   {
-    q: "Does the Diagnostic fee count toward the Blueprint?",
-    a: `Yes. If you purchase the Blueprint within 14 days of your Diagnostic readout, the full Diagnostic fee is credited toward the Blueprint. Your remaining payment is ${blueprintRemainder}.`,
+    q: "Does the SNIPE Diagnostic™ fee count toward SNIPE Blueprint™?",
+    a: `Yes. If you purchase SNIPE Blueprint™ within 14 days of your SNIPE Diagnostic™ readout, the full SNIPE Diagnostic™ fee is credited toward SNIPE Blueprint™. Your remaining payment is ${blueprintRemainder}.`,
   },
   {
-    q: "Does the Blueprint fee count toward SNIPE Engine?",
-    a: `Yes. If you sign for SNIPE Engine within 30 days of your Blueprint presentation, the full Blueprint fee is credited toward the Engine setup fee. The remaining setup payment is ${engineCoreRemainder} for Core or ${engineCommandRemainder} for Command.`,
+    q: "Does the SNIPE Blueprint™ fee count toward SNIPE Engine™?",
+    a: `Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full SNIPE Blueprint™ fee is credited toward the SNIPE Engine™ setup fee. The remaining setup payment is ${engineCoreRemainder} for SNIPE Engine™ Core or ${engineCommandRemainder} for SNIPE Engine™ Command.`,
   },
   {
-    q: "How much does SNIPE Engine cost?",
-    a: `Engine Core is ${OFFERS.engineCore.setup.label} setup plus ${OFFERS.engineCore.monthly.label} per month. Engine Command is ${OFFERS.engineCommand.setup.label} setup plus ${OFFERS.engineCommand.monthly.label} per month. Both include a 21-day launch runway. Advertising spend is separate and paid directly by the client.`,
+    q: "How much does SNIPE Engine™ cost?",
+    a: `SNIPE Engine™ Core is ${OFFERS.engineCore.setup.label} setup plus ${OFFERS.engineCore.monthly.label} per month. SNIPE Engine™ Command is ${OFFERS.engineCommand.setup.label} setup plus ${OFFERS.engineCommand.monthly.label} per month. Both include a 21-day launch runway. Advertising spend is separate and paid directly by the client.`,
   },
   {
     q: "Can I buy a Blueprint without becoming a monthly client?",
-    a: "Yes. The SNIPE Blueprint is a standalone strategic product. You can implement it with your own team or another provider.",
+    a: "Yes. The SNIPE Blueprint™ is a standalone strategic product. You can implement it with your own team or another provider.",
   },
   {
-    q: "Is the Loop Library really free?",
-    a: "Yes. The Loop Library is a free resource. You provide your email and business details so we can deliver relevant recipes and updates. You can unsubscribe from marketing emails at any time.",
+    q: "Are SNIPE Loops™ really free?",
+    a: "Yes. SNIPE Loops™ is a free resource. You provide your email and business details so we can deliver relevant recipes and updates. You can unsubscribe from marketing emails at any time.",
   },
 ];
 
 const DELIVERY = [
   {
-    q: "What is the difference between Core and Command?",
-    a: "Core is designed for a business whose own team can take live calls and callbacks. The client's team answers first and configured Voice AI provides fallback coverage. Command includes a GrowthSnipe live team for agreed intake, booking and administrative tasks up to 100 combined hours per month, with Voice AI as fallback.",
+    q: "What is the difference between SNIPE Engine™ Core and SNIPE Engine™ Command?",
+    a: "SNIPE Engine™ Core is designed for a business whose own team can take live calls and callbacks. The client's team answers first and configured Voice AI provides fallback coverage. SNIPE Engine™ Command includes a GrowthSnipe live team for agreed intake, booking and administrative tasks up to 100 combined hours per month, with Voice AI as fallback.",
   },
   {
-    q: "Does SNIPE Engine include advertising spend?",
-    a: `No. The client pays the advertising platform directly. The plan includes management within its agreed spend limit: up to ${OFFERS.engineCore.adSpendCap.label}/month in ad spend for Core and up to ${OFFERS.engineCommand.adSpendCap.label}/month for Command, across the channels specified in the plan.`,
+    q: "Does SNIPE Engine™ include advertising spend?",
+    a: `No. The client pays the advertising platform directly. The plan includes management within its agreed spend limit: up to ${OFFERS.engineCore.adSpendCap.label}/month in ad spend for SNIPE Engine™ Core and up to ${OFFERS.engineCommand.adSpendCap.label}/month for SNIPE Engine™ Command, across the channels specified in the plan.`,
   },
   {
     q: "What happens during the 21-day launch runway?",
     a: "We work through onboarding, access, phone and lead routing, CRM setup, priority workflows, tracking and initial campaign launch. Timing depends on client access and approvals, platform verification and third-party dependencies. The exact launch checklist is agreed during onboarding.",
   },
   {
-    q: "Are there limits to Command's live-team hours?",
-    a: `Yes. Command includes up to 100 combined hours per month across live intake, booking and agreed admin work. Unused hours do not roll over. Additional 20-hour blocks are ${OFFER_EXTRAS.extraHoursBlock.label}, subject to availability and written agreement.`,
+    q: "Are there limits to SNIPE Engine™ Command's live-team hours?",
+    a: `Yes. SNIPE Engine™ Command includes up to 100 combined hours per month across live intake, booking and agreed admin work. Unused hours do not roll over. Additional 20-hour blocks are ${OFFER_EXTRAS.extraHoursBlock.label}, subject to availability and written agreement.`,
   },
   {
-    q: "What admin work is included in Command?",
+    q: "What admin work is included in SNIPE Engine™ Command?",
     a: "Agreed tasks may include appointment confirmations and reschedules, quote and invoice follow-up, CRM updates and partner scheduling. Bookkeeping, payroll, field dispatch, licensed work and other out-of-scope duties are not included.",
   },
   {
     q: "Do you replace our existing booking software?",
-    a: "Not by default. The approach is to work with the business's existing platform where access and integration support make that practical. The scope is confirmed during the Diagnostic, Blueprint or Engine onboarding.",
+    a: "Not by default. The approach is to work with the business's existing platform where access and integration support make that practical. The scope is confirmed during the Diagnostic, Blueprint or SNIPE Engine™ onboarding.",
   },
   {
     q: "What if our software does not integrate?",
@@ -111,11 +111,11 @@ const GETTING_STARTED = [
   },
   {
     q: "How quickly can we start?",
-    a: "The timing depends on fit, payment, data availability, access and team capacity. The Blueprint delivery window begins after complete intake and required data are received. Engine's 21-day launch runway begins after onboarding prerequisites are met.",
+    a: "The timing depends on fit, payment, data availability, access and team capacity. The Blueprint delivery window begins after complete intake and required data are received. The 21-day SNIPE Engine™ launch runway begins after onboarding prerequisites are met.",
   },
   {
     q: "Can you work with a business that is smaller or earlier-stage?",
-    a: "The best fit is an established operator with a real service history, customer demand and enough capacity to act on the plan. The free call can help determine whether the Loop Library, Diagnostic or Blueprint is a sensible starting point.",
+    a: "The best fit is an established operator with a real service history, customer demand and enough capacity to act on the plan. The free call can help determine whether SNIPE Loops™, a Diagnostic or a Blueprint is a sensible starting point.",
   },
 ];
 
@@ -125,7 +125,7 @@ export function Faq() {
       <PageHero
         eyebrow="FAQ"
         title="Pricing, process and services, answered."
-        lede="Straight answers about GrowthSnipe pricing, the Diagnostic, the Blueprint, Engine delivery and working together."
+        lede="Straight answers about GrowthSnipe pricing, the Diagnostic, the Blueprint, SNIPE Engine™ delivery and working together."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-8">
         <div className="text-center">
@@ -138,7 +138,7 @@ export function Faq() {
       {[
         { title: "General", items: GENERAL },
         { title: "Offers and pricing", items: PRICING },
-        { title: "Engine and delivery", items: DELIVERY },
+        { title: "SNIPE Engine™ and delivery", items: DELIVERY },
         { title: "Getting started", items: GETTING_STARTED },
       ].map(({ title, items }) => (
         <section key={title} className="mx-auto w-full max-w-6xl px-4 py-10">
@@ -161,7 +161,7 @@ export function Faq() {
 
       <CtaBand
         title="Questions answered. Next step is yours."
-        body="A 20-minute call to determine whether a Diagnostic, Blueprint or Engine partnership fits."
+        body="A 20-minute call to determine whether a Diagnostic, Blueprint or SNIPE Engine™ partnership fits."
       />
     </MarketingLayout>
   );

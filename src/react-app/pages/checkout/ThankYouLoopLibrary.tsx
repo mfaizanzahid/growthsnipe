@@ -6,7 +6,7 @@ export function ThankYouLoopLibrary() {
     <MarketingLayout>
       <PageHero
         eyebrow="Thank you"
-        title="Your Loop Library is ready."
+        title="Your SNIPE Loops™ are ready."
         lede="Check your inbox for the access link. Start with one workflow that solves a current problem, such as missed-call follow-up, quote follow-up or review requests."
       />
       <section className="mx-auto w-full max-w-2xl px-4 pb-14">

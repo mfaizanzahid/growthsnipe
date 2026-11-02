@@ -109,11 +109,11 @@ export function AdminLeads() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Leads</h1>
-        <p className="text-sm text-muted-foreground">Loop Library captures and buyer reminder sequences.</p>
+        <p className="text-sm text-muted-foreground">SNIPE Loops™ captures and buyer reminder sequences.</p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Loop Library leads</CardTitle>
+          <CardTitle>SNIPE Loops™ leads</CardTitle>
           <CardDescription>Select a row to see its email ledger.</CardDescription>
         </CardHeader>
         <CardContent>

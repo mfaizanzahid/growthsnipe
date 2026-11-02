@@ -14,7 +14,7 @@ export function ThankYouDiagnostic() {
       <PageHero
         eyebrow="Thank you"
         title="Your Diagnostic is underway."
-        lede="Thank you for purchasing the SNIPE Diagnostic. The next step is to provide the business information needed for a useful review."
+        lede="Thank you for purchasing the SNIPE Diagnostic™. The next step is to provide the business information needed for a useful review."
       />
       <section className="mx-auto w-full max-w-2xl px-4 pb-14">
         <ol className="list-decimal space-y-2 pl-6 text-muted-foreground">

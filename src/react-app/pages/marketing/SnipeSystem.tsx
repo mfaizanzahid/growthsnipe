@@ -61,7 +61,7 @@ export function SnipeSystem() {
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <div className="text-center">
           <Button size="lg" asChild>
-            <Link to="/blueprint">Get My SNIPE Blueprint</Link>
+            <Link to="/blueprint">Get My SNIPE Blueprint™</Link>
           </Button>
         </div>
       </section>
@@ -111,14 +111,14 @@ export function SnipeSystem() {
               <CardTitle className="text-base">The method becomes an operating system</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              The SNIPE System is not designed to end as a PDF. The Blueprint defines the priorities. SNIPE Engine installs the workflows, manages the agreed operating activity and uses SNIPE Intelligence™ to keep the work visible.
+              The SNIPE System is not designed to end as a PDF. The Blueprint defines the priorities. SNIPE Engine™ installs the workflows, manages the agreed operating activity and uses SNIPE Intelligence™ to keep the work visible.
             </CardContent>
           </Card>
           <Card className="flex flex-col justify-center">
             <CardContent className="space-y-3 pt-6 text-center">
               <p className="font-semibold">Put the system to work on your numbers.</p>
               <Button asChild>
-                <Link to="/blueprint">Build My SNIPE Blueprint</Link>
+                <Link to="/blueprint">Build My SNIPE Blueprint™</Link>
               </Button>
             </CardContent>
           </Card>

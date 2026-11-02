@@ -14,7 +14,7 @@ export function ThankYouBlueprint() {
       <PageHero
         eyebrow="Thank you"
         title="Let's build your growth plan."
-        lede="Thank you for purchasing the SNIPE Blueprint. Complete the intake and provide the requested business information. The 10-business-day delivery window begins once the required information is complete."
+        lede="Thank you for purchasing the SNIPE Blueprint™. Complete the intake and provide the requested business information. The 10-business-day delivery window begins once the required information is complete."
       />
       <section className="mx-auto w-full max-w-2xl px-4 pb-14">
         <h2 className="font-semibold">You will receive:</h2>

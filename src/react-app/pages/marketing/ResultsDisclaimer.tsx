@@ -18,10 +18,10 @@ export function ResultsDisclaimer() {
             </p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-foreground">Illustrations and case studies</h2>
-            <p className="mt-2">
-              Illustrative scenarios and examples on this site use assumed figures to show how the SNIPE System connects numbers to decisions. Unless a result is labeled as a measured client outcome, treat it as an illustration, not a forecast and not a promise of what your business will achieve.
-            </p>
+          <h2 className="text-lg font-semibold text-foreground">Scenarios and examples</h2>
+          <p className="mt-2">
+            Scenarios and examples on this site use assumed figures to show how the SNIPE System connects numbers to decisions. Treat them as illustrations of the method, not forecasts and not promises of what your business will achieve.
+          </p>
           </section>
           <section>
             <h2 className="text-lg font-semibold text-foreground">Estimates and assumptions</h2>

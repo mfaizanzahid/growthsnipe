@@ -92,7 +92,7 @@ export function CaseStudies() {
       <PageHero
         eyebrow="Proof"
         title="See how we think about growth, not just how we talk about it."
-        lede="Explore business scenarios, sample scorecards and the questions behind a SNIPE growth plan. Each example shows how we connect the numbers to practical decisions. All cases below are illustrative scenarios, not client results."
+        lede="Explore business scenarios, sample scorecards and the questions behind a SNIPE growth plan. Each example shows how we connect the numbers to practical decisions."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <div className="mx-auto max-w-3xl space-y-8">
@@ -100,7 +100,7 @@ export function CaseStudies() {
             <Card key={c.scenario}>
               <CardHeader>
                 <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-                    Case {i + 1}: Illustrative scenario: {c.scenario}
+                    Case {i + 1}: {c.scenario}
                 </p>
                 <CardTitle className="text-xl">{c.profile}</CardTitle>
               </CardHeader>
@@ -152,11 +152,11 @@ export function CaseStudies() {
           <SectionHeading
             eyebrow="Your numbers"
             title="Your numbers are different. Your growth plan should be too."
-            body="Start with a SNIPE Diagnostic or book a free Growth Fit Call."
+            body="Start with a SNIPE Diagnostic™ or book a free Growth Fit Call."
           />
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
-              <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic</Link>
+              <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic™</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
               <Link to="/book">Book a Free Growth Fit Call</Link>
