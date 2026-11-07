@@ -95,7 +95,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 
 ## Deployment
 
-- Production deploys through Cloudflare Workers Builds on every push to `main`. `npm run deploy:prod` is the manual fallback.
+- Production deploys are manual only (`npm run deploy:prod`) and only on the owner's explicit request. There is no auto-deploy on push to `main`.
 - **Apply the production migration before pushing code that reads new columns.** `npm run db:migrate:prod`.
 - `VITE_*` values are build variables and only take effect on the next build. A `.env` file needs `\$` for a literal dollar sign; a Cloudflare build variable takes a plain `$`.
 - CI runs typecheck, test, and build on PRs and `main`. It deploys nothing.
@@ -112,6 +112,8 @@ Use `.opencode/agents/*.md`. Prefer `implementation-planner` first, then the spe
 
 - Ask before proceeding when a request is ambiguous, has more than one reasonable interpretation, or involves scope, copy voice, or irreversible/production actions. Trivial, fully specified tasks proceed without questions.
 - Never commit, push, amend, rebase, or reset unless the owner explicitly asks in that request. Leave finished work uncommitted and report what changed.
+- GitHub pushes deploy nothing (CI runs checks only); never treat a push as a release.
+- Never deploy to Cloudflare production (`npm run deploy:prod`, migrations, secrets, or dashboard actions) unless the owner explicitly asks in that request.
 
 ## Completion rule
 
