@@ -92,7 +92,7 @@ export function CaseStudies() {
       <PageHero
         eyebrow="Proof"
         title="See how we think about growth, not just how we talk about it."
-        lede="Explore business scenarios, sample scorecards and the questions behind a SNIPE growth plan. Each example shows how we connect the numbers to practical decisions."
+        lede="Explore business scenarios, sample dashboards and the questions behind a SNIPE growth plan. Each example shows how we connect the numbers to practical decisions."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <div className="mx-auto max-w-3xl space-y-8">

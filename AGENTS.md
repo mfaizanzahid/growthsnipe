@@ -38,7 +38,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 ## Product surfaces
 
 1. **Public marketing site**: home, offers (blueprint, diagnostic, loop-library, engine), six industry pages, four capability pages (paid-ads, crm, intelligence, voiceiq), how it works, snipe-system, case studies, resources, about, faq, book, checkout (diagnostic/blueprint), thank-you pages, results-disclaimer, plus blog, privacy, terms, contact, login, onboarding.
-2. **SNIPE Intelligence™ dashboard** (authenticated, org-scoped via top-left switcher): scorecard overview, connections, business profile, billing and payments, audit log, org settings, profile. MCP access, AI Employees, and briefings are hidden for now.
+2. **SNIPE Intelligence™ dashboard** (authenticated, org-scoped via top-left switcher): dashboard overview, connections, business profile, billing and payments, audit log, org settings, profile. MCP access, AI Employees, and briefings are hidden for now.
 3. **Superadmin area**: all-tenant clients, invoices, usage/one-time charges, refunds, plans (including contact-only), coupons, portal settings.
 4. **Dormant (code retained, UI hidden)**: remote MCP endpoint `/mcp` with org-scoped bearer tokens, provider adapters, briefing schedules and Crons.
 
@@ -67,7 +67,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 ## Dashboard map
 
 - `/` home, offers, six industry pages, four capability pages, `/how-it-works`, `/snipe-system`, `/case-studies`, `/resources`, `/about`, `/faq`, `/book`, `/checkout/*`, `/thank-you/*`, `/results-disclaimer`, plus `/blog`, `/privacy`, `/terms`, `/contact`, `/login`, `/onboarding`. Retired (redirect): `/features`, `/integrations`, `/who-we-help`, `/pricing`.
-- `/dashboard` SNIPE Intelligence™ scorecard, `/connections`, `/business-profile`, `/billing`, `/settings`, `/profile`. Hidden for now: `/mcp-access`, `/employees`, `/briefings-schedules`.
+- `/dashboard` SNIPE Intelligence™ dashboard, `/connections`, `/business-profile`, `/billing`, `/settings`, `/profile`. Hidden for now: `/mcp-access`, `/employees`, `/briefings-schedules`.
 - `/superadmin` clients, invoices, usage charges, refunds, plans, coupons, settings.
 
 ## Tenancy and roles

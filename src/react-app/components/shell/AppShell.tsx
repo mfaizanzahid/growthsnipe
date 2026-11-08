@@ -39,7 +39,7 @@ import { EmbedScripts } from "../EmbedScripts";
 const APP_BRAND = "SNIPE Intelligence™";
 
 const NAV = [
-  { to: "/dashboard", label: "Scorecard", icon: HomeIcon, end: true },
+  { to: "/dashboard", label: "Dashboard", icon: HomeIcon, end: true },
   { to: "/connections", label: "Connections", icon: CircleStackIcon, end: false },
   { to: "/business-profile", label: "Business profile", icon: BuildingOfficeIcon, end: false },
   { to: "/billing", label: "Billing", icon: CreditCardIcon, end: false },

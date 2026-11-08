@@ -22,8 +22,8 @@ Two ways to buy:
 | Discovery call (Growth Fit Call) | Fit and scoping conversation | Free |
 | SNIPE Diagnostic™ | Paid data teardown and Leak Map | $199 one-time |
 | SNIPE Blueprint™ | Written growth plan | $999 one-time |
-| SNIPE Engine™ Core | Build plus operator, client team answers first | $2,999 setup + $1,999/mo |
-| SNIPE Engine™ Command | Build plus operator, our live team answers first | $4,999 setup + $3,999/mo |
+| SNIPE Engine™ Core | Build plus operator, client team answers first | Private — confirmed on a call |
+| SNIPE Engine™ Command | Build plus operator, our live team answers first | Private — confirmed on a call |
 | SNIPE Intelligence™ | Analytics and VoiceIQ dashboard | $199/mo, 30-day free trial (dashboard only) |
 
 Hard rule: offer prices may display on the public marketing pages listed in `docs/copy-content-website-strategy.md`. Everywhere else, plans and tiers render no price. All offer prices and credit rules live in `src/lib/offers.ts`, never hard-coded elsewhere. SaaS subscription plans come from `GET /api/plans`.
@@ -94,7 +94,7 @@ Case studies and testimonials must read as realistic customer language. Do not a
 
 Public: `/`, offers, industry and capability pages, `/how-it-works`, `/snipe-system`, `/case-studies`, `/resources`, `/about`, `/faq`, `/book`, `/checkout/*`, `/thank-you/*`, `/results-disclaimer`, `/blog`, `/privacy`, `/terms`, `/contact`, `/login`, `/onboarding`. Retired (redirect): `/features`, `/integrations`, `/who-we-help`, `/pricing`, `/signup`.
 
-Dashboard: `/dashboard` scorecard, `/connections`, `/business-profile`, `/billing`, `/settings`, `/profile`.
+Dashboard: `/dashboard` overview, `/connections`, `/business-profile`, `/billing`, `/settings`, `/profile`.
 
 Superadmin: `/superadmin` clients, invoices, charges, refunds, plans, coupons, settings.
 

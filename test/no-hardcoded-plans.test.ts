@@ -124,10 +124,10 @@ describe("no hard-coded plans in customer-facing plan surfaces", () => {
 
   it("offer pages read prices from the single source of truth", () => {
     const root = process.cwd();
+    // The Engine page shows no prices (private pricing), so it is intentionally absent here.
     for (const page of [
       "src/react-app/pages/marketing/Diagnostic.tsx",
       "src/react-app/pages/marketing/Blueprint.tsx",
-      "src/react-app/pages/marketing/Engine.tsx",
     ]) {
       const content = readFileSync(join(root, page), "utf8");
       expect(content).toContain("lib/offers");

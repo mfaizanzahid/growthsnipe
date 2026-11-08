@@ -56,7 +56,7 @@ export function LoopLibraryAccess() {
   return (
     <MarketingLayout>
       <PageHero
-        eyebrow="Free SNIPE Loops™"
+        eyebrow="SNIPE Loops™"
         title="Your growth loops, ready to install."
         lede={state === "ok" && firstName ? `Hi ${firstName}. Start with the loop that fixes your most obvious gap.` : "Start with the loop that fixes your most obvious gap."}
       />

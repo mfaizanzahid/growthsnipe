@@ -165,13 +165,6 @@ function robotsTxt(): string {
   return [
     "User-agent: *",
     "Allow: /",
-    "Disallow: /api/",
-    "Disallow: /auth/",
-    "Disallow: /dashboard",
-    "Disallow: /billing",
-    "Disallow: /superadmin",
-    "Disallow: /login",
-    "Disallow: /onboarding",
     "",
     `Sitemap: ${HOST}/sitemap.xml`,
     "",

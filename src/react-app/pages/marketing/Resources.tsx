@@ -49,7 +49,7 @@ const CATEGORIES: Array<{ title: string; items: string[] }> = [
     title: "Running the Business",
     items: [
       "When Is It Time to Hire Another Technician?",
-      "A Weekly Growth Scorecard for Owners.",
+        "A Real-Time Growth Dashboard for Owners.",
       "How to Turn a Marketing Report into an Operating Decision.",
     ],
   },

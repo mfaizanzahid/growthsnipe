@@ -86,7 +86,7 @@ export function Landing() {
                 <Link to="/book">Book a Free Growth Fit Call</Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <Link to="/loop-library">Download SNIPE Loops™</Link>
+                <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic™</Link>
               </Button>
             </div>
             <p className="mt-4 text-xs text-muted-foreground">
@@ -96,7 +96,7 @@ export function Landing() {
           <div className="mx-auto w-full max-w-md lg:max-w-none">
             <svg
               role="img"
-              aria-label="Growth scorecard showing rising booked work after leaks are fixed"
+              aria-label="Growth dashboard showing rising booked work after leaks are fixed"
               viewBox="0 0 480 420"
               className="h-auto w-full"
             >
@@ -146,7 +146,7 @@ export function Landing() {
           { value: "< 5 min", label: "Speed-to-lead target" },
           { value: "90%+", label: "Answer rate target" },
           { value: "21 days", label: "Launch runway" },
-          { value: "1 scorecard", label: "Booked jobs, not clicks" },
+          { value: "Live dashboard", label: "Booked jobs, not clicks" },
         ]}
       />
 
@@ -202,7 +202,7 @@ export function Landing() {
                 <CardTitle className="text-base">Keep the system moving and improving.</CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                    We help operate acquisition, intake, follow-up, retention and reviews. Deliverable: SNIPE Engine™ Core or SNIPE Engine™ Command.
+                    We help operate acquisition, intake, follow-up, retention and reviews. Deliverable: SNIPE Engine™, installed and run with your team.
               </CardContent>
             </Card>
           </div>
@@ -270,12 +270,12 @@ export function Landing() {
         <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="flex flex-col">
             <CardHeader>
-              <CardTitle className="text-base">Free SNIPE Loops™</CardTitle>
-              <CardDescription>Free</CardDescription>
+              <CardTitle className="text-base">SNIPE Loops™</CardTitle>
+              <CardDescription>No card required</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
               <p className="flex-1">Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business.</p>
-              <Button className="mt-4" asChild><Link to="/loop-library">Download SNIPE Loops™</Link></Button>
+              <Button className="mt-4" asChild><Link to="/loop-library">Download SNIPE Loops™ For Free</Link></Button>
             </CardContent>
           </Card>
           <Card className="flex flex-col">
@@ -301,11 +301,11 @@ export function Landing() {
           <Card className="flex flex-col">
             <CardHeader>
               <CardTitle className="text-base">SNIPE Engine™</CardTitle>
-              <CardDescription>From {OFFERS.engineCore.monthly.label}/month</CardDescription>
+              <CardDescription>The operating partnership</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
-              <p className="flex-1">The implementation and operating partnership that puts the plan to work. Choose Core or Command.</p>
-              <Button className="mt-4" asChild><Link to="/engine">Compare SNIPE Engine™ Plans</Link></Button>
+              <p className="flex-1">The implementation and operating partnership that puts the plan to work, and keeps it running.</p>
+              <Button className="mt-4" asChild><Link to="/engine">Explore SNIPE Engine™</Link></Button>
             </CardContent>
           </Card>
         </div>
@@ -334,39 +334,105 @@ export function Landing() {
 
       <section className="mx-auto w-full max-w-6xl px-4 py-16">
         <SectionHeading
-          eyebrow="SNIPE Engine™ overview"
+          eyebrow="SNIPE Engine™"
           title="The plan is only the beginning. The system has to run."
           body="SNIPE Engine™ brings the plan, marketing, CRM, call coverage, follow-up and analytics into one partnership."
         />
-        <div className="mt-10 grid gap-4 md:grid-cols-2">
-          <Card className="flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-base">SNIPE Engine™ Core</CardTitle>
-              <CardDescription>
-                {OFFERS.engineCore.setup.label} setup + {OFFERS.engineCore.monthly.label}/month
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
-              <p className="flex-1">For owner-led businesses with someone on their team who can handle live calls and callbacks. Your team answers first, Voice AI provides fallback coverage when they cannot.</p>
-              <Button className="mt-4" variant="outline" asChild><Link to="/engine">Compare SNIPE Engine™ plans</Link></Button>
-            </CardContent>
-          </Card>
-          <Card className="flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-base">SNIPE Engine™ Command</CardTitle>
-              <CardDescription>
-                {OFFERS.engineCommand.setup.label} setup + {OFFERS.engineCommand.monthly.label}/month
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
-        <p className="flex-1">For businesses ready to delegate more of intake, booking, admin and growth follow-up. Our live team answers first, Voice AI provides fallback coverage.</p>
-        <Button className="mt-4" variant="outline" asChild><Link to="/engine">Compare SNIPE Engine™ plans</Link></Button>
-            </CardContent>
-          </Card>
+        <div className="mx-auto mt-10 grid max-w-4xl gap-4 text-center sm:grid-cols-3">
+          <div className="rounded-xl border bg-card p-6">
+            <p className="font-semibold">We run the marketing</p>
+            <p className="mt-2 text-sm text-muted-foreground">Paid media, campaigns and follow-up, managed against your numbers.</p>
+          </div>
+          <div className="rounded-xl border bg-card p-6">
+            <p className="font-semibold">We cover the phones</p>
+            <p className="mt-2 text-sm text-muted-foreground">Live intake and booking support, with Voice AI fallback when the team cannot answer.</p>
+          </div>
+          <div className="rounded-xl border bg-card p-6">
+            <p className="font-semibold">We keep it visible</p>
+                <p className="mt-2 text-sm text-muted-foreground">A dynamic, real-time analytics dashboard, plan reviews and clear next actions.</p>
+          </div>
         </div>
-        <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-muted-foreground">
-          Both plans include a 21-day launch runway as part of setup. Advertising spend is paid directly by the client.
-        </p>
+        <div className="mt-8 text-center">
+          <Button size="lg" asChild>
+            <Link to="/engine">Explore SNIPE Engine™</Link>
+          </Button>
+          <p className="mx-auto mt-4 max-w-2xl text-xs text-muted-foreground">
+            Advertising spend is paid directly by the client.
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-muted/40">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-16 lg:grid-cols-2">
+          <div>
+            <Eyebrow>SNIPE Loops™</Eyebrow>
+            <h2 className="max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
+              Run the follow-up plays that book more jobs.
+            </h2>
+            <p className="mt-4 max-w-xl text-lg text-muted-foreground">
+              Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business this week. No card required.
+            </p>
+            <div className="mt-8">
+              <Button size="lg" asChild>
+                <Link to="/loop-library">Download SNIPE Loops™ For Free</Link>
+              </Button>
+            </div>
+          </div>
+          <div className="mx-auto w-full max-w-md lg:max-w-none">
+            <svg
+              role="img"
+              aria-label="Automated follow-up loops across SMS and email that bring leads back to booked work"
+              viewBox="0 0 480 420"
+              className="h-auto w-full"
+            >
+              <ellipse cx="240" cy="210" rx="215" ry="185" className="fill-primary/10" />
+              <rect x="70" y="90" width="340" height="240" rx="18" className="fill-card stroke-border" strokeWidth="2" />
+              <circle cx="108" cy="128" r="10" className="fill-muted-foreground/30" />
+              <rect x="126" y="116" width="150" height="24" rx="12" className="fill-muted" />
+              <rect x="226" y="152" width="150" height="24" rx="12" className="fill-primary/25" />
+              <circle cx="108" cy="200" r="10" className="fill-muted-foreground/30" />
+              <rect x="126" y="188" width="150" height="24" rx="12" className="fill-muted" />
+              <rect x="196" y="224" width="180" height="24" rx="12" className="fill-primary/25" />
+              <path
+                d="M 348 230 L 352 234 L 360 225"
+                fill="none"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="stroke-primary"
+              />
+              <rect x="126" y="260" width="110" height="24" rx="12" className="fill-muted" />
+              <rect x="126" y="296" width="64" height="22" rx="11" className="fill-primary/20" />
+              <text x="158" y="311" textAnchor="middle" fontSize="11" className="fill-primary">SMS</text>
+              <rect x="198" y="296" width="64" height="22" rx="11" className="fill-primary/20" />
+              <text x="230" y="311" textAnchor="middle" fontSize="11" className="fill-primary">Email</text>
+              <path
+                d="M 384 64 A 40 40 0 1 1 349 84"
+                fill="none"
+                strokeWidth="5"
+                strokeLinecap="round"
+                className="stroke-primary"
+              />
+              <path
+                d="M 350 73 L 349 84 L 358 78"
+                fill="none"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="stroke-primary"
+              />
+              <circle cx="92" cy="318" r="24" className="fill-primary" />
+              <path
+                d="M 82 318 L 89 325 L 103 310"
+                fill="none"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="stroke-primary-foreground"
+              />
+            </svg>
+          </div>
+        </div>
       </section>
 
       <section className="border-t bg-muted/40">
@@ -388,7 +454,7 @@ export function Landing() {
               detail="Owner, Whitfield Property Inspections"
             />
             <Testimonial
-              quote="The scorecard is the first report I actually read. It tells me what to do, not just what happened."
+              quote="The dashboard is the first report I actually read. It tells me what to do, not just what happened."
               name="Luis Ortega"
               detail="Owner, Ortega Inspection Group"
             />

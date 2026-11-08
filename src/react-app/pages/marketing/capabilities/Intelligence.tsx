@@ -57,7 +57,7 @@ export function Intelligence() {
               <CardTitle className="text-base">From data to decisions</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              A dashboard is useful only when it helps someone decide what to do. SNIPE Intelligence™ pairs visibility with scorecards, warning thresholds, forecasting views and regular review rhythms based on the selected SNIPE Engine™ plan.
+              A dashboard is useful only when it helps someone decide what to do. SNIPE Intelligence™ pairs visibility with a dynamic, real-time analytics dashboard, warning thresholds, forecasting views and regular review rhythms as part of your agreed SNIPE Engine™ scope.
             </CardContent>
           </Card>
           <Card>
@@ -80,7 +80,7 @@ export function Intelligence() {
 
       <CtaBand
         title="See what is happening in your business."
-        body="One scorecard for enquiries, bookings, ticket size and follow-up, reviewed on a rhythm that fits your plan."
+        body="One live dashboard for enquiries, bookings, ticket size and follow-up, reviewed on a rhythm that fits your plan."
       />
     </MarketingLayout>
   );

@@ -3,6 +3,7 @@ import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import type { ComponentType, ReactNode } from "react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { OFFERS } from "../../../lib/offers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion";
 
@@ -486,7 +487,7 @@ export function CtaBand({ title, body }: { title: string; body: string }) {
               className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
               asChild
             >
-              <Link to="/engine">See plans</Link>
+              <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic™</Link>
             </Button>
           </div>
           <p className="mt-4 text-xs opacity-75">We reply within one business day</p>

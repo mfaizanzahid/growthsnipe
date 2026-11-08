@@ -23,7 +23,7 @@ const STEPS = [
   },
   {
     title: "Run and improve",
-    body: "We work to the agreed plan, review performance, address issues and adjust priorities as the business and market change. The selected SNIPE Engine™ plan determines the cadence and level of live operational support.",
+    body: "We work to the agreed plan, review performance, address issues and adjust priorities as the business and market change. Your agreed SNIPE Engine™ scope determines the cadence and level of live operational support.",
   },
 ];
 

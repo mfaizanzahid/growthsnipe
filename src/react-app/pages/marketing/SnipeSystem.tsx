@@ -45,7 +45,7 @@ const PILLARS = [
     frameworks: [
       "Revenue Loops: Lifecycle workflows for add-ons, reviews, retention, reactivation and referrals.",
       "Capacity Trigger Ladder: Helps identify when workload and utilization justify hiring or operational changes.",
-      "Guardrail Scorecard: Defines the metric, target, warning threshold and corrective action.",
+      "Guardrail Dashboard: Defines the metric, target, warning threshold and corrective action.",
     ],
   },
 ];

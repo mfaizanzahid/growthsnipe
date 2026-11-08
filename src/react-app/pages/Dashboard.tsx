@@ -707,7 +707,7 @@ export function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Trial ended: subscribe to restore access</CardTitle>
-            <CardDescription>Your scorecard and reports are paused. Your data is retained.</CardDescription>
+            <CardDescription>Your dashboard and reports are paused. Your data is retained.</CardDescription>
           </CardHeader>
           <CardContent><Button asChild><Link to="/billing">Go to billing</Link></Button></CardContent>
         </Card>

@@ -15,7 +15,7 @@ const INCLUDED = [
   "The Partner Flywheel: a plan for identifying, developing and reactivating valuable referral relationships.",
   "The Capacity Trigger Ladder: hiring and operating triggers based on workload, utilization and the volume the business can responsibly fulfill.",
   "The 12-Month Roadmap: a sequenced execution plan with priorities, timing, responsibilities and dependencies.",
-  "The Guardrail Scorecard: the metrics to review, target ranges, warning thresholds and corrective actions.",
+  "The Guardrail Dashboard: the metrics to review, target ranges, warning thresholds and corrective actions.",
 ];
 
 const STEPS = [

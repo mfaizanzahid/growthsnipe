@@ -415,7 +415,7 @@ export function buyerReminderContent(input: {
       `<p>Hi ${name},</p>` +
       (isCheckIn
         ? `<p>It has been two weeks since your Blueprint presentation. Reply to this email with your implementation questions and we will help you through them.</p>`
-        : `<p>Your Blueprint fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your presentation, which ends on ${escapeHtml(input.deadlineDate)}.</p><p><a href="${input.actionLink}">Compare SNIPE Engine™ plans</a></p>`) +
+        : `<p>Your Blueprint fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your presentation, which ends on ${escapeHtml(input.deadlineDate)}.</p><p><a href="${input.actionLink}">Contact us for SNIPE Engine™ pricing</a></p>`) +
       `<p>GrowthSnipe</p>` +
       marketingFooter(input.unsubscribeUrl),
   };

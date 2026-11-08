@@ -27,7 +27,7 @@ export function Hvac() {
           "Maintenance-plan and seasonal revenue loops.",
           "Review and referral workflows.",
           "Local search and paid campaign management.",
-          "A scorecard connecting enquiries, booked calls, completed jobs, ticket size and capacity.",
+          "A dashboard connecting enquiries, booked calls, completed jobs, ticket size and capacity.",
         ],
         buildsCta: "Find My HVAC Growth Gaps",
         finalTitle: "More visibility. Better follow-through. A plan for the next busy season.",

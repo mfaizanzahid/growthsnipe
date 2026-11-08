@@ -4,7 +4,6 @@ import { CtaBand, PageHero, SectionHeading, TrustCallout } from "../../../compon
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import { OFFERS } from "../../../../lib/offers";
 
 const INCLUDES = [
   "Growth target and channel planning.",
@@ -74,11 +73,11 @@ export function PaidAds() {
       <section className="border-t bg-muted/40">
         <div className="mx-auto w-full max-w-3xl px-4 py-16 text-center">
           <SectionHeading
-            eyebrow="Pricing context"
-            title="          Paid media lives inside SNIPE Engine™."
+            eyebrow="How it works"
+            title="Paid media lives inside SNIPE Engine™."
           />
           <p className="mt-4 text-muted-foreground">
-            Paid media management is included within SNIPE Engine™ plan limits. Core covers eligible LSA and Search campaign management for up to {OFFERS.engineCore.adSpendCap.label}/month in client ad spend. Command covers eligible LSA, Search and Meta campaign management for up to {OFFERS.engineCommand.adSpendCap.label}/month in client ad spend. Ad spend is paid directly by the client. Any additional management fees are confirmed in writing.
+            Paid media management, including eligible local and search campaigns, is covered within your agreed SNIPE Engine™ scope. Ad spend is paid directly by the client. Exact scope and limits are confirmed in writing before you start.
           </p>
           <div className="mt-6">
             <Button size="lg" asChild>

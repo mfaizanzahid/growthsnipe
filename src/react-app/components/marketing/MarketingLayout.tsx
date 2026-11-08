@@ -77,11 +77,15 @@ const NAV_MENUS = [
       { to: "/resources", label: "Resources" },
       { to: "/blog", label: "Blog" },
       { to: "/case-studies", label: "Case studies" },
+      { to: "/faq", label: "FAQ" },
     ],
   },
   {
     label: "Company",
-    links: [{ to: "/about", label: "About" }],
+    links: [
+      { to: "/about", label: "About" },
+      { to: "/contact", label: "Contact" },
+    ],
   },
 ];
 
@@ -114,8 +118,11 @@ const OFFERS_LINKS = [
 const COMPANY_LINKS = [
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
-  { to: "/book", label: "Book a Free Growth Fit Call" },
+  { to: "/resources", label: "Resources" },
+  { to: "/blog", label: "Blog" },
+  { to: "/case-studies", label: "Case studies" },
   { to: "/login", label: "Sign in" },
+  { to: "/book", label: "Book a Free Growth Fit Call" },
 ];
 
 // Owner to supply real social profile URLs later — "#" placeholders for now.
@@ -309,21 +316,6 @@ export function MarketingLayout({ children }: { children: React.ReactNode }) {
                     </Link>
                   </li>
                 ))}
-                <li>
-                  <Link className="hover:underline" to="/resources">
-                    Resources
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:underline" to="/blog">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link className="hover:underline" to="/case-studies">
-                    Case studies
-                  </Link>
-                </li>
                 {supportEmail && (
                   <li>
                     <a

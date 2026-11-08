@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { MarketingLayout } from "../../../components/marketing/MarketingLayout";
 import { CtaBand, PageHero, SectionHeading, TrustCallout } from "../../../components/marketing/MarketingBits";
 import { Button } from "../../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
 
 const SUPPORTS = [
@@ -37,23 +36,10 @@ export function Voiceiq() {
             eyebrow="How coverage works"
             title="Humans first. AI as configured fallback."
           />
-          <div className="mt-8 grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">SNIPE Engine™ Core</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                Your team answers first. Configured Voice AI provides fallback when your team is unavailable, busy or outside working hours.
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">SNIPE Engine™ Command</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-muted-foreground">
-                The GrowthSnipe live team handles agreed live intake first, with configured Voice AI fallback for overflow, after-hours coverage or periods outside the live-team allocation.
-              </CardContent>
-            </Card>
+          <div className="mx-auto mt-8 max-w-3xl rounded-xl border bg-card p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Inside SNIPE Engine™, your team can answer first with configured Voice AI as fallback, or our live team can handle agreed live intake with Voice AI covering overflow and after hours. The exact coverage model is agreed in writing before you start.
+            </p>
           </div>
         </div>
       </section>

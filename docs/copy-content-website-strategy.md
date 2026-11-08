@@ -56,7 +56,7 @@ For owner-operated home-service companies ready to grow beyond owner-dependent w
 | Offers | SNIPE Blueprint™ | `/blueprint` | Sell the complete strategic growth plan | Get Your SNIPE Blueprint™ |
 | Offers | SNIPE Diagnostic™ | `/diagnostic` | Sell the 12-month performance review | Get Your SNIPE Diagnostic™ |
 | Offers | SNIPE Loops™ | `/loop-library` | Capture email and segment by platform / trade | Download SNIPE Loops™ |
-| Offers | SNIPE Engine™ | `/engine` | Convert qualified prospects into a monthly partner | Compare SNIPE Engine™ Plans / Book a Call |
+| Offers | SNIPE Engine™ | `/engine` | Convert qualified prospects into an operating partnership | Book a Free Growth Fit Call |
 | Industries | Home Inspectors | `/home-inspectors` | Show inspection-specific growth opportunities | Build My Inspection Growth Plan |
 | Industries | HVAC | `/hvac` | Show HVAC-specific growth opportunities | Build My HVAC Growth Plan |
 | Industries | Plumbing | `/plumbing` | Show plumbing-specific growth opportunities | Build My Plumbing Growth Plan |
@@ -95,7 +95,7 @@ For owner-operated home-service companies ready to grow beyond owner-dependent w
 - Offers ▼
   - SNIPE Diagnostic™ — $199
   - SNIPE Blueprint™ — $999
-  - SNIPE Engine™ — from $1,999/mo
+  - SNIPE Engine™
   - SNIPE Loops™
 - Resources
 - About
@@ -117,7 +117,7 @@ Home / resource / industry page → SNIPE Diagnostic™ ($199) → 60-minute rea
 Home / SNIPE System / industry page → SNIPE Blueprint™ ($999) → 90-minute presentation → Engine offer, with the $999 credited toward the Engine setup fee if signed within 30 days of the presentation.
 
 ### Path D — DIY and nurture
-Home / resource / industry page → Free SNIPE Loops™ → segmented email education → Diagnostic or Blueprint → SNIPE Engine™.
+Home / resource / industry page → SNIPE Loops™ → segmented email education → Diagnostic or Blueprint → SNIPE Engine™.
 
 ## Recommended supporting URLs
 
@@ -158,7 +158,7 @@ GrowthSnipe helps owner-operated home-service companies plan, install and run a 
 - Find the Leaks in Your Growth System
 - Get Your SNIPE Diagnostic™
 - Build My SNIPE Blueprint™
-- Compare SNIPE Engine™ Plans
+- Explore SNIPE Engine™
 - Download SNIPE Loops™
 - See How the SNIPE System Works
 - Show Me the Growth Math
@@ -232,7 +232,7 @@ Deliverable: SNIPE CRM™, SNIPE VoiceIQ™, SNIPE Intelligence™ and the confi
 
 We help operate acquisition, intake, follow-up, partner activity, retention and performance reviews. You get a clear operating rhythm and visibility into what needs attention next.
 
-Deliverable: SNIPE Engine™ Core or SNIPE Engine™ Command.
+Deliverable: SNIPE Engine™, scoped privately for your business.
 
 CTA: `See How It Works`
 
@@ -284,10 +284,10 @@ A personalized 12-month growth plan built around your numbers, market, services,
 
 CTA: `Build My Blueprint`
 
-### From $1,999/month — SNIPE Engine™
-The implementation and operating partnership that puts the plan to work. Choose SNIPE Engine™ Core or SNIPE Engine™ Command.
+### SNIPE Engine™ — the operating partnership
+The implementation and operating partnership that puts the plan to work, and keeps it running.
 
-CTA: `Compare SNIPE Engine™ Plans`
+CTA: `Explore SNIPE Engine™`
 
 **Credit-forward note:** Your $199 Diagnostic can be credited toward a Blueprint purchased within 14 days. Your $999 Blueprint can be credited toward a SNIPE Engine™ setup fee when you sign within 30 days of your Blueprint presentation. Terms apply.
 
@@ -302,39 +302,51 @@ The point is not that every business will add 12 jobs. The point is to work back
 
 CTA: `See What the Numbers Say About My Business`
 
-## Section 8 — Engine overview
+## Section 8 — SNIPE Engine™
 
 # The plan is only the beginning. The system has to run.
 
-SNIPE Engine™ brings the plan, marketing, CRM, call coverage, follow-up and analytics into one ongoing partnership.
+SNIPE Engine™ brings the plan, marketing, CRM, call coverage, follow-up and analytics into one partnership.
 
-**SNIPE Engine™ Core — $2,999 setup + $1,999/month**  
-For owner-led businesses with someone on their team who can handle live calls and callbacks. Your team answers first; Voice AI provides fallback coverage when they cannot.
+- We run the marketing: paid media, campaigns and follow-up, managed against your numbers.
+- We cover the phones: live intake and booking support, with Voice AI fallback when the team cannot answer.
+- We keep it visible: a dynamic, real-time analytics dashboard, plan reviews and clear next actions.
 
-**SNIPE Engine™ Command — $4,999 setup + $3,999/month**  
-For businesses ready to delegate more of intake, booking, admin and growth follow-up. Our trained live team handles the agreed work, with Voice AI as fallback coverage.
+CTA: `Explore SNIPE Engine™`
 
-Both plans include a 21-day launch runway as part of setup. Advertising spend is paid separately by the client.
+Microcopy: Advertising spend is paid directly by the client.
 
-CTA: `Compare Core and Command`
+## Section 9 — SNIPE Loops™
 
-## Section 9 — Proof and trust
+# Run the follow-up plays that book more jobs.
 
-# See the thinking behind the system.
+Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business this week. No card required.
 
-Explore sample growth breakdowns, example dashboards and the decisions a SNIPE plan is designed to make visible.
+CTA: `Download SNIPE Loops™ For Free`
 
+## Section 10 — Proof and trust
+
+# Owners who stopped guessing.
+
+Real businesses, real numbers. Read what owners say about finding the leak, then explore the case studies behind the system.
 
 CTA: `Explore Case Studies`
 
-## Section 10 — Final CTA
+## Section 11 — Start with SNIPE Diagnostic™ or SNIPE Blueprint™
+
+# Start with SNIPE Diagnostic™ or SNIPE Blueprint™.
+
+Find the leaks, or get the full 12-month plan. Both credit forward when you keep moving.
+
+CTA: `Start with SNIPE Diagnostic™`, `Start with SNIPE Blueprint™`
+
+## Section 12 — Final CTA
 
 # Stop guessing where the next stage of growth will come from.
 
 Start with a 20-minute Growth Fit Call. We will learn how your business wins work today, where the process feels stuck and which next step makes sense.
 
-**Primary CTA:** `Book a Free Growth Fit Call`  
-**Secondary CTA:** `Download SNIPE Loops™`
+**Primary CTA:** `Book a Free Growth Fit Call`
 
 Microcopy: No pressure to buy. If the fit is not right, we will tell you.
 
@@ -397,7 +409,7 @@ Hiring and operating triggers based on workload, utilization and the volume the 
 ### 8. The 12-Month Roadmap
 A sequenced execution plan with priorities, timing, responsibilities and dependencies.
 
-### 9. The Guardrail Scorecard
+### 9. The Guardrail Dashboard
 The metrics to review, target ranges, warning thresholds and corrective actions.
 
 ## How it works
@@ -429,7 +441,7 @@ The metrics to review, target ranges, warning thresholds and corrective actions.
 
 **SNIPE Blueprint™: $999 one-time.**
 
-If you move into SNIPE Engine™ within 30 days of your Blueprint presentation, the full $999 is credited toward your setup fee. That means the remaining setup payment is $2,000 for SNIPE Engine™ Core or $4,000 for SNIPE Engine™ Command, before any separately approved add-ons or taxes.
+If you move into SNIPE Engine™ within 30 days of your Blueprint presentation, the full $999 is credited toward your setup. We confirm the remaining amount in writing before you sign.
 
 CTA: `Get My SNIPE Blueprint™ — $999`
 
@@ -527,9 +539,9 @@ CTA: `Start My SNIPE Diagnostic™ — $199`
 
 ---
 
-# 7. Free SNIPE Loops™ — `/loop-library`
+# 7. SNIPE Loops™ — `/loop-library`
 
-**SEO title:** Free SNIPE Loops™ | Home-Service Follow-Up & Automation Recipes  
+**SEO title:** SNIPE Loops™ | Home-Service Follow-Up & Automation Recipes  
 **Meta description:** Get free follow-up scripts, automation recipes and customer lifecycle workflows for home inspectors, HVAC, plumbing, electrical, roofing and contractors.
 
 ## Hero
@@ -612,7 +624,7 @@ CTA: `Download SNIPE Loops™`
 # 8. SNIPE Engine™ — `/engine`
 
 **SEO title:** SNIPE Engine™ | Managed Growth Marketing & Operations for Home Services  
-**Meta description:** Choose SNIPE Engine™ Core or Command for a connected growth system covering paid acquisition, CRM, call handling, follow-up, revenue loops and analytics.
+**Meta description:** SNIPE Engine™ is the operating partnership that runs your growth system: marketing, call handling, CRM, follow-up, revenue loops and analytics.
 
 ## Hero
 
@@ -620,124 +632,52 @@ CTA: `Download SNIPE Loops™`
 
 # We do not hand you a plan and disappear. We help run the system.
 
-SNIPE Engine™ turns your growth plan into a working operating system. We configure the infrastructure, manage the agreed marketing and follow-up activities, support call capture and keep performance visible—so the owner is not left coordinating a collection of disconnected vendors.
-
-**SNIPE Engine™ Core: $2,999 setup + $1,999/month**  
-**SNIPE Engine™ Command: $4,999 setup + $3,999/month**
-
-Both plans include a 21-day launch runway within the setup fee. Advertising spend is paid directly by the client.
+SNIPE Engine™ turns your growth plan into a working operating system. We configure the infrastructure, manage the agreed marketing and follow-up activities, support call capture and keep performance visible, so the owner is not left coordinating a collection of disconnected vendors.
 
 CTA: `Book a Free Growth Fit Call`  
-Secondary CTA: `Compare the Plans`
+Secondary CTA: `See What's Included` (→ `#included`)
 
-## What SNIPE Engine™ connects
+## What SNIPE Engine™ runs
 
-- Growth strategy and recurring plan reviews.
-- Paid search and agreed paid media campaigns.
-- Lead capture, routing and customer records through SNIPE CRM™.
-- Call coverage, intake workflows and quality insights through SNIPE VoiceIQ™.
-- Revenue loops for follow-up, reviews, reactivation and repeat business.
-- Performance visibility through SNIPE Intelligence™.
-- Referral partner and customer follow-up activities appropriate to the selected plan.
+One partnership that runs the whole growth system. We install the systems below and help run them. Every engagement is scoped one on one.
 
-## Choose your operating model
+1. **Marketing that answers to booked work:** paid search and agreed paid media campaigns, planned against your numbers and managed week to week.
+2. **Calls answered, every time:** live intake and booking support from our team, with configured Voice AI fallback for overflow and after hours.
+3. **A CRM that holds the whole journey:** lead capture, routing, pipelines, customer records and follow-up workflows in SNIPE CRM™.
+4. **Revenue Loops that bring work back:** follow-up, review, reactivation and repeat-business loops installed and run for you.
+5. **Reputation and partners, handled:** review and reputation workflows including review-response management.
+6. **Visibility you can act on:** performance visibility through SNIPE Intelligence™, a dynamic, real-time analytics dashboard, with plan reviews.
 
-### SNIPE Engine™ Core
-**For owner-led firms with someone on the team who can take live calls and callbacks.**
+## Inside SNIPE Engine™
 
-**$2,999 one-time setup + $1,999/month**
+# Every system your growth runs on.
 
-Your team remains first on the phone. When your team cannot answer—such as during a busy period or after hours—Voice AI provides configured fallback coverage to answer, capture details and handle supported booking tasks. Anything requiring a person can be routed into a callback task.
-
-Included:
-- 21-day launch runway.
-- Shared Growth Manager.
-- SNIPE CRM™ with pipelines and workflows.
-- All eight core Revenue Loops installed.
-- Instant Capture workflows, missed-call text-back, configured Voice AI and chat.
-- VoIP migration and call routing as scoped during onboarding.
-- Automated quote follow-up and monthly customer reactivation campaigns.
-- Review and reputation workflows.
-- Local Services Ads and Google Search campaign management for up to $3,000/month in client ad spend.
-- Google Business Profile setup and weekly posts.
-- One service-area / geographic page per month.
-- Partner Flywheel assets, scripts and dormancy alerts.
-- Full SNIPE Intelligence™ dashboard, weekly scorecard, forecasting and custom reports.
-- 45-minute strategy call every two weeks.
-- Four-business-hour support response target.
-- Blueprint refresh every six months.
-
-CTA: `See Whether Core Fits My Business`
-
-### SNIPE Engine™ Command
-**For firms that want to delegate more of intake, booking, admin and growth follow-up.**
-
-**$4,999 one-time setup + $3,999/month**
-
-Our trained live team takes the first agreed live intake and administrative work in your company's name, up to 100 combined hours per month. Voice AI provides fallback coverage during overflow, after hours or when the agreed team-hour cap is reached. Anything outside the supported scope is routed for the appropriate client decision or callback.
-
-Included:
-- 21-day launch runway.
-- Dedicated Pod Lead.
-- Live intake, booking, quote chasing and agreed admin support, up to 100 combined hours/month.
-- Voice AI fallback coverage outside live-team coverage.
-- SNIPE CRM™ with pipelines and workflows.
-- All eight core Revenue Loops plus custom loops.
-- Booking-platform configuration and custom integrations within the agreed scope.
-- Full VoIP migration, multi-line routing and extended-hours coverage as scoped.
-- Weekly quote and customer follow-up campaigns plus agreed outbound calling.
-- Review workflows and review-response management.
-- Local Services Ads, Google Search and Meta campaign management for up to $10,000/month in client ad spend.
-- Google Business Profile management, three geographic pages per month, schema and answer-engine optimization work as scoped.
-- Managed Partner Flywheel outreach, up to 100 contacts/month, plus partner check-in calls.
-- Full SNIPE Intelligence™ dashboard, weekly scorecard, forecasting and custom reports, reviewed with your Pod Lead.
-- Weekly strategy call.
-- One-business-hour support response target.
-- Quarterly Blueprint refresh.
-
-CTA: `See Whether Command Fits My Business`
-
-## Side-by-side comparison
-
-| Included | SNIPE Engine™ Core | SNIPE Engine™ Command |
-|---|---|---|
-| One-time setup | $2,999 | $4,999 |
-| Monthly fee | $1,999 | $3,999 |
-| Best fit | Owner-led team | Team ready to delegate intake and admin |
-| Who answers first | Client team | GrowthSnipe live team |
-| Voice AI | Fallback coverage | Fallback coverage |
-| Live intake and booking | Client team, with configured AI fallback | GrowthSnipe team, up to 100 combined hours/month |
-| CRM and workflows | Included | Included |
-| Revenue Loops | 8 core loops | 8 core loops + custom loops |
-| Paid media | LSA + Search, up to $3K/month ad spend | LSA + Search + Meta, up to $10K/month ad spend |
-| Partner program | Assets, scripts and alerts | Managed outreach up to 100 contacts/month |
-| Analytics | Full dashboard and weekly scorecard | Full dashboard, weekly review with Pod Lead |
-| Strategy cadence | Every two weeks | Weekly |
-| Blueprint refresh | Every six months | Quarterly |
-| Support response target | 4 business hours | 1 business hour |
+- Growth strategy and recurring plan reviews tied to your numbers.
+- Paid search and paid media campaigns, managed against your numbers.
+- Campaign and landing-page structure tied to revenue targets.
+- Local Services Ads, Search and Meta campaign management.
+- Google Business Profile, service-area pages and review groundwork.
+- Live intake and booking support, with Voice AI fallback.
+- VoIP migration, multi-line routing and extended-hours coverage.
+- Call routing, recording and quality insights through SNIPE VoiceIQ™.
+- SNIPE CRM™ holds every lead, pipeline, customer record and follow-up workflow.
+- Booking-platform configuration and custom integrations.
+- Quote chasing, confirmations, reschedules and outbound calling.
+- Revenue Loops for follow-up, reviews, reactivation and repeat business.
+- Review requests, review responses and Partner Flywheel outreach.
+- SNIPE Intelligence™: a dynamic, real-time analytics dashboard with forecasting and clear next actions.
 
 ## What the 21-day launch runway means
 
-The setup fee includes onboarding and a focused launch sequence. During the 21-day runway, the teams work through access, tracking, phone and lead routing, CRM configuration, priority workflows and initial paid campaign launch, subject to timely access, approvals, platform verification and any required third-party review. The exact sequence depends on the client's starting point and scope.
+Onboarding includes a focused launch sequence. During the 21-day runway, the teams work through access, tracking, phone and lead routing, CRM configuration, priority workflows and initial paid campaign launch, subject to timely access, approvals, platform verification and any required third-party review. The exact sequence depends on the client's starting point and scope.
 
 This is not a promise that every campaign, integration or third-party approval will be live within 21 calendar days regardless of client dependencies.
 
-## Command hours and boundaries
+## Talk to us about SNIPE Engine™
 
-- Command includes up to 100 combined hours per month across live intake, booking and agreed admin activities.
-- Unused hours do not roll over.
-- Additional hours are available in 20-hour blocks for $500, subject to availability and scope.
-- Included admin may cover appointment confirmations and reschedules, quote and invoice follow-up, CRM updates and partner scheduling.
-- It does not include bookkeeping, payroll, field dispatch, licensed work or other out-of-scope responsibilities.
-- A weekly utilization report shows how the hours are being used.
-- When live coverage is unavailable or the agreed hours are used, configured Voice AI fallback and callback workflows apply.
+Tell us about your business, goals and capacity. We will confirm the scope and next steps in writing before anything starts. Advertising spend is paid separately by the client to the advertising platform.
 
-## Important pricing notes
-
-- Advertising spend is separate and paid directly by the client to the advertising platform.
-- Core campaign management covers up to $3,000/month in client ad spend; Command covers up to $10,000/month. Spend above the plan limit is subject to the agreed incremental management fee.
-- Platform, telephony, messaging and other third-party usage charges should be listed clearly in the proposal or service agreement before onboarding.
-- Any work outside the written scope is quoted separately.
+CTA: `Book a Free Growth Fit Call`
 
 ## Final CTA
 
@@ -745,7 +685,7 @@ This is not a promise that every campaign, integration or third-party approval w
 
 Book a free 20-minute Growth Fit Call. We will discuss your goals, current setup, capacity and the level of support that makes sense.
 
-CTA: `Book My Free Growth Fit Call`
+CTA: `Book a Free Growth Fit Call`
 
 ---
 
@@ -842,7 +782,7 @@ CTA: `Build My HVAC Growth Plan`
 - Maintenance-plan and seasonal revenue loops.
 - Review and referral workflows.
 - Local search and paid campaign management.
-- A scorecard connecting enquiries, booked calls, completed jobs, ticket size and capacity.
+- A dashboard connecting enquiries, booked calls, completed jobs, ticket size and capacity.
 
 CTA: `Find My HVAC Growth Gaps`
 
@@ -1055,9 +995,9 @@ Depending on trade, location, budget and capacity, the campaign mix may include 
 
 A standard ad report may tell you how many clicks and leads arrived. GrowthSnipe wants to know what happened next: Did the business respond? Was the enquiry qualified? Did it book? What was the job worth? Could the team fulfill it?
 
-### Pricing context
+### How it works
 
-Paid media management is included within SNIPE Engine™ plan limits. Core covers eligible LSA and Search campaign management for up to $3,000/month in client ad spend. Command covers eligible LSA, Search and Meta campaign management for up to $10,000/month in client ad spend. Ad spend is paid directly by the client. Any additional management fees are confirmed in writing.
+Paid media management, including eligible local and search campaigns, is covered within your agreed SNIPE Engine™ scope. Ad spend is paid directly by the client. Exact scope and limits are confirmed in writing before you start.
 
 CTA: `Book a Free Growth Fit Call`
 
@@ -1097,7 +1037,7 @@ CTA: `Book a Free Growth Fit Call`
 
 ## 10.3 SNIPE Intelligence™ — `/intelligence`
 
-**SEO title:** SNIPE Intelligence™ | Home-Service Growth Analytics & Scorecards  
+**SEO title:** SNIPE Intelligence™ | Real-Time Home-Service Growth Analytics Dashboard  
 **Meta description:** See the numbers behind your home-service growth: lead sources, response, bookings, job value, campaign performance and operating priorities.
 
 ### Hero
@@ -1122,7 +1062,7 @@ CTA: `See a Sample Dashboard`
 
 ### From data to decisions
 
-A dashboard is useful only when it helps someone decide what to do. SNIPE Intelligence™ pairs visibility with scorecards, warning thresholds, forecasting views and regular review rhythms based on the selected SNIPE Engine™ plan.
+A dashboard is useful only when it helps someone decide what to do. SNIPE Intelligence™ pairs visibility with a dynamic, real-time analytics dashboard, warning thresholds, forecasting views and regular review rhythms as part of your agreed SNIPE Engine™ scope.
 
 ### Data integrity
 
@@ -1145,9 +1085,7 @@ CTA: `Improve My Call Handling`
 
 ### How coverage works
 
-**SNIPE Engine™ Core:** Your team answers first. Configured Voice AI provides fallback when your team is unavailable, busy or outside working hours.
-
-**SNIPE Engine™ Command:** The GrowthSnipe live team handles agreed live intake first, with configured Voice AI fallback for overflow, after-hours coverage or periods outside the live-team allocation.
+Inside SNIPE Engine™, your team can answer first with configured Voice AI as fallback, or our live team can handle agreed live intake with Voice AI covering overflow and after hours. The exact coverage model is agreed in writing before you start.
 
 ### What the system is designed to support
 
@@ -1202,7 +1140,7 @@ We work to the agreed plan, review performance, address issues and adjust priori
 
 ## Start at the right level
 
-- Need ideas you can implement yourself? Start with free SNIPE Loops™.
+- Need ideas you can implement yourself? Start with SNIPE Loops™.
 - Need to understand where the process is leaking? Start with the $199 Diagnostic.
 - Need a complete plan? Get the $999 Blueprint.
 - Need a partner to implement and operate the system? Explore SNIPE Engine™.
@@ -1269,7 +1207,7 @@ We create lifecycle follow-up, define when additional capacity is needed and rev
 Frameworks:
 - **Revenue Loops:** Lifecycle workflows for add-ons, reviews, retention, reactivation and referrals.
 - **Capacity Trigger Ladder:** Helps identify when workload and utilization justify hiring or operational changes.
-- **Guardrail Scorecard:** Defines the metric, target, warning threshold and corrective action.
+- **Guardrail Dashboard:** Defines the metric, target, warning threshold and corrective action.
 
 ## The core growth equations
 
@@ -1300,7 +1238,7 @@ CTA: `Build My SNIPE Blueprint™`
 
 # See how we think about growth—not just how we talk about it.
 
-Explore business scenarios, sample scorecards and the questions behind a SNIPE growth plan. Each example shows how we connect the numbers to practical decisions.
+Explore business scenarios, sample dashboards and the questions behind a SNIPE growth plan. Each example shows how we connect the numbers to practical decisions.
 
 
 
@@ -1456,7 +1394,7 @@ CTA: `Download SNIPE Loops™`
 
 ### Running the Business
 - When Is It Time to Hire Another Technician?
-- A Weekly Growth Scorecard for Owners.
+- A Real-Time Growth Dashboard for Owners.
 - How to Turn a Marketing Report into an Operating Decision.
 
 ## Featured lead magnet
@@ -1527,7 +1465,7 @@ CTA: `Book a Free Growth Fit Call`
 
 This is a focused 20-minute conversation to understand how your business gets customers today, where the growth process feels stuck and what you want to achieve next.
 
-We will recommend the most sensible next step—whether that is free SNIPE Loops™, SNIPE Diagnostic™, SNIPE Blueprint™ or SNIPE Engine™. If there is not a fit, we will say so.
+We will recommend the most sensible next step—whether that is SNIPE Loops™, SNIPE Diagnostic™, SNIPE Blueprint™ or SNIPE Engine™. If there is not a fit, we will say so.
 
 CTA above scheduler: `Choose a Time`
 
@@ -1605,10 +1543,10 @@ The SNIPE Blueprint™ is $999 one-time. It includes a personalized 25–35-page
 Yes. If you purchase the Blueprint within 14 days of your Diagnostic readout, the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining payment is $800.
 
 ### Does the Blueprint fee count toward SNIPE Engine™?
-Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full $999 Blueprint fee is credited toward the Engine setup fee. The remaining setup payment is $2,000 for Core or $4,000 for Command.
+Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full $999 Blueprint fee is credited toward your setup. We confirm the remaining amount in writing before you sign.
 
 ### How much does SNIPE Engine™ cost?
-SNIPE Engine™ Core is $2,999 setup plus $1,999 per month. SNIPE Engine™ Command is $4,999 setup plus $3,999 per month. Both include a 21-day launch runway. Advertising spend is separate and paid directly by the client.
+Every SNIPE Engine™ engagement is scoped one on one and priced privately. Book a Growth Fit Call and we will confirm your pricing in writing before anything starts. Advertising spend is separate and paid directly by the client.
 
 ### Can I buy a Blueprint without becoming a monthly client?
 Yes. The SNIPE Blueprint™ is a standalone strategic product. You can implement it with your own team or another provider.
@@ -1616,22 +1554,19 @@ Yes. The SNIPE Blueprint™ is a standalone strategic product. You can implement
 ### Are SNIPE Loops™ really free?
 Yes. SNIPE Loops™ are a free resource. You provide your email and business details so we can deliver relevant recipes and updates. You can unsubscribe from marketing emails at any time.
 
-## Engine and delivery
+## SNIPE Engine™ and delivery
 
-### What is the difference between Core and Command?
-Core is designed for a business whose own team can take live calls and callbacks. The client's team answers first and configured Voice AI provides fallback coverage. Command includes a GrowthSnipe live team for agreed intake, booking and administrative tasks up to 100 combined hours per month, with Voice AI as fallback.
+### What does SNIPE Engine™ cover?
+Strategy and plan reviews, paid media management, lead capture and routing through SNIPE CRM™, call handling with Voice AI fallback, follow-up and reactivation loops, reviews and reputation workflows, partner referral support, and performance visibility through SNIPE Intelligence™. It can also include live intake, booking and agreed admin support from our team. The exact scope is agreed in writing before you start.
 
 ### Does SNIPE Engine™ include advertising spend?
-No. The client pays the advertising platform directly. The plan includes management within its agreed spend limit: up to $3,000/month in ad spend for Core and up to $10,000/month for Command, across the channels specified in the plan.
+No. The client pays the advertising platform directly. Campaign management is covered within the agreed scope and spend limits, confirmed in writing before you start.
 
 ### What happens during the 21-day launch runway?
 We work through onboarding, access, phone and lead routing, CRM setup, priority workflows, tracking and initial campaign launch. Timing depends on client access and approvals, platform verification and third-party dependencies. The exact launch checklist is agreed during onboarding.
 
-### Are there limits to Command's live-team hours?
-Yes. Command includes up to 100 combined hours per month across live intake, booking and agreed admin work. Unused hours do not roll over. Additional 20-hour blocks are $500, subject to availability and written agreement.
-
-### What admin work is included in Command?
-Agreed tasks may include appointment confirmations and reschedules, quote and invoice follow-up, CRM updates and partner scheduling. Bookkeeping, payroll, field dispatch, licensed work and other out-of-scope duties are not included.
+### What work can SNIPE Engine™ cover beyond marketing?
+Agreed tasks may include appointment confirmations and reschedules, quote and invoice follow-up, CRM updates and partner scheduling. Bookkeeping, payroll, field dispatch, licensed work and other out-of-scope duties are not included. The exact scope is agreed in writing before you start.
 
 ### Do you replace our existing booking software?
 Not by default. The approach is to work with the business's existing platform where access and integration support make that practical. The scope is confirmed during the Diagnostic, Blueprint or Engine onboarding.
@@ -1815,11 +1750,11 @@ We will help determine whether your best next step is a Diagnostic, Blueprint, E
 
 | Page | Primary CTA | Secondary CTA |
 |---|---|---|
-| Home | Book a Free Growth Fit Call | Download SNIPE Loops™ |
+| Home | Book a Free Growth Fit Call | Get My SNIPE Diagnostic™ |
 | Blueprint | Get My SNIPE Blueprint™ — $999 | Book a Free Growth Fit Call |
 | Diagnostic | Get My SNIPE Diagnostic™ — $199 | Book a Free Growth Fit Call |
 | SNIPE Loops™ | Download SNIPE Loops™ | Explore the SNIPE System |
-| Engine | Book a Free Growth Fit Call | Compare Core and Command |
+| Engine | Book a Free Growth Fit Call | Get My SNIPE Diagnostic™ |
 | Industry pages | Build My [Trade] Growth Plan | Download SNIPE Loops™ |
 | Paid Ads | Plan My Ad Campaigns | Book a Free Growth Fit Call |
 | CRM / Intelligence / VoiceIQ | See the Growth System | Book a Free Growth Fit Call |
@@ -1834,14 +1769,14 @@ We will help determine whether your best next step is a Diagnostic, Blueprint, E
 ## Conversion design rules
 
 1. Use one dominant CTA per section; avoid giving every button equal visual weight.
-2. Keep the pricing visible on the offer pages and Engine page.
+2. Keep the pricing visible on the offer pages. SNIPE Engine™ pricing is private: no prices or plan tiers on the website, confirmed in writing on a call.
 3. Put the offer deliverables, process, fit criteria, risk/assumption language and FAQs near the CTA.
 4. On mobile, keep a compact sticky CTA but do not cover form fields or checkout controls.
 5. Use trade-specific screenshots, workflows and dashboard views where available.
 6. Show sample dashboards.
 7. Use the same naming consistently: SNIPE Diagnostic™, SNIPE Blueprint™, SNIPE Engine™, SNIPE Engine™ Core, SNIPE Engine™ Command, SNIPE CRM™, SNIPE Intelligence™, SNIPE VoiceIQ™.
 8. Explain the credit rules in plain language on the relevant sales pages and checkout confirmation.
-9. Keep ad spend, third-party usage charges, plan limits and Command-hour limits visible before purchase.
+9. Keep ad spend and third-party usage charges visible before purchase, with the exact scope confirmed in writing.
 10. Do not use countdown timers or artificial scarcity unless a real, enforceable deadline exists.
 
 ## Recommended visual assets
@@ -1850,7 +1785,7 @@ Homepage hero: clean visual showing the journey from lead → response → booke
 SNIPE System diagram: five connected pillars.
 Blueprint preview: real, anonymized customer deliverable showing the structure and depth of a SNIPE Blueprint™.
 Diagnostic preview: an actual customer Leak Map with identifying information removed.
-Engine page: Core vs Command comparison graphic.
+Engine page: operating-partnership visual (no plan comparison).
 CRM page: actual configured pipeline screenshot.
 Intelligence page: actual dashboard screenshot.
 VoiceIQ page: call flow diagram showing client team / live team and AI fallback.

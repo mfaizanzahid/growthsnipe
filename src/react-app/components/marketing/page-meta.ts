@@ -19,14 +19,14 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
       "Get a 12-month performance review, quantified Leak Map and 60-minute readout to identify where your home-service growth process is losing opportunities.",
   },
   "/loop-library": {
-    title: "Free SNIPE Loops™ | Home-Service Follow-Up & Automation Recipes",
+    title: "SNIPE Loops™ | Home-Service Follow-Up & Automation Recipes",
     description:
       "Get free follow-up scripts, automation recipes and customer lifecycle workflows for home inspectors, HVAC, plumbing, electrical, roofing and contractors.",
   },
   "/engine": {
     title: "SNIPE Engine™ | Managed Growth Marketing & Operations for Home Services",
     description:
-      "Choose SNIPE Engine™ Core or Command for a connected growth system covering paid acquisition, CRM, call handling, follow-up, revenue loops and analytics.",
+      "Choose SNIPE Engine™ for a connected growth system covering paid acquisition, CRM, call handling, follow-up, revenue loops and analytics. Priced privately.",
   },
   "/home-inspectors": {
     title: "Home Inspection Marketing & Growth Systems | GrowthSnipe",
@@ -69,7 +69,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
       "SNIPE CRM brings your leads, calls, customer records and follow-up workflows into one connected home-service growth system.",
   },
   "/intelligence": {
-    title: "SNIPE Intelligence™ | Home-Service Growth Analytics & Scorecards",
+    title: "SNIPE Intelligence™ | Real-Time Home-Service Growth Analytics Dashboard",
     description:
       "See the numbers behind your home-service growth: lead sources, response, bookings, job value, campaign performance and operating priorities.",
   },
@@ -155,7 +155,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   "/contact": {
     title: "Contact GrowthSnipe",
     description:
-      "Book a discovery call, ask for a Revenue Leak Scorecard, or ask about SNIPE Engine™ Core and SNIPE Engine™ Command.",
+      "Book a discovery call, ask for a Revenue Leak Scorecard, or ask about SNIPE Engine™.",
   },
   "/privacy": {
     title: "Privacy Policy | GrowthSnipe",

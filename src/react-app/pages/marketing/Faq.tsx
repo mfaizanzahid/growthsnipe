@@ -2,17 +2,11 @@ import { Link } from "react-router-dom";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, Faq as FaqList, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
 import { Button } from "../../components/ui/button";
-import { OFFERS, OFFER_EXTRAS } from "../../../lib/offers";
+import { OFFERS } from "../../../lib/offers";
 import { formatWholeMoney } from "../../lib/money";
 
 const blueprintRemainder = formatWholeMoney(
   OFFERS.blueprint.price.amountMinor - OFFERS.diagnostic.price.amountMinor,
-);
-const engineCoreRemainder = formatWholeMoney(
-  OFFERS.engineCore.setup.amountMinor - OFFERS.blueprint.price.amountMinor,
-);
-const engineCommandRemainder = formatWholeMoney(
-  OFFERS.engineCommand.setup.amountMinor - OFFERS.blueprint.price.amountMinor,
 );
 
 const GENERAL = [
@@ -49,11 +43,11 @@ const PRICING = [
   },
   {
     q: "Does the SNIPE Blueprint™ fee count toward SNIPE Engine™?",
-    a: `Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full SNIPE Blueprint™ fee is credited toward the SNIPE Engine™ setup fee. The remaining setup payment is ${engineCoreRemainder} for SNIPE Engine™ Core or ${engineCommandRemainder} for SNIPE Engine™ Command.`,
+    a: "Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full SNIPE Blueprint™ fee is credited toward your setup. We confirm the remaining amount in writing before you sign.",
   },
   {
     q: "How much does SNIPE Engine™ cost?",
-    a: `SNIPE Engine™ Core is ${OFFERS.engineCore.setup.label} setup plus ${OFFERS.engineCore.monthly.label} per month. SNIPE Engine™ Command is ${OFFERS.engineCommand.setup.label} setup plus ${OFFERS.engineCommand.monthly.label} per month. Both include a 21-day launch runway. Advertising spend is separate and paid directly by the client.`,
+    a: "Every SNIPE Engine™ engagement is scoped one on one and priced privately. Book a Growth Fit Call and we will confirm your pricing in writing before anything starts. Advertising spend is separate and paid directly by the client.",
   },
   {
     q: "Can I buy a Blueprint without becoming a monthly client?",
@@ -67,24 +61,20 @@ const PRICING = [
 
 const DELIVERY = [
   {
-    q: "What is the difference between SNIPE Engine™ Core and SNIPE Engine™ Command?",
-    a: "SNIPE Engine™ Core is designed for a business whose own team can take live calls and callbacks. The client's team answers first and configured Voice AI provides fallback coverage. SNIPE Engine™ Command includes a GrowthSnipe live team for agreed intake, booking and administrative tasks up to 100 combined hours per month, with Voice AI as fallback.",
+    q: "What does SNIPE Engine™ cover?",
+    a: "Strategy and plan reviews, paid media management, lead capture and routing through SNIPE CRM™, call coverage with Voice AI fallback, follow-up and reactivation loops, reviews and reputation workflows, partner referral support, and performance visibility through SNIPE Intelligence™. It can also include live intake, booking and agreed admin support from our team. The exact scope is agreed in writing before you start.",
   },
   {
     q: "Does SNIPE Engine™ include advertising spend?",
-    a: `No. The client pays the advertising platform directly. The plan includes management within its agreed spend limit: up to ${OFFERS.engineCore.adSpendCap.label}/month in ad spend for SNIPE Engine™ Core and up to ${OFFERS.engineCommand.adSpendCap.label}/month for SNIPE Engine™ Command, across the channels specified in the plan.`,
+    a: "No. The client pays the advertising platform directly. Campaign management is covered within the agreed scope and spend limits, confirmed in writing before you start.",
   },
   {
     q: "What happens during the 21-day launch runway?",
     a: "We work through onboarding, access, phone and lead routing, CRM setup, priority workflows, tracking and initial campaign launch. Timing depends on client access and approvals, platform verification and third-party dependencies. The exact launch checklist is agreed during onboarding.",
   },
   {
-    q: "Are there limits to SNIPE Engine™ Command's live-team hours?",
-    a: `Yes. SNIPE Engine™ Command includes up to 100 combined hours per month across live intake, booking and agreed admin work. Unused hours do not roll over. Additional 20-hour blocks are ${OFFER_EXTRAS.extraHoursBlock.label}, subject to availability and written agreement.`,
-  },
-  {
-    q: "What admin work is included in SNIPE Engine™ Command?",
-    a: "Agreed tasks may include appointment confirmations and reschedules, quote and invoice follow-up, CRM updates and partner scheduling. Bookkeeping, payroll, field dispatch, licensed work and other out-of-scope duties are not included.",
+    q: "What work can SNIPE Engine™ cover beyond marketing?",
+    a: "Agreed tasks may include appointment confirmations and reschedules, quote and invoice follow-up, CRM updates and partner scheduling. Bookkeeping, payroll, field dispatch, licensed work and other out-of-scope duties are not included. The exact scope is agreed in writing before you start.",
   },
   {
     q: "Do you replace our existing booking software?",

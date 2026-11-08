@@ -27,7 +27,7 @@ export const POSTS: BlogPostData[] = [
       "Why home-service owners should fix missed calls and ticket consistency before increasing paid ad spend. A practical order of operations.",
     relatedLinks: [
       { label: "How it works", to: "/how-it-works" },
-      { label: "SNIPE Engine™ plans", to: "/engine" },
+      { label: "SNIPE Engine™", to: "/engine" },
       { label: "Get a Leak Scorecard", to: "/contact" },
     ],
     sections: [
@@ -110,7 +110,7 @@ export const POSTS: BlogPostData[] = [
       "How to judge home-service paid ads on cost per booked inspection, set a sane guardrail, and decide when to scale or pause.",
     relatedLinks: [
       { label: "How it works", to: "/how-it-works" },
-      { label: "SNIPE Engine™ plans", to: "/engine" },
+      { label: "SNIPE Engine™", to: "/engine" },
       { label: "Book a discovery call", to: "/contact" },
     ],
     sections: [
@@ -146,38 +146,38 @@ export const POSTS: BlogPostData[] = [
   },
   {
     slug: "weekly-scorecard-five-lines",
-    title: "A weekly scorecard that fits on five lines",
-    dek: "Most reports are too long to use. These five lines are enough to decide what to do this week.",
+    title: "A real-time dashboard that fits on one screen",
+    dek: "Most reports are too long to use. One live view is enough to decide what to do this week.",
     date: "September 2026",
     readMinutes: 4,
     pillar: "Intelligence",
     metaDescription:
-      "A five-line weekly scorecard for home-service owners: booked jobs, average ticket, answer rate, speed to lead, and cost per booked job.",
+      "A real-time analytics dashboard for home-service owners: booked jobs, average ticket, answer rate, speed to lead, and cost per booked job.",
     relatedLinks: [
-      { label: "SNIPE Intelligence™", to: "/features" },
+      { label: "SNIPE Intelligence™", to: "/intelligence" },
       { label: "How it works", to: "/how-it-works" },
       { label: "Book a call", to: "/book" },
     ],
     sections: [
       {
-        heading: "Five lines, one decision each",
+        heading: "Five numbers, one decision each",
         paragraphs: [
           "Booked jobs tells you whether demand is real. Average ticket tells you whether the offer is consistent. Answer rate tells you whether capture is working. Speed to lead tells you whether the follow-up is alive. Cost per booked inspection tells you whether paid traffic is earning its place.",
-          "Each line points to a different action. That is the test of a useful scorecard: every number should change a decision.",
+          "Each number points to a different action. That is the test of a useful dashboard: every number should change a decision.",
         ],
       },
       {
         heading: "Compare to last week, not to your best week",
         paragraphs: [
           "The comparison that matters is recent and fair. Same weekday mix, same season, same market. Comparing to a record month creates anxiety, not insight.",
-          "Write the number down every week. Memory edits the past, and a four-week trail is where the trend becomes obvious.",
+          "Check the live view every week. Memory edits the past, and a four-week trail is where the trend becomes obvious.",
         ],
       },
       {
-        heading: "Put the scorecard where the work happens",
+        heading: "Put the dashboard where the work happens",
         paragraphs: [
-          "A scorecard that lives in an inbox gets read once. One that is reviewed in a short weekly call, with one owner for each line, changes behavior.",
-          "GrowthSnipe builds the scorecard from your booking software, CRM, phones, and ad accounts, then reviews it with you. The point is not the report. The point is the next decision.",
+          "A dashboard nobody opens changes nothing. One that is reviewed in a short weekly call, with one owner for each number, changes behavior.",
+          "GrowthSnipe builds the dashboard from your booking software, CRM, phones, and ad accounts, then reviews it with you. The point is not the report. The point is the next decision.",
         ],
       },
     ],

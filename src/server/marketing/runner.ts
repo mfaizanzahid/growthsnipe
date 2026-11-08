@@ -101,7 +101,7 @@ async function buyerContent(
   const unsubscribeUrl = unsubscribeLinkFor(ctx.base, unsubToken);
   const kind = send.sequence === DIAG_CREDIT_SEQUENCE_KEY ? "diagnostic" : "blueprint";
   const deadline = new Date(send.dueAt).toISOString().slice(0, 10);
-  const actionLink = kind === "diagnostic" ? `${ctx.base}/checkout/blueprint` : `${ctx.base}/engine`;
+  const actionLink = kind === "diagnostic" ? `${ctx.base}/checkout/blueprint` : `${ctx.base}/book`;
   return buyerReminderContent({ firstName: name, kind, step: send.stepKey, deadlineDate: deadline, actionLink, unsubscribeUrl });
 }
 
