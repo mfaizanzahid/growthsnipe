@@ -96,46 +96,77 @@ export function Landing() {
           <div className="mx-auto w-full max-w-md lg:max-w-none">
             <svg
               role="img"
-              aria-label="Growth dashboard showing rising booked work after leaks are fixed"
+              aria-label="Growth dashboard showing booked work climbing after leaks are fixed"
               viewBox="0 0 480 420"
               className="h-auto w-full"
             >
-              <ellipse cx="240" cy="210" rx="215" ry="185" className="fill-primary/10" />
-              <rect x="80" y="60" width="320" height="300" rx="18" className="fill-card stroke-border" strokeWidth="2" />
-              <circle cx="108" cy="88" r="5" className="fill-muted-foreground/40" />
-              <circle cx="126" cy="88" r="5" className="fill-muted-foreground/40" />
-              <circle cx="144" cy="88" r="5" className="fill-muted-foreground/40" />
-              <rect x="162" y="82" width="150" height="12" rx="6" className="fill-primary/30" />
-              <rect x="104" y="116" width="120" height="10" rx="5" className="fill-muted-foreground/30" />
-              <rect x="104" y="136" width="200" height="10" rx="5" className="fill-muted-foreground/30" />
-              <rect x="104" y="156" width="160" height="10" rx="5" className="fill-muted-foreground/30" />
-              <rect x="104" y="196" width="272" height="2" className="fill-border" />
-              <rect x="114" y="268" width="32" height="52" rx="6" className="fill-primary/25" />
-              <rect x="156" y="248" width="32" height="72" rx="6" className="fill-primary/40" />
-              <rect x="198" y="232" width="32" height="88" rx="6" className="fill-primary/55" />
-              <rect x="240" y="210" width="32" height="110" rx="6" className="fill-primary/70" />
-              <rect x="282" y="186" width="32" height="134" rx="6" className="fill-primary" />
-              <circle cx="392" cy="96" r="26" className="fill-primary" />
+              <ellipse cx="240" cy="205" rx="208" ry="188" className="fill-primary/5" />
+              <circle cx="356" cy="126" r="92" className="fill-primary/5" />
+
+              <rect x="52" y="48" width="376" height="318" rx="20" className="fill-card stroke-border" strokeWidth="2" />
+              <rect x="52" y="88" width="376" height="1.5" className="fill-border" />
+
+              <circle cx="78" cy="68" r="5" className="fill-muted-foreground/30" />
+              <circle cx="96" cy="68" r="5" className="fill-muted-foreground/30" />
+              <circle cx="114" cy="68" r="5" className="fill-muted-foreground/30" />
+              <rect x="140" y="61" width="96" height="14" rx="7" className="fill-muted" />
+
+              <rect x="72" y="106" width="104" height="62" rx="12" className="fill-primary" />
+              <rect x="86" y="120" width="48" height="12" rx="6" className="fill-primary-foreground/90" />
+              <rect x="86" y="140" width="30" height="8" rx="4" className="fill-primary-foreground/50" />
+
+              <rect x="184" y="106" width="104" height="62" rx="12" className="fill-muted" />
+              <rect x="198" y="120" width="40" height="12" rx="6" className="fill-muted-foreground/40" />
+              <rect x="198" y="140" width="26" height="8" rx="4" className="fill-muted-foreground/25" />
+
+              <rect x="296" y="106" width="104" height="62" rx="12" className="fill-muted" />
+              <rect x="310" y="120" width="44" height="12" rx="6" className="fill-muted-foreground/40" />
+              <rect x="310" y="140" width="28" height="8" rx="4" className="fill-muted-foreground/25" />
+
+              <g strokeDasharray="4 6" className="stroke-border">
+                <line x1="72" y1="208" x2="408" y2="208" />
+                <line x1="72" y1="244" x2="408" y2="244" />
+                <line x1="72" y1="280" x2="408" y2="280" />
+              </g>
+
               <path
-                d="M 381 96 L 389 104 L 403 88"
+                d="M 72 300 L 104 286 L 136 292 L 168 268 L 200 276 L 232 250 L 264 258 L 296 228 L 328 236 L 360 206 L 392 190 L 408 178 L 408 322 L 72 322 Z"
+                className="fill-primary/10"
+              />
+              <path
+                d="M 72 300 L 104 286 L 136 292 L 168 268 L 200 276 L 232 250 L 264 258 L 296 228 L 328 236 L 360 206 L 392 190 L 408 178"
+                fill="none"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="stroke-primary"
+              />
+              <circle cx="408" cy="178" r="12" className="fill-primary/20" />
+              <circle cx="408" cy="178" r="6" className="fill-primary" />
+
+              <circle cx="404" cy="92" r="27" className="fill-card" />
+              <circle cx="404" cy="92" r="21" className="fill-primary" />
+              <path
+                d="M 394 92 L 401 99 L 414 85"
                 fill="none"
                 strokeWidth="4"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="stroke-primary-foreground"
               />
-              <rect x="48" y="288" width="170" height="64" rx="14" className="fill-card stroke-border" strokeWidth="2" />
-              <circle cx="76" cy="320" r="12" className="fill-primary/20" />
+
+              <rect x="24" y="312" width="172" height="60" rx="14" className="fill-card stroke-border" strokeWidth="2" />
+              <circle cx="52" cy="342" r="14" className="fill-primary/15" />
               <path
-                d="M 70 320 L 74.5 324.5 L 82 316"
+                d="M 45.5 342 L 50 346.5 L 58.5 337"
                 fill="none"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="stroke-primary"
               />
-              <rect x="96" y="306" width="100" height="10" rx="5" className="fill-muted-foreground/30" />
-              <rect x="96" y="324" width="70" height="10" rx="5" className="fill-primary/40" />
+              <rect x="76" y="326" width="96" height="10" rx="5" className="fill-muted-foreground/40" />
+              <rect x="76" y="344" width="62" height="10" rx="5" className="fill-primary/40" />
             </svg>
           </div>
         </div>
@@ -381,55 +412,94 @@ export function Landing() {
           <div className="mx-auto w-full max-w-md lg:max-w-none">
             <svg
               role="img"
-              aria-label="Automated follow-up loops across SMS and email that bring leads back to booked work"
+              aria-label="A follow-up loop that moves a lead through SMS and email follow-up until the job is booked"
               viewBox="0 0 480 420"
               className="h-auto w-full"
             >
-              <ellipse cx="240" cy="210" rx="215" ry="185" className="fill-primary/10" />
-              <rect x="70" y="90" width="340" height="240" rx="18" className="fill-card stroke-border" strokeWidth="2" />
-              <circle cx="108" cy="128" r="10" className="fill-muted-foreground/30" />
-              <rect x="126" y="116" width="150" height="24" rx="12" className="fill-muted" />
-              <rect x="226" y="152" width="150" height="24" rx="12" className="fill-primary/25" />
-              <circle cx="108" cy="200" r="10" className="fill-muted-foreground/30" />
-              <rect x="126" y="188" width="150" height="24" rx="12" className="fill-muted" />
-              <rect x="196" y="224" width="180" height="24" rx="12" className="fill-primary/25" />
-              <path
-                d="M 348 230 L 352 234 L 360 225"
+              <ellipse cx="240" cy="210" rx="205" ry="190" className="fill-primary/5" />
+              <ellipse cx="240" cy="210" rx="150" ry="140" className="fill-primary/5" />
+
+              <circle cx="240" cy="210" r="135" fill="none" strokeWidth="2.5" className="stroke-primary/15" />
+              <circle
+                cx="240"
+                cy="210"
+                r="135"
                 fill="none"
-                strokeWidth="2.5"
+                strokeWidth="2"
+                strokeDasharray="2 11"
+                strokeLinecap="round"
+                className="stroke-primary/40"
+              />
+
+              <g transform="translate(357 143) rotate(60)">
+                <path d="M -6 -6 L 7 0 L -6 6 Z" className="fill-primary" />
+              </g>
+              <g transform="translate(240 345) rotate(180)">
+                <path d="M -6 -6 L 7 0 L -6 6 Z" className="fill-primary" />
+              </g>
+              <g transform="translate(123 143) rotate(-60)">
+                <path d="M -6 -6 L 7 0 L -6 6 Z" className="fill-primary" />
+              </g>
+
+              <circle cx="240" cy="75" r="34" className="fill-card stroke-border" strokeWidth="2" />
+              <g
+                transform="translate(240 75)"
+                fill="none"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="stroke-primary"
-              />
-              <rect x="126" y="260" width="110" height="24" rx="12" className="fill-muted" />
-              <rect x="126" y="296" width="64" height="22" rx="11" className="fill-primary/20" />
-              <text x="158" y="311" textAnchor="middle" fontSize="11" className="fill-primary">SMS</text>
-              <rect x="198" y="296" width="64" height="22" rx="11" className="fill-primary/20" />
-              <text x="230" y="311" textAnchor="middle" fontSize="11" className="fill-primary">Email</text>
-              <path
-                d="M 384 64 A 40 40 0 1 1 349 84"
+              >
+                <rect x="-13" y="-12" width="26" height="19" rx="5" />
+                <path d="M -4 7 L -4 13 L 3 7" />
+                <circle cx="-7" cy="-2.5" r="1.4" stroke="none" className="fill-primary" />
+                <circle cx="0" cy="-2.5" r="1.4" stroke="none" className="fill-primary" />
+                <circle cx="7" cy="-2.5" r="1.4" stroke="none" className="fill-primary" />
+              </g>
+              <text x="240" y="30" textAnchor="middle" fontSize="12" fontWeight="600" className="fill-muted-foreground">SMS</text>
+
+              <circle cx="357" cy="277" r="34" className="fill-card stroke-border" strokeWidth="2" />
+              <g
+                transform="translate(357 277)"
                 fill="none"
-                strokeWidth="5"
-                strokeLinecap="round"
-                className="stroke-primary"
-              />
-              <path
-                d="M 350 73 L 349 84 L 358 78"
-                fill="none"
-                strokeWidth="5"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="stroke-primary"
-              />
-              <circle cx="92" cy="318" r="24" className="fill-primary" />
-              <path
-                d="M 82 318 L 89 325 L 103 310"
+              >
+                <rect x="-13" y="-9" width="26" height="18" rx="3" />
+                <path d="M -13 -6 L 0 3 L 13 -6" />
+              </g>
+              <text x="357" y="329" textAnchor="middle" fontSize="12" fontWeight="600" className="fill-muted-foreground">Email</text>
+
+              <circle cx="123" cy="277" r="34" className="fill-card stroke-border" strokeWidth="2" />
+              <g
+                transform="translate(123 277)"
                 fill="none"
-                strokeWidth="4"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="stroke-primary"
+              >
+                <path d="M -11 -6 L 10 -6" />
+                <path d="M 5 -10 L 10 -6 L 5 -2" />
+                <path d="M 11 6 L -10 6" />
+                <path d="M -5 2 L -10 6 L -5 10" />
+              </g>
+              <text x="123" y="329" textAnchor="middle" fontSize="12" fontWeight="600" className="fill-muted-foreground">Follow-up</text>
+
+              <rect x="172" y="158" width="136" height="104" rx="16" className="fill-card stroke-border" strokeWidth="2" />
+              <circle cx="240" cy="188" r="19" className="fill-primary" />
+              <path
+                d="M 232 188 L 238 194 L 249 182"
+                fill="none"
+                strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 className="stroke-primary-foreground"
               />
+              <text x="240" y="230" textAnchor="middle" fontSize="17" fontWeight="700" className="fill-foreground">Booked</text>
+              <text x="240" y="247" textAnchor="middle" fontSize="11" className="fill-muted-foreground">Job scheduled</text>
             </svg>
           </div>
         </div>
