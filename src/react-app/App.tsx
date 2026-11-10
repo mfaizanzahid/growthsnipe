@@ -27,11 +27,15 @@ import { Connections } from "./pages/Connections";
 import { BusinessProfile } from "./pages/BusinessProfile";
 import { AuditLog } from "./pages/AuditLog";
 import { NotFound } from "./pages/NotFound";
+import { DiagnosticConnect } from "./pages/diagnostic/DiagnosticConnect";
+import { DiagnosticStatus } from "./pages/diagnostic/DiagnosticStatus";
 
 export const router = createBrowserRouter([
   ...MARKETING_ROUTES.map(({ path, Component }) => ({ path, element: <Component /> })),
   { path: "/login", element: <Login /> },
   { path: "/magic", element: <MagicLink /> },
+  { path: "/diagnostic/connect", element: <DiagnosticConnect /> },
+  { path: "/diagnostic/status", element: <DiagnosticStatus /> },
   // Invite-only: public signup and password flows are retired. Old links land on Book.
   { path: "/signup", element: <Navigate to="/book" replace /> },
   // Retired marketing pages redirect to their strategy replacements.

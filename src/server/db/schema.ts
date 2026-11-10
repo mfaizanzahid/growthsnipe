@@ -45,3 +45,80 @@ export const orgDashboardLayouts = sqliteTable('org_dashboard_layouts', {
 export const userDashboardPrefs = sqliteTable('user_dashboard_prefs', {
   userId: text('user_id').notNull(), organizationId: text('organization_id').notNull(), preset: text('preset').notNull().default('last_12m'), customFrom: text('custom_from'), customTo: text('custom_to'), updatedAt: integer('updated_at').notNull(),
 }, t => ({ pk: primaryKey({ columns: [t.userId, t.organizationId] }) }));
+
+/* SNIPE Diagnostic guest runs. Deliberately not org-scoped: one-time buyers
+ * are guests (see one_time_orders). Credentials are encrypted, temporary
+ * order rows are cleared once the report is ready, and the PDF is rendered
+ * on demand from the stored facts and narrative JSON. */
+export const diagnosticRuns = sqliteTable('diagnostic_runs', {
+  id: text('id').primaryKey(),
+  oneTimeOrderId: text('one_time_order_id').notNull().unique(),
+  email: text('email').notNull(),
+  provider: text('provider'),
+  status: text('status').notNull().default('awaiting_connection'),
+  stage: text('stage'),
+  progress: integer('progress').notNull().default(0),
+  windowFrom: text('window_from'),
+  windowTo: text('window_to'),
+  factsJson: text('facts_json'),
+  narrativeJson: text('narrative_json'),
+  connectEmailSentAt: integer('connect_email_sent_at'),
+  reportEmailSentAt: integer('report_email_sent_at'),
+  errorText: text('error_text'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+  readyAt: integer('ready_at'),
+}, t => ({
+  orderIdx: uniqueIndex('diagnostic_runs_order_idx').on(t.oneTimeOrderId),
+  emailIdx: index('diagnostic_runs_email_idx').on(t.email),
+  statusIdx: index('diagnostic_runs_status_idx').on(t.status),
+}));
+
+export const diagnosticCredentials = sqliteTable('diagnostic_credentials', {
+  runId: text('run_id').primaryKey(),
+  provider: text('provider').notNull(),
+  encryptedCredentials: text('encrypted_credentials').notNull(),
+  status: text('status').notNull().default('pending'),
+  validatedAt: integer('validated_at'),
+  createdAt: integer('created_at').notNull(),
+});
+
+export const diagnosticOrders = sqliteTable('diagnostic_orders', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  providerOrderId: text('provider_order_id').notNull(),
+  status: text('status').notNull().default('scheduled'),
+  scheduledAt: text('scheduled_at'),
+  completedAt: text('completed_at'),
+  totalMinor: integer('total_minor'),
+  currency: text('currency').notNull().default('USD'),
+  paid: integer('paid'),
+  serviceType: text('service_type'),
+  servicesJson: text('services_json'),
+  inspectorNames: text('inspector_names').notNull().default('[]'),
+  buyerName: text('buyer_name'),
+  buyerEmail: text('buyer_email'),
+  buyerPhone: text('buyer_phone'),
+  buyingAgentName: text('buying_agent_name'),
+  buyingAgentEmail: text('buying_agent_email'),
+  buyingAgentPhone: text('buying_agent_phone'),
+  agencyName: text('agency_name'),
+  sellingAgentName: text('selling_agent_name'),
+  referralSource: text('referral_source'),
+  city: text('city'),
+  address: text('address'),
+  detailsJson: text('details_json'),
+  syncedAt: integer('synced_at').notNull(),
+}, t => ({
+  runSched: index('diagnostic_orders_run_sched_idx').on(t.runId, t.scheduledAt),
+  runProvider: uniqueIndex('diagnostic_orders_run_order_idx').on(t.runId, t.providerOrderId),
+}));
+
+export const diagnosticEvents = sqliteTable('diagnostic_events', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  stage: text('stage').notNull(),
+  level: text('level').notNull().default('info'),
+  message: text('message').notNull(),
+  createdAt: integer('created_at').notNull(),
+}, t => ({ runIdx: index('diagnostic_events_run_idx').on(t.runId, t.createdAt) }));

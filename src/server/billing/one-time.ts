@@ -13,6 +13,7 @@ import {
 } from "../email/templates";
 import { BillingError } from "./errors";
 import type { Gateway } from "./gateway";
+import { startDiagnosticRun } from "../diagnostic/report";
 import {
   createOneTimeOrder,
   findOneTimeOrderByIdempotencyKey,
@@ -220,6 +221,20 @@ export async function completeOneTimePaidOrder(
   if (!fresh.receiptSentAt) {
     await sendOneTimeEmails(db, env, fresh, product.name, product.slug as OneTimeSlug);
     await updateOneTimeOrder(db, order.id, { receiptSentAt: now, intakeSentAt: now, updatedAt: now });
+  }
+  if (product.slug === "diagnostic") {
+    try {
+      await startDiagnosticRun(db, env, {
+        id: fresh.id,
+        email: fresh.email,
+        name: fresh.name,
+        businessName: fresh.businessName,
+        trade: fresh.trade,
+      }, now);
+    } catch (err) {
+      // The paid order stands even if the connect email cannot be sent now.
+      console.error("[diagnostic] could not start run:", (err as Error)?.message ?? err);
+    }
   }
   return { transitioned: true, order: (await getOneTimeOrder(db, order.id)) ?? fresh };
 }

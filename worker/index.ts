@@ -38,6 +38,7 @@ import { planCron } from "../src/server/lib/cron-plan";
 import { claimRunLease, hasEnrichmentBacklog, releaseRunLease, runAnalyticsSyncForOrg } from "../src/server/analytics/sync";
 import { runWorkflowSupervisor } from "../src/server/analytics/sync-tasks";
 import { SyncWorkflow } from "../src/server/analytics/sync-workflow";
+import { DiagnosticWorkflow } from "../src/server/diagnostic/workflow";
 import { orgSyncState } from "../src/server/db/schema";
 
 const billingApp = createApp();
@@ -207,7 +208,7 @@ app.all("/webhooks/*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx)
   app.get("/health", (c) => c.json({ ok: true, service: "growthsnipe" }));
 app.all("*", (c) => billingApp.fetch(c.req.raw, c.env, c.executionCtx));
 
-export { SyncWorkflow };
+export { SyncWorkflow, DiagnosticWorkflow };
 
 const workerHandlers = {
   fetch: app.fetch,

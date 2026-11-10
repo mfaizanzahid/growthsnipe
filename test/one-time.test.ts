@@ -24,6 +24,7 @@ const ENV = {
   SAFEPAY_DEFAULT_COUNTRY: "US",
   RESEND_API_KEY: "re_test",
   APP_BASE_URL: "https://growthsnipe.test",
+  BETTER_AUTH_SECRET: "test-auth-secret",
 } as unknown as Env;
 
 function testDb(): Db {
@@ -65,6 +66,68 @@ function testDb(): Db {
     CREATE INDEX one_time_orders_email_idx ON one_time_orders (email);
     CREATE INDEX one_time_orders_status_idx ON one_time_orders (status);
     CREATE INDEX one_time_orders_tracker_idx ON one_time_orders (tracker);
+    CREATE TABLE diagnostic_runs (
+      id TEXT PRIMARY KEY,
+      one_time_order_id TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL,
+      provider TEXT,
+      status TEXT NOT NULL DEFAULT 'awaiting_connection',
+      stage TEXT,
+      progress INTEGER NOT NULL DEFAULT 0,
+      window_from TEXT,
+      window_to TEXT,
+      facts_json TEXT,
+      narrative_json TEXT,
+      connect_email_sent_at INTEGER,
+      report_email_sent_at INTEGER,
+      error_text TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      ready_at INTEGER
+    );
+    CREATE TABLE diagnostic_credentials (
+      run_id TEXT PRIMARY KEY,
+      provider TEXT NOT NULL,
+      encrypted_credentials TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      validated_at INTEGER,
+      created_at INTEGER NOT NULL
+    );
+    CREATE TABLE diagnostic_orders (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL,
+      provider_order_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'scheduled',
+      scheduled_at TEXT,
+      completed_at TEXT,
+      total_minor INTEGER,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      paid INTEGER,
+      service_type TEXT,
+      services_json TEXT,
+      inspector_names TEXT NOT NULL DEFAULT '[]',
+      buyer_name TEXT,
+      buyer_email TEXT,
+      buyer_phone TEXT,
+      buying_agent_name TEXT,
+      buying_agent_email TEXT,
+      buying_agent_phone TEXT,
+      agency_name TEXT,
+      selling_agent_name TEXT,
+      referral_source TEXT,
+      city TEXT,
+      address TEXT,
+      details_json TEXT,
+      synced_at INTEGER NOT NULL
+    );
+    CREATE TABLE diagnostic_events (
+      id TEXT PRIMARY KEY,
+      run_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      level TEXT NOT NULL DEFAULT 'info',
+      message TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
   `);
   const db = drizzle(
     async (sql: string, params: unknown[]) => {
@@ -170,14 +233,15 @@ describe("one-time confirm", () => {
     const first = await req(app, "/api/one-time/confirm", { orderId: session.orderId, tracker: session.tracker });
     expect(first.status).toBe(200);
     expect((await getOneTimeOrder(db, session.orderId))?.status).toBe("paid");
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
     expect(outbox[0]?.subject).toContain("SNIPE Diagnostic");
-    expect(outbox[1]?.subject).toContain("Diagnostic is underway");
+    expect(outbox[1]?.subject).toContain("is underway");
+    expect(outbox[2]?.subject.toLowerCase()).toContain("connect your software");
 
     const again = await req(app, "/api/one-time/confirm", { orderId: session.orderId, tracker: session.tracker });
     expect(again.status).toBe(200);
     expect(((await again.json()) as { cached: boolean }).cached).toBe(true);
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
   });
 
   it("rejects tracker mismatch and pending payments", async () => {
@@ -243,11 +307,11 @@ describe("one-time webhook reconcile", () => {
     const out = await handleSafepayWebhook(ENV, store, body, await sign(body), undefined, oneTimeAdapter(db));
     expect(out.ack).toBe("reconciled");
     expect((await getOneTimeOrder(db, session.orderId))?.status).toBe("paid");
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
 
     const dupBody = envelope("evt_1", "payment.succeeded", { tracker: session.tracker });
     expect((await handleSafepayWebhook(ENV, store, dupBody, await sign(dupBody), undefined, oneTimeAdapter(db))).ack).toBe("duplicate");
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
   });
 
   it("fails pending orders on payment.failed and 401s bad signatures", async () => {

@@ -162,12 +162,45 @@ export function oneTimeIntakeContent(input: {
     };
   }
   return {
-    subject: "Your Diagnostic is underway — data checklist inside",
+    subject: "Your SNIPE Diagnostic™ is underway",
     html:
       `<p>Hi ${name},</p>` +
-      `<p>Thank you for purchasing the SNIPE Diagnostic™. The next step is to provide the business information needed for a useful review.</p>` +
-      `<p>Check your email for the data checklist and secure submission instructions. Gather the available reports and exports, submit them using the secure method provided, and we will confirm receipt and coordinate your 60-minute readout.</p>` +
-      `<p><strong>If a data point is unavailable, tell us.</strong> We would rather identify a gap than fill it with a guess.</p>`,
+      `<p>Thank you for purchasing the SNIPE Diagnostic™. The next step is to connect your booking software so we can review your last 12 months of jobs, revenue, referrals, and service mix.</p>` +
+      `<p>Watch for a separate email with your secure connect link. The connection is encrypted, used only for this review, and removed once your report is ready.</p>` +
+      `<p>Once connected, we will email your report and coordinate your 60-minute readout.</p>`,
+  };
+}
+
+/** Diagnostic: secure connect link (sent after purchase). */
+export function diagnosticConnectContent(input: {
+  firstName: string;
+  connectUrl: string;
+}): { subject: string; html: string } {
+  const name = escapeHtml(input.firstName);
+  return {
+    subject: "Connect your software to start your SNIPE Diagnostic™",
+    html:
+      `<p>Hi ${name},</p>` +
+      `<p>Connect Spectora or ISN to start your 12-month review. The credentials are encrypted and used only for this Diagnostic. They are removed when your report is ready.</p>` +
+      `<p><a href="${input.connectUrl}">Connect your booking software</a></p>` +
+      `<p>If the button does not work, copy this link into your browser: ${input.connectUrl}</p>`,
+  };
+}
+
+/** Diagnostic: report ready with the signed download link. */
+export function diagnosticReadyContent(input: {
+  firstName: string;
+  reportUrl: string;
+  bookUrl: string;
+}): { subject: string; html: string } {
+  const name = escapeHtml(input.firstName);
+  return {
+    subject: "Your SNIPE Diagnostic™ is ready",
+    html:
+      `<p>Hi ${name},</p>` +
+      `<p>Your 12-month review is ready. It includes your baseline, referral performance, leak map, priority findings, and a 90-day plan.</p>` +
+      `<p><a href="${input.reportUrl}">Download your Diagnostic report</a></p>` +
+      `<p>Want to walk through it together? <a href="${input.bookUrl}">Book your 60-minute readout</a>.</p>`,
   };
 }
 

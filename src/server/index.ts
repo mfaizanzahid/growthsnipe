@@ -12,6 +12,7 @@ import { createContactRoutes } from "./routes/contact";
 import { createBookRoutes } from "./routes/book";
 import { createLoopLibraryRoutes } from "./routes/loop-library";
 import { createOneTimeRoutes } from "./routes/one-time";
+import { createDiagnosticRoutes } from "./routes/diagnostic";
 import { createPendingEmailRoutes } from "./routes/pending-email";
 import { createBillingRoutes } from "./routes/billing";
 import { createSidekickRoutes } from "./routes/sidekick";
@@ -137,6 +138,7 @@ export function createApp() {
   app.route("/", createBookRoutes());
   app.route("/", createLoopLibraryRoutes());
   app.route("/", createOneTimeRoutes());
+  app.route("/", createDiagnosticRoutes());
   app.route("/", createPendingEmailRoutes());
   app.route("/", createBillingRoutes());
   app.route("/", createSidekickRoutes());

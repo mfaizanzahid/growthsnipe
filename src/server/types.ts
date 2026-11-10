@@ -38,6 +38,22 @@ export interface Env {
   LOG_RETENTION_DAYS?: string;
   /** HMAC secret for marketing unsubscribe / library-access tokens. Falls back to BETTER_AUTH_SECRET. */
   MARKETING_TOKEN_SECRET?: string;
+  /** HMAC secret for signed Diagnostic connect/report links. */
+  DIAGNOSTIC_TOKEN_SECRET?: string;
+  /** Cloudflare Workflow entrypoint for Diagnostic collection and rendering. */
+  DIAGNOSTIC_WORKFLOW?: DiagnosticWorkflowBinding;
+}
+
+export interface DiagnosticWorkflowInstanceHandle {
+  id: string;
+  status(): Promise<{ status: string; error?: unknown }>;
+  delete(): Promise<void>;
+  terminate(): Promise<void>;
+}
+
+export interface DiagnosticWorkflowBinding {
+  create(options: { id?: string; params?: unknown }): Promise<DiagnosticWorkflowInstanceHandle>;
+  get(id: string): Promise<DiagnosticWorkflowInstanceHandle>;
 }
 
 export type OrgRole = "admin" | "user" | "viewer";

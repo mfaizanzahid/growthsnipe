@@ -469,6 +469,10 @@ export {
   orgInspectorTargets,
   orgDashboardLayouts,
   userDashboardPrefs,
+  diagnosticRuns,
+  diagnosticCredentials,
+  diagnosticOrders,
+  diagnosticEvents,
 } from "../src/server/db/schema";
 
 /** MCP OAuth authorization server (opaque tokens, hashes only). */
