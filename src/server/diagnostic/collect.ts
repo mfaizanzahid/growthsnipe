@@ -68,7 +68,9 @@ function basketFor(order: OrderRecord, enriched: BasketItem[] | null): BasketIte
   const details = (order.details ?? {}) as Record<string, unknown>;
   const fromDetails = extractBasket(details, order.serviceType);
   const items = enriched && enriched.length > 0 ? enriched : fromDetails;
-  return items.filter((item) => item.name !== NO_CHARGE_MARKER);
+  // ISN returns the full fee catalog with amount 0 for fees not on the order.
+  // Match the dashboard: keep unknown (null) and charged lines, drop zeroes.
+  return items.filter((item) => item.name !== NO_CHARGE_MARKER && item.amountMinor !== 0);
 }
 
 function toRow(
@@ -273,7 +275,9 @@ export async function fetchDiagnosticEnrichment(
   return providerOrderIds.map((providerOrderId) => ({
     providerOrderId,
     servicesJson: JSON.stringify(
-      (byId.get(providerOrderId) ?? []).filter((item) => item.name !== NO_CHARGE_MARKER),
+      (byId.get(providerOrderId) ?? []).filter(
+        (item) => item.name !== NO_CHARGE_MARKER && item.amountMinor !== 0,
+      ),
     ),
   }));
 }

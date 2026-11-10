@@ -212,6 +212,16 @@ class Report {
     this.y -= 2;
   }
 
+  /** Vertical space a `text` call will consume, used to keep blocks together. */
+  measure(text: string, opts: { size?: number; bold?: boolean; x?: number; width?: number; leading?: number } = {}): number {
+    const size = opts.size ?? 10.5;
+    const font = opts.bold ? this.bold : this.font;
+    const x = opts.x ?? MARGIN;
+    const width = opts.width ?? CONTENT_W - (x - MARGIN);
+    const leading = opts.leading ?? size * 1.45;
+    return this.wrap(text, font, size, width).length * leading + 6;
+  }
+
   heading(text: string, opts: { size?: number; kicker?: string } = {}): void {
     this.ensure(60);
     if (opts.kicker) {
@@ -771,31 +781,73 @@ export async function renderDiagnosticPdf(
   for (const item of ordered) {
     const leak = leakById.get(item.leakId);
     if (!leak) continue;
-    report.ensure(120);
-    const top = report.cursor;
-    report.currentPage.drawRectangle({
-      x: MARGIN,
-      y: top - 4,
-      width: 3,
-      height: 92,
-      color: severityColor(item.severity),
-    });
+    const meta = `${item.severity.toUpperCase()} severity, ${item.confidence} confidence, ${item.effort} effort`;
+    const evidenceHeight =
+      leak.evidence.reduce(
+        (sum, evidence) => sum + report.measure(evidence.value, { size: 10, x: MARGIN + 14 }) + 2,
+        0,
+      ) + 4;
+    const exposureText = leak.exposure
+      ? `Estimated range: ${money(leak.exposure.lowMinor, currency)} to ${money(leak.exposure.highMinor, currency)}.`
+      : "";
+    const assumptionText = leak.exposure ? `Assumption: ${leak.exposure.assumptions.join(" ")}` : "";
+    const exposureHeight = leak.exposure
+      ? report.measure(exposureText, { bold: true, size: 10, x: MARGIN + 12 }) +
+        report.measure(assumptionText, { size: 8.5, x: MARGIN + 12 })
+      : 0;
+    const blockHeight =
+      report.measure(item.title, { bold: true, size: 11.5, x: MARGIN + 12 }) +
+      report.measure(meta, { size: 8, x: MARGIN + 12 }) +
+      evidenceHeight +
+      exposureHeight +
+      report.measure(item.consequence, { size: 9.5, x: MARGIN + 12 }) +
+      14;
+
+    // Keep the whole section on one page, then draw the severity bar to the
+    // section's actual vertical bounds instead of a fixed height.
+    report.ensure(blockHeight);
+    const startPage = report.currentPage;
+    const startY = report.cursor;
+
     report.text(item.title, { bold: true, size: 11.5, x: MARGIN + 12 });
-    report.text(`${item.severity.toUpperCase()} severity, ${item.confidence} confidence, ${item.effort} effort`, {
-      size: 8,
-      color: MUTED,
-      x: MARGIN + 12,
-    });
+    report.text(meta, { size: 8, color: MUTED, x: MARGIN + 12 });
     report.bullets(leak.evidence.map((e) => e.value));
     if (leak.exposure) {
-      report.text(`Estimated range: ${money(leak.exposure.lowMinor, currency)} to ${money(leak.exposure.highMinor, currency)}.`, {
-        bold: true,
-        size: 10,
-        x: MARGIN + 12,
-      });
-      report.text(`Assumption: ${leak.exposure.assumptions.join(" ")}`, { size: 8.5, color: MUTED, x: MARGIN + 12 });
+      report.text(exposureText, { bold: true, size: 10, x: MARGIN + 12 });
+      report.text(assumptionText, { size: 8.5, color: MUTED, x: MARGIN + 12 });
     }
     report.text(item.consequence, { size: 9.5, x: MARGIN + 12 });
+
+    const blockTop = startY + 8;
+    const blockBottom = report.cursor;
+    const barColor = severityColor(item.severity);
+    if (report.currentPage === startPage) {
+      startPage.drawRectangle({
+        x: MARGIN,
+        y: blockBottom,
+        width: 3,
+        height: Math.max(24, blockTop - blockBottom),
+        color: barColor,
+      });
+    } else {
+      // A block taller than a page: continue the bar across the break.
+      const firstBottom = CONTENT_BOTTOM + 6;
+      startPage.drawRectangle({
+        x: MARGIN,
+        y: firstBottom,
+        width: 3,
+        height: Math.max(24, blockTop - firstBottom),
+        color: barColor,
+      });
+      report.currentPage.drawRectangle({
+        x: MARGIN,
+        y: blockBottom,
+        width: 3,
+        height: Math.max(24, CONTENT_TOP - blockBottom),
+        color: barColor,
+      });
+    }
+
     report.divider();
   }
 
