@@ -48,7 +48,7 @@ function userPrompt(facts: DiagnosticFacts): string {
     "6. Identify 1 to 4 key constraints and up to 4 strengths. Cite a metricRef for each.",
     "7. Write 3 to 5 quick wins for the next 14 days. Each must state what to do, when to do it, and how to do it.",
     "8. Write a 30-day plan with exactly three windows: Days 1-7, Days 8-21, Days 22-30. Each action must state what to do, when to do it, how to do it, the owner role, and the success metric.",
-    "9. In nextStep, recommend one of: DIY, SNIPE Loops, SNIPE Blueprint, SNIPE Engine Core, SNIPE Engine Command, and explain why using the facts. Set creditNote to: 'The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout.'",
+    "9. In nextStep, recommend one of these exact values (no trademark): DIY, SNIPE Loops, SNIPE Blueprint, SNIPE Engine Core, SNIPE Engine Command, and explain why using the facts. Set creditNote to: 'The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout.'",
     "10. In methodology, list sources (the provider and the 12-month window), the assumptions you used, and a short no-guarantee disclaimer.",
     "",
     "Return JSON with this exact shape:",
@@ -115,8 +115,27 @@ export interface NarrativeValidation {
   narrative?: DiagnosticNarrative;
 }
 
+function normalizeNarrativeInput(raw: unknown): unknown {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
+  const copy = { ...(raw as Record<string, unknown>) };
+  const nextStep = copy.nextStep;
+  if (nextStep && typeof nextStep === "object" && !Array.isArray(nextStep)) {
+    const normalized = { ...(nextStep as Record<string, unknown>) };
+    if (typeof normalized.recommendation === "string") {
+      const value = normalized.recommendation.replace(/™/g, "").trim();
+      if (/blueprint/i.test(value)) normalized.recommendation = "SNIPE Blueprint";
+      else if (/engine\s*core/i.test(value)) normalized.recommendation = "SNIPE Engine Core";
+      else if (/engine\s*command/i.test(value)) normalized.recommendation = "SNIPE Engine Command";
+      else if (/loops/i.test(value)) normalized.recommendation = "SNIPE Loops";
+      else if (/^diy$/i.test(value)) normalized.recommendation = "DIY";
+    }
+    copy.nextStep = normalized;
+  }
+  return copy;
+}
+
 export function validateNarrative(facts: DiagnosticFacts, raw: unknown): NarrativeValidation {
-  const parsed = DiagnosticNarrativeSchema.safeParse(raw);
+  const parsed = DiagnosticNarrativeSchema.safeParse(normalizeNarrativeInput(raw));
   if (!parsed.success) {
     return { ok: false, errors: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).slice(0, 8) };
   }

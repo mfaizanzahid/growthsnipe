@@ -2,12 +2,14 @@ import {
   PDFArray,
   PDFDocument,
   PDFName,
+  PDFString,
   StandardFonts,
   rgb,
   type PDFFont,
   type PDFPage,
   type RGB,
 } from "pdf-lib";
+import { OFFER_CREDITS, OFFERS } from "../../lib/offers";
 import type { DiagnosticFacts, DiagnosticNarrative } from "./types";
 
 const PAGE_W = 612;
@@ -98,6 +100,12 @@ function statusColor(status: string): RGB {
   return MUTED;
 }
 
+function pillarColor(pillar: string): RGB {
+  if (pillar === "N" || pillar === "S") return DANGER;
+  if (pillar === "P") return WARN;
+  return GOOD;
+}
+
 class Report {
   readonly doc: PDFDocument;
   readonly font: PDFFont;
@@ -141,6 +149,44 @@ class Report {
     const existing = page.node.lookup(PDFName.of("Annots"), PDFArray);
     if (existing) existing.push(ref);
     else page.node.set(PDFName.of("Annots"), this.doc.context.obj([ref]));
+  }
+
+  addUrlLink(page: PDFPage, x: number, y: number, width: number, height: number, url: string): void {
+    const annot = this.doc.context.obj({
+      Type: "Annot",
+      Subtype: "Link",
+      Rect: [x, y, x + width, y + height],
+      Border: [0, 0, 0],
+      A: { S: "URI", URI: PDFString.of(url), NewWindow: true },
+    });
+    const ref = this.doc.context.register(annot);
+    const existing = page.node.lookup(PDFName.of("Annots"), PDFArray);
+    if (existing) existing.push(ref);
+    else page.node.set(PDFName.of("Annots"), this.doc.context.obj([ref]));
+  }
+
+  linkButton(label: string, url: string, x: number, yTop: number, width: number, filled = true): void {
+    const height = 36;
+    this.page.drawRectangle({
+      x,
+      y: yTop - height,
+      width,
+      height,
+      color: filled ? PRIMARY : WHITE,
+      borderColor: PRIMARY,
+      borderWidth: 1,
+    });
+    const color = filled ? WHITE : PRIMARY;
+    const size = 11;
+    const textWidth = this.bold.widthOfTextAtSize(label, size);
+    this.page.drawText(label, {
+      x: x + (width - textWidth) / 2,
+      y: yTop - 23,
+      size,
+      font: this.bold,
+      color,
+    });
+    this.addUrlLink(this.page, x, yTop - height, width, height, url);
   }
 
   /** Draw the contents page reserved at the front, with clickable links. */
@@ -323,7 +369,7 @@ class Report {
   chip(x: number, yBottom: number, text: string, color: RGB = MUTED, fill: RGB = SOFT): number {
     const size = 7.5;
     const padX = 5;
-    const label = this.fit(text, this.font, size, 260);
+    const label = sanitize(text);
     const width = this.font.widthOfTextAtSize(label, size) + padX * 2;
     this.page.drawRectangle({ x, y: yBottom, width, height: 14, color: fill });
     this.page.drawText(label, { x: x + padX, y: yBottom + 4, size, font: this.font, color });
@@ -439,7 +485,7 @@ class Report {
         color: valueColor,
       });
       if (item.sub) {
-        this.page.drawText(this.fit(item.sub, this.font, 7, cardW - 20), {
+        this.page.drawText(sanitize(item.sub), {
           x: x + 10,
           y: top - 54,
           size: 7,
@@ -451,27 +497,19 @@ class Report {
     this.y = top - cardH - 16;
   }
 
-  fit(text: string, font: PDFFont, size: number, width: number): string {
-    const clean = sanitize(text);
-    if (font.widthOfTextAtSize(clean, size) <= width) return clean;
-    let out = clean;
-    while (out.length > 0 && font.widthOfTextAtSize(`${out}...`, size) > width) {
-      out = out.slice(0, -1);
-    }
-    return `${out}...`;
-  }
-
   table(headers: string[], rows: string[][], widths: number[]): void {
-    const rowH = 18;
-    const total = widths.reduce((s, w) => s + w, 0);
-    const cols = widths.map((w) => (w / total) * CONTENT_W);
-    this.ensure(rowH * Math.min(rows.length + 1, 6) + 8);
+    const headerH = 18;
+    const lineH = 12;
+    const size = 8.5;
+    const total = widths.reduce((sum, width) => sum + width, 0);
+    const cols = widths.map((width) => (width / total) * CONTENT_W);
+    this.ensure(headerH + 8);
     const drawHeader = () => {
       const top = this.y;
-      this.page.drawRectangle({ x: MARGIN, y: top - rowH, width: CONTENT_W, height: rowH, color: SOFT });
+      this.page.drawRectangle({ x: MARGIN, y: top - headerH, width: CONTENT_W, height: headerH, color: SOFT });
       let x = MARGIN + 6;
       headers.forEach((header, i) => {
-        this.page.drawText(this.fit(header, this.bold, 7.5, cols[i]! - 10), {
+        this.page.drawText(sanitize(header), {
           x,
           y: top - 12,
           size: 7.5,
@@ -480,23 +518,42 @@ class Report {
         });
         x += cols[i]!;
       });
-      this.y = top - rowH;
+      this.y = top - headerH;
     };
     drawHeader();
-    for (const row of rows) {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex]!;
+      const cellLines = row.map((cell, i) =>
+        this.wrap(cell, i === 0 ? this.bold : this.font, size, cols[i]! - 12),
+      );
+      const rowH = Math.max(...cellLines.map((lines) => lines.length)) * lineH + 6;
       if (this.y - rowH < CONTENT_BOTTOM) {
         this.newPage();
         drawHeader();
       }
       const top = this.y;
+      if (rowIndex % 2 === 1) {
+        this.page.drawRectangle({
+          x: MARGIN,
+          y: top - rowH,
+          width: CONTENT_W,
+          height: rowH,
+          color: rgb(0.985, 0.988, 0.995),
+        });
+      }
       let x = MARGIN + 6;
-      row.forEach((cell, i) => {
-        this.page.drawText(this.fit(cell, i === 0 ? this.bold : this.font, 8.5, cols[i]! - 10), {
-          x,
-          y: top - 12,
-          size: 8.5,
-          font: i === 0 ? this.bold : this.font,
-          color: INK,
+      cellLines.forEach((lines, i) => {
+        const font = i === 0 ? this.bold : this.font;
+        const numeric = /^[-+]?\$?[\d,]+(\.\d+)?%?$/.test(row[i]!.replace(/\s+/g, ""));
+        lines.forEach((line, lineIndex) => {
+          const textWidth = font.widthOfTextAtSize(line, size);
+          this.page.drawText(line, {
+            x: numeric ? x + cols[i]! - 12 - textWidth : x,
+            y: top - 12 - lineIndex * lineH,
+            size,
+            font,
+            color: INK,
+          });
         });
         x += cols[i]!;
       });
@@ -560,7 +617,7 @@ class Report {
           color: MUTED,
         });
       }
-      this.page.drawText(this.fit(point.label, this.font, 6.5, step - 2), {
+      this.page.drawText(sanitize(point.label), {
         x: chartLeft + index * step + 1,
         y: baseline - 11,
         size: 6.5,
@@ -576,7 +633,7 @@ class Report {
         color: PRIMARY,
       });
     }
-    this.page.drawText(this.fit(money(max, currency), this.font, 7, 90), {
+    this.page.drawText(sanitize(money(max, currency)), {
       x: chartLeft,
       y: this.y - 9,
       size: 7,
@@ -597,14 +654,14 @@ class Report {
       slice.forEach((item, index) => {
         const x = MARGIN + index * (colW + gap);
         this.page.drawRectangle({ x, y: top - rowH, width: colW, height: rowH, color: SOFT, borderColor: BORDER, borderWidth: 0.5 });
-        this.page.drawText(this.fit(item.label.toUpperCase(), this.bold, 6.5, colW - 16), {
+        this.page.drawText(sanitize(item.label.toUpperCase()), {
           x: x + 8,
           y: top - 14,
           size: 6.5,
           font: this.bold,
           color: MUTED,
         });
-        this.page.drawText(this.fit(item.value, this.bold, 13, colW - 16), {
+        this.page.drawText(sanitize(item.value), {
           x: x + 8,
           y: top - 33,
           size: 13,
@@ -643,15 +700,23 @@ class Report {
   }
 }
 
+export interface DiagnosticPdfLinks {
+  blueprintUrl?: string;
+  bookUrl?: string;
+}
+
 export async function renderDiagnosticPdf(
   facts: DiagnosticFacts,
   narrative: DiagnosticNarrative,
+  links: DiagnosticPdfLinks = {},
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const report = new Report(doc, font, bold);
   const currency = facts.meta.currency;
+  const blueprintUrl = links.blueprintUrl ?? "https://growthsnipe.com/blueprint";
+  const bookUrl = links.bookUrl ?? "https://growthsnipe.com/book";
   const leakById = new Map(facts.leaks.map((leak) => [leak.id, leak]));
 
   // Cover
@@ -684,15 +749,41 @@ export async function renderDiagnosticPdf(
   report.heading(narrative.snapshot.headline, { kicker: "Executive summary" });
   report.text(narrative.snapshot.summary, { size: 11 });
   report.space(4);
+
+  const topFindings = narrative.executiveSummary.topFindings.slice(0, 3);
+  if (topFindings.length > 0) {
+    const gap = 10;
+    const cardW = (CONTENT_W - gap * (topFindings.length - 1)) / topFindings.length;
+    const titleHeights = topFindings.map((finding) =>
+      report.measure(finding.title, { bold: true, size: 9.5, x: MARGIN + 32, width: cardW - 44 }),
+    );
+    const lineHeights = topFindings.map((finding) =>
+      report.measure(finding.oneLine, { size: 8.5, x: MARGIN + 12, width: cardW - 24 }),
+    );
+    const cardH = 28 + Math.max(...titleHeights) + 4 + Math.max(...lineHeights) + 22;
+    report.ensure(cardH + 12);
+    const top = report.cursor;
+    topFindings.forEach((finding, index) => {
+      const x = MARGIN + index * (cardW + gap);
+      const leak = facts.leaks.find((item) =>
+        item.evidence.some((evidence) => evidence.metricRef === finding.metricRef),
+      );
+      const color = leak ? pillarColor(leak.pillar) : PRIMARY;
+      report.drawCard(x, top, cardW, cardH, color);
+      report.rankBadge(x + 18, top - 18, index + 1, color);
+      report.setCursor(top - 18);
+      report.text(finding.title, { bold: true, size: 9.5, x: x + 32, width: cardW - 44 });
+      report.text(finding.oneLine, { size: 8.5, color: MUTED, x: x + 12, width: cardW - 24 });
+      if (leak) {
+        report.chip(x + 12, top - cardH + 8, `${leak.pillar} pillar`, PRIMARY, PRIMARY_SOFT);
+      }
+    });
+    report.setCursor(top - cardH - 12);
+  }
+
+  report.subheading("The full picture");
   for (const paragraph of narrative.executiveSummary.paragraphs) {
     report.text(paragraph, { size: 10.5 });
-  }
-  report.subheading("Top findings");
-  for (const finding of narrative.executiveSummary.topFindings) {
-    report.ensure(40);
-    report.text(finding.title, { bold: true, size: 10.5 });
-    report.text(finding.oneLine, { size: 9.5, color: MUTED });
-    report.space(2);
   }
 
   // SNIPE Framework
@@ -709,64 +800,115 @@ export async function renderDiagnosticPdf(
 
   for (const pillar of facts.framework) {
     const note = narrative.frameworkNotes.find((item) => item.pillar === pillar.code);
-    const header = `${pillar.code} - ${pillar.name}`;
-    const status = pillarStatusLabel(pillar);
-    const context = pillar.context.slice(0, 3).map((item) => `${item.label}: ${item.value}`).join("  |  ");
-    const blockHeight =
-      report.measure(header, { bold: true, size: 12 }) +
-      report.measure(context, { size: 8.5, x: MARGIN + 14 }) +
-      report.measure(note?.assessment ?? "", { size: 9.5, x: MARGIN + 14 }) +
-      report.measure(note?.commercialImplication ?? "", { size: 8.5, x: MARGIN + 14 }) +
-      report.measure(note?.strengthOpportunity ?? "", { size: 8.5, x: MARGIN + 14 }) +
-      24;
-    report.ensure(blockHeight);
-    const startY = report.cursor;
-    report.text(header, { bold: true, size: 12, x: MARGIN + 14 });
-    const statusWidth = report.bold.widthOfTextAtSize(status, 9);
-    report.currentPage.drawText(status, {
-      x: PAGE_W - MARGIN - statusWidth,
-      y: startY,
-      size: 9,
+    const color = pillar.status === "not_assessed" ? MUTED : statusColor(pillar.status);
+    const assessment = note?.assessment ?? "";
+    const implication = note?.commercialImplication ?? "";
+    const opportunity = note?.strengthOpportunity ?? "";
+    const contextLine = pillar.context
+      .slice(0, 3)
+      .map((item) => `${item.label}: ${item.value}`)
+      .join("  |  ");
+    const contextH = report.measure(contextLine, { size: 8, x: MARGIN + 58, width: CONTENT_W - 80 });
+    const height =
+      74 +
+      contextH +
+      report.measure(`What the numbers say: ${assessment}`, { size: 9.5, x: MARGIN + 58, width: CONTENT_W - 80 }) +
+      report.measure(`Why it matters: ${implication}`, { size: 9, x: MARGIN + 58, width: CONTENT_W - 80 }) +
+      report.measure(`Strength or opportunity: ${opportunity}`, { size: 9, x: MARGIN + 58, width: CONTENT_W - 80 });
+    report.ensure(height + 12);
+    const yTop = report.cursor;
+    report.drawCard(MARGIN, yTop, CONTENT_W, height, color);
+    report.currentPage.drawCircle({ x: MARGIN + 30, y: yTop - 30, size: 18, color });
+    const letterWidth = report.bold.widthOfTextAtSize(pillar.code, 16);
+    report.currentPage.drawText(pillar.code, {
+      x: MARGIN + 30 - letterWidth / 2,
+      y: yTop - 36,
+      size: 16,
       font: report.bold,
-      color: statusColor(pillar.status),
+      color: WHITE,
     });
-    report.text(context, { size: 8.5, color: MUTED, x: MARGIN + 14 });
-    if (note) {
-      report.text(note.assessment, { size: 9.5, x: MARGIN + 14 });
-      report.text(`Commercial implication: ${note.commercialImplication}`, {
+    report.currentPage.drawText(pillar.name, {
+      x: MARGIN + 58,
+      y: yTop - 24,
+      size: 13,
+      font: report.bold,
+      color: INK,
+    });
+    const status = pillarStatusLabel(pillar);
+    const statusWidth = report.font.widthOfTextAtSize(status, 7.5) + 10;
+    report.chip(PAGE_W - MARGIN - statusWidth - 8, yTop - 36, status, color);
+    if (pillar.score !== null) {
+      report.currentPage.drawText(`${pillar.score} / 100`, {
+        x: MARGIN + 58,
+        y: yTop - 42,
         size: 8.5,
+        font: report.bold,
         color: MUTED,
-        x: MARGIN + 14,
       });
-      report.text(`Strength or opportunity: ${note.strengthOpportunity}`, {
-        size: 8.5,
-        color: MUTED,
-        x: MARGIN + 14,
-      });
+      report.meter(MARGIN + 112, yTop - 45, Math.round(pillar.score / 20), 5, color);
     }
-    const endY = report.cursor;
-    report.currentPage.drawRectangle({
-      x: MARGIN,
-      y: endY,
-      width: 3,
-      height: Math.max(20, startY + 8 - endY),
-      color: statusColor(pillar.status),
-    });
-    report.divider();
+    report.setCursor(yTop - 58);
+    report.text(contextLine, { size: 8, color: MUTED, x: MARGIN + 58, width: CONTENT_W - 80 });
+    report.text(`What the numbers say: ${assessment}`, { size: 9.5, x: MARGIN + 58, width: CONTENT_W - 80 });
+    report.text(`Why it matters: ${implication}`, { size: 9, color: MUTED, x: MARGIN + 58, width: CONTENT_W - 80 });
+    report.text(`Strength or opportunity: ${opportunity}`, { size: 9, color: PRIMARY, x: MARGIN + 58, width: CONTENT_W - 80 });
+    report.setCursor(yTop - height - 12);
   }
 
   report.subheading("Key constraints");
-  for (const constraint of narrative.keyConstraints) {
-    report.text(`${constraint.title} (${constraint.pillar})`, { bold: true, size: 10 });
-    report.text(constraint.whatItMeans, { size: 9.5 });
-    report.space(2);
+  for (let i = 0; i < narrative.keyConstraints.length; i += 2) {
+    const pair = narrative.keyConstraints.slice(i, i + 2);
+    const gap = 10;
+    const cardW = pair.length === 1 ? CONTENT_W : (CONTENT_W - gap) / 2;
+    const heights = pair.map((constraint, index) => {
+      const x = MARGIN + index * (cardW + gap);
+      return (
+        40 +
+        report.measure(constraint.title, { bold: true, size: 9.5, x: x + 12, width: cardW - 24 }) +
+        report.measure(constraint.whatItMeans, { size: 8.5, x: x + 12, width: cardW - 24 })
+      );
+    });
+    const rowH = Math.max(...heights);
+    report.ensure(rowH + 10);
+    const top = report.cursor;
+    pair.forEach((constraint, index) => {
+      const x = MARGIN + index * (cardW + gap);
+      const color = pillarColor(constraint.pillar);
+      report.drawCard(x, top, cardW, rowH, color);
+      report.chip(x + 12, top - 26, `${constraint.pillar} pillar`, color);
+      report.setCursor(top - 40);
+      report.text(constraint.title, { bold: true, size: 9.5, x: x + 12, width: cardW - 24 });
+      report.text(constraint.whatItMeans, { size: 8.5, color: MUTED, x: x + 12, width: cardW - 24 });
+    });
+    report.setCursor(top - rowH - 10);
   }
+
   if (narrative.strengths.length > 0) {
     report.subheading("Strengths and opportunities");
-    for (const strength of narrative.strengths) {
-      report.text(`${strength.title} (${strength.pillar})`, { bold: true, size: 10 });
-      report.text(strength.detail, { size: 9.5, color: MUTED });
-      report.space(2);
+    for (let i = 0; i < narrative.strengths.length; i += 2) {
+      const pair = narrative.strengths.slice(i, i + 2);
+      const gap = 10;
+      const cardW = pair.length === 1 ? CONTENT_W : (CONTENT_W - gap) / 2;
+      const heights = pair.map((strength, index) => {
+        const x = MARGIN + index * (cardW + gap);
+        return (
+          40 +
+          report.measure(strength.title, { bold: true, size: 9.5, x: x + 12, width: cardW - 24 }) +
+          report.measure(strength.detail, { size: 8.5, x: x + 12, width: cardW - 24 })
+        );
+      });
+      const rowH = Math.max(...heights);
+      report.ensure(rowH + 10);
+      const top = report.cursor;
+      pair.forEach((strength, index) => {
+        const x = MARGIN + index * (cardW + gap);
+        report.drawCard(x, top, cardW, rowH, GOOD);
+        report.chip(x + 12, top - 26, `${strength.pillar} pillar`, GOOD);
+        report.setCursor(top - 40);
+        report.text(strength.title, { bold: true, size: 9.5, x: x + 12, width: cardW - 24 });
+        report.text(strength.detail, { size: 8.5, color: MUTED, x: x + 12, width: cardW - 24 });
+      });
+      report.setCursor(top - rowH - 10);
     }
   }
 
@@ -786,9 +928,8 @@ export async function renderDiagnosticPdf(
     { label: "Add-on attach", value: pct(facts.services.addOnAttachPct) },
   ]);
   report.subheading("What this means");
-  report.text(
+  report.callout(
     `${facts.baseline.jobs} jobs were booked and ${facts.baseline.completed} were completed, producing ${money(facts.baseline.revenueMinor, currency)} at an average ticket of ${money(facts.baseline.avgTicketMinor, currency)}. ${facts.baseline.cancelled} jobs were cancelled.`,
-    { size: 10.5 },
   );
 
   // Revenue trend
@@ -846,8 +987,77 @@ export async function renderDiagnosticPdf(
   );
   if (facts.referrals.newAgents.length > 0) {
     report.subheading("New partners in the last 90 days");
-    report.bullets(facts.referrals.newAgents.map((a) => `${a.name}: ${a.jobs} jobs, ${money(a.revenueMinor, currency)}`));
+    for (let i = 0; i < facts.referrals.newAgents.length; i += 2) {
+      const pair = facts.referrals.newAgents.slice(i, i + 2);
+      const gap = 10;
+      const cardW = pair.length === 1 ? CONTENT_W : (CONTENT_W - gap) / 2;
+      const nameHeights = pair.map((agent, index) => {
+        const x = MARGIN + index * (cardW + gap);
+        return report.measure(agent.name, { bold: true, size: 10, x: x + 12, width: cardW - 74 });
+      });
+      const rowH = 34 + Math.max(...nameHeights) + 22;
+      report.ensure(rowH + 10);
+      const top = report.cursor;
+      pair.forEach((agent, index) => {
+        const x = MARGIN + index * (cardW + gap);
+        report.drawCard(x, top, cardW, rowH, GOOD);
+        report.setCursor(top - 18);
+        report.text(agent.name, { bold: true, size: 10, x: x + 12, width: cardW - 74 });
+        report.text(`${agent.jobs} jobs  |  ${money(agent.revenueMinor, currency)}`, {
+          size: 8.5,
+          color: MUTED,
+          x: x + 12,
+          width: cardW - 24,
+        });
+        report.chip(x + cardW - 52, top - 26, "NEW", GOOD);
+      });
+      report.setCursor(top - rowH - 10);
+    }
   }
+
+  const insightCard = (leak: DiagnosticFacts["leaks"][number]) => {
+    const color = pillarColor(leak.pillar);
+    const assumptionText = leak.exposure ? `Assumption: ${leak.exposure.assumptions.join(" ")}` : "";
+    const titleH = report.measure(leak.title, {
+      bold: true,
+      size: 11.5,
+      x: MARGIN + 14,
+      width: CONTENT_W - 28,
+    });
+    const evidenceHeights = leak.evidence.map((evidence) =>
+      report.measure(evidence.value, { size: 9, x: MARGIN + 26, width: CONTENT_W - 40 }),
+    );
+    const assumptionH = leak.exposure
+      ? report.measure(assumptionText, { size: 8.5, x: MARGIN + 14, width: CONTENT_W - 28 })
+      : 0;
+    const height =
+      30 +
+      titleH +
+      20 +
+      evidenceHeights.reduce((sum, value) => sum + value, 0) +
+      (leak.exposure ? 18 + assumptionH : 0) +
+      10;
+    report.ensure(height + 10);
+    const yTop = report.cursor;
+    report.drawCard(MARGIN, yTop, CONTENT_W, height, color);
+    report.setCursor(yTop - 22);
+    report.text(leak.title, { bold: true, size: 11.5, x: MARGIN + 14, width: CONTENT_W - 28 });
+    report.chip(MARGIN + 14, report.cursor - 16, `${leak.pillar} pillar`, color);
+    report.setCursor(report.cursor - 24);
+    for (const evidence of leak.evidence) {
+      const cy = report.cursor;
+      report.currentPage.drawCircle({ x: MARGIN + 18, y: cy + 3, size: 1.4, color });
+      report.text(evidence.value, { size: 9, x: MARGIN + 26, width: CONTENT_W - 40 });
+    }
+    if (leak.exposure) {
+      report.text(
+        `Estimated range: ${money(leak.exposure.lowMinor, currency)} to ${money(leak.exposure.highMinor, currency)}`,
+        { bold: true, size: 10, x: MARGIN + 14, width: CONTENT_W - 28 },
+      );
+      report.text(assumptionText, { size: 8.5, color: MUTED, x: MARGIN + 14, width: CONTENT_W - 28 });
+    }
+    report.setCursor(yTop - height - 10);
+  };
 
   // Cancellations and loss
   section("Cancellations and loss");
@@ -861,14 +1071,7 @@ export async function renderDiagnosticPdf(
   if (cancelLeaks.length === 0) {
     report.text("No material cancellation finding was produced from the available records.", { size: 10 });
   }
-  for (const leak of cancelLeaks) {
-    report.subheading(leak.title);
-    report.bullets(leak.evidence.map((e) => `${e.value}`));
-    if (leak.exposure) {
-      report.text(`Estimated range: ${money(leak.exposure.lowMinor, currency)} to ${money(leak.exposure.highMinor, currency)}.`, { bold: true, size: 10.5 });
-      report.text(`Assumption: ${leak.exposure.assumptions.join(" ")}`, { size: 9, color: MUTED });
-    }
-  }
+  cancelLeaks.forEach(insightCard);
 
   // Job value and job penetration
   section("Job value and job penetration");
@@ -891,14 +1094,7 @@ export async function renderDiagnosticPdf(
   );
   report.text(`Average services per job: ${facts.services.avgServicesPerJob === null ? "n/a" : facts.services.avgServicesPerJob}.`, { size: 10 });
   const ticketLeaks = facts.leaks.filter((leak) => leak.category === "ticket");
-  for (const leak of ticketLeaks) {
-    report.subheading(leak.title);
-    report.bullets(leak.evidence.map((e) => e.value));
-    if (leak.exposure) {
-      report.text(`Estimated range: ${money(leak.exposure.lowMinor, currency)} to ${money(leak.exposure.highMinor, currency)}.`, { bold: true, size: 10.5 });
-      report.text(`Assumption: ${leak.exposure.assumptions.join(" ")}`, { size: 9, color: MUTED });
-    }
-  }
+  ticketLeaks.forEach(insightCard);
 
   // Repeat and retention
   section("Repeat and retention");
@@ -918,10 +1114,7 @@ export async function renderDiagnosticPdf(
     );
   }
   const repeatLeaks = facts.leaks.filter((leak) => leak.category === "repeat" || leak.category === "referral");
-  for (const leak of repeatLeaks) {
-    report.subheading(leak.title);
-    report.bullets(leak.evidence.map((e) => e.value));
-  }
+  repeatLeaks.forEach(insightCard);
 
   // Capacity and team
   section("Capacity and team");
@@ -1134,36 +1327,27 @@ export async function renderDiagnosticPdf(
     const stripGap = 10;
     const stripW = (CONTENT_W - stripGap * (topThree.length - 1)) / topThree.length;
     const stripTop = report.cursor;
-    const stripH = 64;
+    const exposureFor = (finding: (typeof topThree)[number]): string =>
+      finding.leak?.quantifiable && finding.leak.exposure
+        ? `Exposure ${money(finding.leak.exposure.lowMinor, currency)} to ${money(finding.leak.exposure.highMinor, currency)}`
+        : `${finding.item.severity} severity`;
+    const titleHeights = topThree.map((finding, index) => {
+      const x = MARGIN + index * (stripW + stripGap);
+      return report.measure(finding.item.title, { bold: true, size: 9, x: x + 32, width: stripW - 40 });
+    });
+    const exposureHeights = topThree.map((finding, index) => {
+      const x = MARGIN + index * (stripW + stripGap);
+      return report.measure(exposureFor(finding), { size: 7.5, x: x + 12, width: stripW - 24 });
+    });
+    const stripH = 26 + Math.max(...titleHeights) + 4 + Math.max(...exposureHeights) + 18;
     topThree.forEach((finding, index) => {
       const x = MARGIN + index * (stripW + stripGap);
       report.drawCard(x, stripTop, stripW, stripH, finding.color);
       report.rankBadge(x + 18, stripTop - 18, finding.rank, finding.color);
-      report.currentPage.drawText(report.fit(finding.item.title, report.bold, 9, stripW - 40), {
-        x: x + 32,
-        y: stripTop - 21,
-        size: 9,
-        font: report.bold,
-        color: INK,
-      });
-      const exposure =
-        finding.leak?.quantifiable && finding.leak.exposure
-          ? `Exposure ${money(finding.leak.exposure.lowMinor, currency)} to ${money(finding.leak.exposure.highMinor, currency)}`
-          : `${finding.item.severity} severity`;
-      report.currentPage.drawText(report.fit(exposure, report.font, 7.5, stripW - 24), {
-        x: x + 12,
-        y: stripTop - 40,
-        size: 7.5,
-        font: report.font,
-        color: MUTED,
-      });
-      report.currentPage.drawText(`${finding.item.effort} effort`, {
-        x: x + 12,
-        y: stripTop - 53,
-        size: 7.5,
-        font: report.font,
-        color: MUTED,
-      });
+      report.setCursor(stripTop - 18);
+      report.text(finding.item.title, { bold: true, size: 9, x: x + 32, width: stripW - 40 });
+      report.text(exposureFor(finding), { size: 7.5, color: MUTED, x: x + 12, width: stripW - 24 });
+      report.text(`${finding.item.effort} effort`, { size: 7.5, color: MUTED, x: x + 12, width: stripW - 24 });
     });
     report.setCursor(stripTop - stripH - 12);
   }
@@ -1172,23 +1356,19 @@ export async function renderDiagnosticPdf(
     const titleHeight = report.measure(finding.item.title, { bold: true, size: 12.5, x: MARGIN + 38 });
     const consequenceHeight = report.measure(finding.item.consequence, { size: 9.5, x: MARGIN + 38 });
     const fixHeight = report.measure(finding.item.recommendedFix, { size: 9.5, x: MARGIN + 26 });
-    const height = 96 + titleHeight + consequenceHeight + fixHeight;
+    const height = 110 + titleHeight + consequenceHeight + fixHeight;
     report.ensure(height + 12);
     const yTop = report.cursor;
     report.drawCard(MARGIN, yTop, CONTENT_W, height, finding.color);
     report.rankBadge(MARGIN + 22, yTop - 18, finding.rank, finding.color);
-    report.currentPage.drawText(report.fit(finding.item.title, report.bold, 12.5, CONTENT_W - 56), {
-      x: MARGIN + 38,
-      y: yTop - 22,
-      size: 12.5,
-      font: report.bold,
-      color: INK,
-    });
+    report.setCursor(yTop - 22);
+    report.text(finding.item.title, { bold: true, size: 12.5, x: MARGIN + 38, width: CONTENT_W - 56 });
+    const chipsY = report.cursor - 16;
     let chipX = MARGIN + 38;
-    chipX += report.chip(chipX, yTop - 42, `${finding.item.severity} severity`, finding.color) + 6;
-    chipX += report.chip(chipX, yTop - 42, `${finding.item.effort} effort`, MUTED) + 6;
-    report.chip(chipX, yTop - 42, `${finding.item.confidence} confidence`, MUTED);
-    report.setCursor(yTop - 64);
+    chipX += report.chip(chipX, chipsY, `${finding.item.severity} severity`, finding.color) + 6;
+    chipX += report.chip(chipX, chipsY, `${finding.item.effort} effort`, MUTED) + 6;
+    report.chip(chipX, chipsY, `${finding.item.confidence} confidence`, MUTED);
+    report.setCursor(chipsY - 18);
     report.text(finding.item.consequence, { size: 9.5, x: MARGIN + 38 });
     const fixTop = report.cursor - 6;
     const fixBlockH = fixHeight + 24;
@@ -1261,14 +1441,8 @@ export async function renderDiagnosticPdf(
         borderWidth: 0.9,
         color: WHITE,
       });
-      report.currentPage.drawText(report.fit(win.title, report.bold, 11, cardW - 44), {
-        x: x + 34,
-        y: rowTop - 22,
-        size: 11,
-        font: report.bold,
-        color: INK,
-      });
-      report.setCursor(rowTop - 36);
+      report.setCursor(rowTop - 22);
+      report.text(win.title, { bold: true, size: 11, x: x + 34, width: cardW - 44 });
       report.text(win.what, { size: 9.5, x: x + 14, width: cardW - 28 });
       report.text(`How: ${win.how}`, { size: 8.5, color: MUTED, x: x + 14, width: cardW - 28 });
       let chipX = x + 14;
@@ -1314,13 +1488,6 @@ export async function renderDiagnosticPdf(
       font: report.bold,
       color: WHITE,
     });
-    report.currentPage.drawText(report.fit(phase.focus, report.font, 7, width - 16), {
-      x: trackX + 8,
-      y: trackTop - 27,
-      size: 7,
-      font: report.font,
-      color: rgb(0.92, 0.96, 1),
-    });
     trackX += width + segGap;
   });
   report.currentPage.drawCircle({ x: MARGIN + CONTENT_W - 2, y: trackTop - trackH / 2, size: 4, color: INK });
@@ -1334,12 +1501,18 @@ export async function renderDiagnosticPdf(
   report.setCursor(trackTop - trackH - 18);
 
   for (const phase of narrative.thirtyDayPlan) {
+    const focusH = report.measure(phase.focus, { bold: true, size: 9, x: MARGIN + 12, width: CONTENT_W - 24 });
     const actionHeights = phase.actions.map((action) => {
-      const whatH = report.measure(action.what, { bold: true, size: 10, x: MARGIN + 38 });
-      const howH = report.measure(action.how, { size: 9.5, x: MARGIN + 38 });
-      return 18 + whatH + 4 + howH + 22;
+      const whatH = report.measure(action.what, { bold: true, size: 10, x: MARGIN + 38, width: CONTENT_W - 60 });
+      const howH = report.measure(action.how, { size: 9.5, x: MARGIN + 38, width: CONTENT_W - 56 });
+      const successH = report.measure(`Success metric: ${action.successMetric}`, {
+        size: 8.5,
+        x: MARGIN + 38,
+        width: CONTENT_W - 56,
+      });
+      return 16 + whatH + 4 + howH + 18 + successH + 10;
     });
-    const height = 46 + actionHeights.reduce((sum, value) => sum + value, 0) + 12;
+    const height = 34 + focusH + 8 + actionHeights.reduce((sum, value) => sum + value, 0) + 12;
     report.ensure(height + 12);
     const yTop = report.cursor;
     report.drawCard(MARGIN, yTop, CONTENT_W, height, PRIMARY);
@@ -1351,31 +1524,26 @@ export async function renderDiagnosticPdf(
       font: report.bold,
       color: PRIMARY,
     });
-    report.currentPage.drawText(report.fit(phase.focus, report.bold, 9, CONTENT_W - 130), {
-      x: MARGIN + 118,
-      y: yTop - 19,
-      size: 9,
-      font: report.bold,
-      color: INK,
-    });
-    let cy = yTop - 46;
+    report.setCursor(yTop - 40);
+    report.text(phase.focus, { bold: true, size: 9, x: MARGIN + 12, width: CONTENT_W - 24 });
+    let cy = report.cursor - 4;
     phase.actions.forEach((action, index) => {
       report.rankBadge(MARGIN + 22, cy + 3, index + 1, PRIMARY);
-      report.currentPage.drawText(report.fit(action.what, report.bold, 10, CONTENT_W - 60), {
-        x: MARGIN + 38,
-        y: cy,
-        size: 10,
-        font: report.bold,
-        color: INK,
-      });
-      report.setCursor(cy - 14);
+      report.setCursor(cy);
+      report.text(action.what, { bold: true, size: 10, x: MARGIN + 38, width: CONTENT_W - 60 });
       report.text(action.how, { size: 9.5, x: MARGIN + 38, width: CONTENT_W - 56 });
-      let chipX = MARGIN + 38;
       const chipsY = report.cursor - 18;
+      let chipX = MARGIN + 38;
       chipX += report.chip(chipX, chipsY, `When: ${action.when}`, MUTED) + 6;
-      chipX += report.chip(chipX, chipsY, `Owner: ${action.ownerRole}`, PRIMARY, PRIMARY_SOFT) + 6;
-      report.chip(chipX, chipsY, `Success: ${action.successMetric}`, MUTED);
-      cy = chipsY - 18;
+      report.chip(chipX, chipsY, `Owner: ${action.ownerRole}`, PRIMARY, PRIMARY_SOFT);
+      report.setCursor(chipsY - 16);
+      report.text(`Success metric: ${action.successMetric}`, {
+        size: 8.5,
+        color: MUTED,
+        x: MARGIN + 38,
+        width: CONTENT_W - 56,
+      });
+      cy = report.cursor - 6;
     });
     report.setCursor(yTop - height - 12);
   }
@@ -1386,13 +1554,169 @@ export async function renderDiagnosticPdf(
     report.callout(`By day 30: ${lastAction.successMetric}`);
   }
 
-  // Next step
+  // Recommended next step: conversion page.
   section("Recommended next step");
-  report.heading("Recommended next step", { kicker: "Keep moving" });
-  report.kpiRow([{ label: "Recommendation", value: displayProduct(narrative.nextStep.recommendation) }]);
-  report.text(narrative.nextStep.rationale, { size: 10.5 });
-  report.space(4);
-  report.callout(narrative.nextStep.creditNote);
+  report.heading("Turn this Diagnostic into your 12-month plan", { kicker: "Your next step" });
+  report.text(
+    "The SNIPE Blueprint™ takes the numbers in this report and turns them into a sequenced plan for revenue, channels, ticket value, follow-up, and capacity.",
+    { size: 10.5, color: MUTED },
+  );
+  report.space(6);
+
+  const recommendation = displayProduct(narrative.nextStep.recommendation);
+  const recommendationH = report.measure(recommendation, {
+    bold: true,
+    size: 16,
+    x: MARGIN + 16,
+    width: CONTENT_W - 32,
+  });
+  const rationaleH = report.measure(narrative.nextStep.rationale, {
+    size: 9,
+    x: MARGIN + 16,
+    width: CONTENT_W - 32,
+  });
+  const ribbonH = 24 + recommendationH + 4 + rationaleH + 14;
+  report.ensure(ribbonH + 12);
+  const ribbonY = report.cursor;
+  report.drawCard(MARGIN, ribbonY, CONTENT_W, ribbonH, PRIMARY, PRIMARY_SOFT);
+  report.currentPage.drawText("RECOMMENDED FOR YOUR BUSINESS", {
+    x: MARGIN + 16,
+    y: ribbonY - 18,
+    size: 7.5,
+    font: report.bold,
+    color: PRIMARY,
+  });
+  report.setCursor(ribbonY - 38);
+  report.text(recommendation, { bold: true, size: 16, x: MARGIN + 16, width: CONTENT_W - 32 });
+  report.text(narrative.nextStep.rationale, {
+    size: 9,
+    color: MUTED,
+    x: MARGIN + 16,
+    width: CONTENT_W - 32,
+  });
+  report.setCursor(ribbonY - ribbonH - 12);
+
+  const focusFindings = narrative.executiveSummary.topFindings.slice(0, 2).map((item) => item.title);
+  if (focusFindings.length > 0) {
+    report.text(`Your Blueprint will focus on ${focusFindings.join(" and ")}.`, { size: 10 });
+  }
+
+  report.subheading("What the Blueprint gives you");
+  const benefits = [
+    "A personalized plan built from your actual numbers.",
+    "12-month targets, economics, channel mix, and budget.",
+    "Booking, follow-up, and revenue workflows.",
+    "Capacity and hiring triggers.",
+    "A 90-minute presentation and 30 days of follow-up questions.",
+    "A sequenced plan you can run with your own team.",
+  ];
+  const benefitRows = Math.ceil(benefits.length / 2);
+  const benefitHeights = benefits.map((benefit) =>
+    report.measure(benefit, { size: 8.5, x: MARGIN + 28, width: CONTENT_W / 2 - 44 }),
+  );
+  const benefitRowHeights: number[] = [];
+  for (let row = 0; row < benefitRows; row += 1) {
+    benefitRowHeights.push(Math.max(benefitHeights[row * 2] ?? 0, benefitHeights[row * 2 + 1] ?? 0) + 6);
+  }
+  const benefitsH = 20 + benefitRowHeights.reduce((sum, value) => sum + value, 0);
+  report.ensure(benefitsH + 12);
+  const benefitsTop = report.cursor;
+  report.drawCard(MARGIN, benefitsTop, CONTENT_W, benefitsH);
+  let benefitY = benefitsTop - 24;
+  for (let row = 0; row < benefitRows; row += 1) {
+    for (let col = 0; col < 2; col += 1) {
+      const benefit = benefits[row * 2 + col];
+      if (!benefit) continue;
+      const x = MARGIN + 16 + col * (CONTENT_W / 2);
+      report.currentPage.drawLine({ start: { x, y: benefitY + 3 }, end: { x: x + 3, y: benefitY }, thickness: 1, color: PRIMARY });
+      report.currentPage.drawLine({ start: { x: x + 3, y: benefitY }, end: { x: x + 8, y: benefitY + 6 }, thickness: 1, color: PRIMARY });
+      report.setCursor(benefitY);
+      report.text(benefit, { size: 8.5, x: x + 12, width: CONTENT_W / 2 - 42 });
+    }
+    benefitY -= benefitRowHeights[row]!;
+  }
+  report.setCursor(benefitsTop - benefitsH - 12);
+
+  report.subheading("Your credit");
+  const creditDays = OFFER_CREDITS.diagnosticToBlueprint.days;
+  const diagnosticPrice = OFFERS.diagnostic.price.label;
+  report.callout(
+    `You have already paid ${diagnosticPrice} for this SNIPE Diagnostic™. Purchase the SNIPE Blueprint™ within ${creditDays} days of your readout and the full ${diagnosticPrice} is credited.`,
+  );
+
+  report.subheading("What happens next");
+  const nextSteps = [
+    { title: "Open the Blueprint page", body: "Review the plan and choose your start date." },
+    { title: "Complete the short intake", body: "We already have your 12 months of data, so this is quick." },
+    { title: "Get your plan", body: "Receive it within 10 business days and join the 90-minute presentation." },
+  ];
+  const stepGap = 10;
+  const stepW = (CONTENT_W - stepGap * 2) / 3;
+  const stepH = 92;
+  report.ensure(stepH + 12);
+  const stepsTop = report.cursor;
+  nextSteps.forEach((step, index) => {
+    const x = MARGIN + index * (stepW + stepGap);
+    report.drawCard(x, stepsTop, stepW, stepH, PRIMARY);
+    report.rankBadge(x + 18, stepsTop - 18, index + 1, PRIMARY);
+    report.setCursor(stepsTop - 18);
+    report.text(step.title, { bold: true, size: 9.5, x: x + 32, width: stepW - 36 });
+    report.text(step.body, { size: 8.5, color: MUTED, x: x + 12, width: stepW - 24 });
+  });
+  report.setCursor(stepsTop - stepH - 12);
+
+  report.subheading("What owners say");
+  const testimonials = [
+    {
+      quote: "They found $4,800 a month in missed calls before we signed anything. That number made the decision easy.",
+      name: "Marcus Hale",
+      detail: "Owner, Hale Home Inspections",
+    },
+    {
+      quote: "Our average ticket moved because every inspector finally offered the same add-ons. No discounting, just consistency.",
+      name: "Dana Whitfield",
+      detail: "Owner, Whitfield Property Inspections",
+    },
+    {
+      quote: "The dashboard is the first report I actually read. It tells me what to do, not just what happened.",
+      name: "Luis Ortega",
+      detail: "Owner, Ortega Inspection Group",
+    },
+  ];
+  const quoteGap = 10;
+  const quoteW = (CONTENT_W - quoteGap * 2) / 3;
+  const quoteHeights = testimonials.map((item) =>
+    report.measure(`"${item.quote}"`, { size: 8.5, x: MARGIN + 12, width: quoteW - 24 }),
+  );
+  const quoteH = Math.max(...quoteHeights) + 64;
+  report.ensure(quoteH + 12);
+  const quotesTop = report.cursor;
+  testimonials.forEach((item, index) => {
+    const x = MARGIN + index * (quoteW + quoteGap);
+    report.drawCard(x, quotesTop, quoteW, quoteH, BORDER);
+    report.setCursor(quotesTop - 18);
+    report.text(`"${item.quote}"`, { size: 8.5, x: x + 12, width: quoteW - 24 });
+    report.setCursor(quotesTop - quoteH + 34);
+    report.text(item.name, { bold: true, size: 8.5, x: x + 12, width: quoteW - 24 });
+    report.text(item.detail, { size: 7.5, color: MUTED, x: x + 12, width: quoteW - 24 });
+  });
+  report.setCursor(quotesTop - quoteH - 12);
+
+  report.subheading("Take the next step");
+  report.ensure(110);
+  const ctaTop = report.cursor;
+  report.linkButton("Get My SNIPE Blueprint™", blueprintUrl, MARGIN, ctaTop, CONTENT_W, true);
+  report.setCursor(ctaTop - 44);
+  report.linkButton("Book a Free Growth Fit Call", bookUrl, MARGIN, report.cursor, CONTENT_W, false);
+  report.setCursor(ctaTop - 88);
+  report.text(
+    `Opens the Blueprint page. The ${diagnosticPrice} credit applies within ${creditDays} days of your readout.`,
+    { size: 8, color: MUTED },
+  );
+  report.text(
+    "No business outcome is guaranteed. The Blueprint is a planning product built from the data in this report.",
+    { size: 8, color: MUTED },
+  );
 
   // Methodology
   section("Methodology");
@@ -1404,7 +1728,7 @@ export async function renderDiagnosticPdf(
     report.bullets(narrative.methodology.assumptions);
   }
   report.subheading("Disclaimers");
-  report.bullets(narrative.methodology.disclaimers);
+  report.callout(narrative.methodology.disclaimers.join(" "), "warn");
 
   // Appendix
   section("Appendix and scoring rules");

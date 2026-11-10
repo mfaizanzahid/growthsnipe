@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PDFArray, PDFDict, PDFDocument, PDFName } from "pdf-lib";
+import { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
 import { buildFacts, metricValue } from "../src/server/diagnostic/facts";
 import { diagnosticWindow } from "../src/server/diagnostic/collect";
 import { fallbackNarrative, validateNarrative } from "../src/server/diagnostic/synthesize";
@@ -281,5 +281,27 @@ describe("diagnostic pdf", () => {
     const action = first.lookup(PDFName.of("A"), PDFDict);
     const destination = action.lookup(PDFName.of("D"), PDFArray);
     expect(destination.size()).toBeGreaterThan(1);
+  });
+
+  it("adds a clickable Blueprint URL on the next-step page", async () => {
+    const f = facts();
+    const narrative = fallbackNarrative(f);
+    const bytes = await renderDiagnosticPdf(f, narrative);
+    const doc = await PDFDocument.load(bytes);
+    let found = false;
+    for (const page of doc.getPages()) {
+      const annots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+      if (!annots) continue;
+      for (let i = 0; i < annots.size(); i += 1) {
+        const annot = annots.lookup(i) as PDFDict;
+        const action = annot.lookup(PDFName.of("A"), PDFDict);
+        if (!action) continue;
+        const uri = action.get(PDFName.of("URI"));
+        if (uri instanceof PDFString && uri.decodeText().includes("growthsnipe.com/blueprint")) {
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(true);
   });
 });
