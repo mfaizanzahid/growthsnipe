@@ -301,6 +301,62 @@ class Report {
     return this.wrap(text, font, size, width).length * leading + 6;
   }
 
+  setCursor(y: number): void {
+    this.y = y;
+  }
+
+  drawCard(x: number, yTop: number, width: number, height: number, accent?: RGB, fill: RGB = WHITE): void {
+    this.page.drawRectangle({
+      x,
+      y: yTop - height,
+      width,
+      height,
+      color: fill,
+      borderColor: BORDER,
+      borderWidth: 0.6,
+    });
+    if (accent) {
+      this.page.drawRectangle({ x, y: yTop - height, width: 4, height, color: accent });
+    }
+  }
+
+  chip(x: number, yBottom: number, text: string, color: RGB = MUTED, fill: RGB = SOFT): number {
+    const size = 7.5;
+    const padX = 5;
+    const label = this.fit(text, this.font, size, 260);
+    const width = this.font.widthOfTextAtSize(label, size) + padX * 2;
+    this.page.drawRectangle({ x, y: yBottom, width, height: 14, color: fill });
+    this.page.drawText(label, { x: x + padX, y: yBottom + 4, size, font: this.font, color });
+    return width;
+  }
+
+  rankBadge(cx: number, cy: number, value: number, color: RGB): void {
+    this.page.drawCircle({ x: cx, y: cy, size: 8.5, color });
+    const label = `${value}`;
+    const width = this.bold.widthOfTextAtSize(label, 9);
+    this.page.drawText(label, { x: cx - width / 2, y: cy - 3, size: 9, font: this.bold, color: WHITE });
+  }
+
+  meter(x: number, y: number, value: number, max: number, color: RGB): void {
+    for (let i = 0; i < max; i += 1) {
+      this.page.drawRectangle({
+        x: x + i * 8,
+        y,
+        width: 5,
+        height: 5,
+        color: i < value ? color : SOFT,
+        borderColor: BORDER,
+        borderWidth: 0.3,
+      });
+    }
+  }
+
+  iconArrow(x: number, y: number, color: RGB): void {
+    this.page.drawLine({ start: { x, y: y + 3 }, end: { x: x + 8, y: y + 3 }, thickness: 1.1, color });
+    this.page.drawLine({ start: { x: x + 4, y: y + 6 }, end: { x: x + 8, y: y + 3 }, thickness: 1.1, color });
+    this.page.drawLine({ start: { x: x + 4, y }, end: { x: x + 8, y: y + 3 }, thickness: 1.1, color });
+  }
+
   heading(text: string, opts: { size?: number; kicker?: string } = {}): void {
     this.ensure(60);
     if (opts.kicker) {
@@ -395,7 +451,7 @@ class Report {
     this.y = top - cardH - 16;
   }
 
-  private fit(text: string, font: PDFFont, size: number, width: number): string {
+  fit(text: string, font: PDFFont, size: number, width: number): string {
     const clean = sanitize(text);
     if (font.widthOfTextAtSize(clean, size) <= width) return clean;
     let out = clean;
@@ -972,54 +1028,362 @@ export async function renderDiagnosticPdf(
     report.divider();
   }
 
-  // Priority findings
+  // Priority findings: impact/effort matrix, top three, then cards.
   section("Priority findings");
   report.heading("Priority findings", { kicker: "What to fix first" });
-  ordered.forEach((item, index) => {
+  report.text(
+    "Ranked by impact and practical effort. The matrix shows where each finding sits; the cards give the next action.",
+    { size: 9.5, color: MUTED },
+  );
+  report.space(4);
+
+  const impactFor = (severity: string): number =>
+    severity === "critical" ? 4 : severity === "high" ? 3 : severity === "medium" ? 2 : 1;
+  const effortFor = (effort: string): number => (effort === "high" ? 3 : effort === "medium" ? 2 : 1);
+  const findings = ordered.map((item, index) => {
     const leak = leakById.get(item.leakId);
-    report.ensure(96);
-    report.text(`${index + 1}. ${item.title}`, { bold: true, size: 12 });
-    report.text(`${item.consequence}`, { size: 9.5 });
-    report.text(`Next action: ${item.recommendedFix}`, { size: 9.5, color: PRIMARY });
-    report.text(`Effort: ${item.effort}. ${leak?.quantifiable && leak.exposure ? `Estimated range: ${money(leak.exposure.lowMinor, currency)} to ${money(leak.exposure.highMinor, currency)}.` : ""}`, {
-      size: 8.5,
-      color: MUTED,
+    return {
+      item,
+      leak,
+      rank: index + 1,
+      impact: impactFor(item.severity),
+      effortScore: effortFor(item.effort),
+      color: severityColor(item.severity),
+    };
+  });
+
+  const matrixH = 250;
+  report.ensure(matrixH + 20);
+  const matrixTop = report.cursor;
+  const matrixBottom = matrixTop - matrixH;
+  const plotLeft = MARGIN + 44;
+  const plotRight = PAGE_W - MARGIN - 10;
+  const plotTop = matrixTop - 26;
+  const plotBottom = matrixBottom + 34;
+  const plotW = plotRight - plotLeft;
+  const plotH = plotTop - plotBottom;
+  const halfW = plotW / 2;
+  const halfH = plotH / 2;
+
+  report.drawCard(MARGIN, matrixTop, CONTENT_W, matrixH, undefined, SOFT);
+  report.currentPage.drawRectangle({ x: plotLeft, y: plotBottom + halfH, width: halfW, height: halfH, color: rgb(0.94, 0.99, 0.96) });
+  report.currentPage.drawRectangle({ x: plotLeft + halfW, y: plotBottom + halfH, width: halfW, height: halfH, color: rgb(0.99, 0.97, 0.92) });
+  report.currentPage.drawRectangle({ x: plotLeft, y: plotBottom, width: halfW, height: halfH, color: rgb(0.97, 0.98, 1) });
+  report.currentPage.drawRectangle({ x: plotLeft + halfW, y: plotBottom, width: halfW, height: halfH, color: rgb(0.96, 0.96, 0.97) });
+  report.currentPage.drawLine({ start: { x: plotLeft, y: plotBottom }, end: { x: plotRight, y: plotBottom }, thickness: 0.8, color: BORDER });
+  report.currentPage.drawLine({ start: { x: plotLeft, y: plotBottom }, end: { x: plotLeft, y: plotTop }, thickness: 0.8, color: BORDER });
+  report.currentPage.drawLine({ start: { x: plotLeft + halfW, y: plotBottom }, end: { x: plotLeft + halfW, y: plotTop }, thickness: 0.5, color: BORDER });
+  report.currentPage.drawLine({ start: { x: plotLeft, y: plotBottom + halfH }, end: { x: plotRight, y: plotBottom + halfH }, thickness: 0.5, color: BORDER });
+  const quadrantLabels = [
+    { text: "QUICK WINS", x: plotLeft + 8, y: plotTop - 16, color: GOOD },
+    { text: "MAJOR PROJECTS", x: plotLeft + halfW + 8, y: plotTop - 16, color: WARN },
+    { text: "FILL-INS", x: plotLeft + 8, y: plotBottom + halfH - 14, color: MUTED },
+    { text: "DEPRIORITIZE", x: plotLeft + halfW + 8, y: plotBottom + halfH - 14, color: MUTED },
+  ];
+  for (const label of quadrantLabels) {
+    const width = report.bold.widthOfTextAtSize(label.text, 7);
+    report.currentPage.drawRectangle({
+      x: label.x - 3,
+      y: label.y - 3,
+      width: width + 6,
+      height: 11,
+      color: WHITE,
+      opacity: 0.92,
     });
-    report.space(6);
-  });
+    report.currentPage.drawText(label.text, {
+      x: label.x,
+      y: label.y,
+      size: 7,
+      font: report.bold,
+      color: label.color,
+    });
+  }
+  report.currentPage.drawText("IMPACT", { x: MARGIN + 8, y: matrixTop - 14, size: 7.5, font: report.bold, color: MUTED });
+  report.currentPage.drawText("Critical", { x: MARGIN + 2, y: plotTop - 8, size: 7, font: report.font, color: MUTED });
+  report.currentPage.drawText("Low", { x: MARGIN + 10, y: plotBottom - 2, size: 7, font: report.font, color: MUTED });
+  report.currentPage.drawText("Low", { x: plotLeft - 4, y: plotBottom - 12, size: 7, font: report.font, color: MUTED });
+  report.currentPage.drawText("Medium", { x: plotLeft + halfW - 14, y: plotBottom - 12, size: 7, font: report.font, color: MUTED });
+  report.currentPage.drawText("High", { x: plotRight - 16, y: plotBottom - 12, size: 7, font: report.font, color: MUTED });
+  report.currentPage.drawText("EFFORT", { x: MARGIN + CONTENT_W / 2 - 16, y: matrixBottom + 14, size: 7.5, font: report.bold, color: MUTED });
 
-  // Quick wins
-  section("Quick wins");
-  report.heading("Quick wins", { kicker: "Start this week" });
-  narrative.quickWins.forEach((win, index) => {
-    report.ensure(90);
-    report.text(`${index + 1}. ${win.title}`, { bold: true, size: 11 });
-    report.text(`What: ${win.what}`, { size: 9.5 });
-    report.text(`When: ${win.when}`, { size: 9, color: MUTED });
-    report.text(`How: ${win.how}`, { size: 9.5 });
-    report.text(`About ${win.effortHours} hours.`, { size: 8.5, color: MUTED });
-    report.space(6);
-  });
+  const xMin = plotLeft + 20;
+  const xMax = plotRight - 20;
+  const yMin = plotBottom + 18;
+  const yMax = plotTop - 18;
+  const offsets = [-13, 13, -26, 26];
+  const plotted = new Map<string, number>();
+  for (const finding of findings) {
+    const key = `${finding.effortScore}-${finding.impact}`;
+    const offset = plotted.get(key) ?? 0;
+    plotted.set(key, offset + 1);
+    const jitter = offset === 0 ? 0 : offsets[offset % offsets.length]!;
+    const x = Math.max(
+      plotLeft + 12,
+      Math.min(plotRight - 12, xMin + ((finding.effortScore - 1) / 2) * (xMax - xMin) + jitter),
+    );
+    const y = yMin + ((finding.impact - 1) / 3) * (yMax - yMin);
+    report.currentPage.drawCircle({ x, y, size: 10.5, color: finding.color });
+    const label = `${finding.rank}`;
+    const labelWidth = report.bold.widthOfTextAtSize(label, 9);
+    report.currentPage.drawText(label, { x: x - labelWidth / 2, y: y - 3, size: 9, font: report.bold, color: WHITE });
+  }
+  report.setCursor(matrixBottom - 10);
 
-  // 30-day plan
-  section("30-day plan");
-  report.heading("30-day plan", { kicker: "From findings to action" });
-  for (const phase of narrative.thirtyDayPlan) {
-    report.ensure(150);
-    report.subheading(phase.window);
-    report.text(`Focus: ${phase.focus}`, { bold: true, size: 10 });
-    for (const action of phase.actions) {
-      report.ensure(100);
-      report.text(`What: ${action.what}`, { size: 9.5 });
-      report.text(`When: ${action.when}`, { size: 9, color: MUTED });
-      report.text(`How: ${action.how}`, { size: 9.5 });
-      report.text(`Owner: ${action.ownerRole} | Success metric: ${action.successMetric}`, {
-        size: 8.5,
+  const topThree = findings.slice(0, 3);
+  if (topThree.length > 0) {
+    const stripGap = 10;
+    const stripW = (CONTENT_W - stripGap * (topThree.length - 1)) / topThree.length;
+    const stripTop = report.cursor;
+    const stripH = 64;
+    topThree.forEach((finding, index) => {
+      const x = MARGIN + index * (stripW + stripGap);
+      report.drawCard(x, stripTop, stripW, stripH, finding.color);
+      report.rankBadge(x + 18, stripTop - 18, finding.rank, finding.color);
+      report.currentPage.drawText(report.fit(finding.item.title, report.bold, 9, stripW - 40), {
+        x: x + 32,
+        y: stripTop - 21,
+        size: 9,
+        font: report.bold,
+        color: INK,
+      });
+      const exposure =
+        finding.leak?.quantifiable && finding.leak.exposure
+          ? `Exposure ${money(finding.leak.exposure.lowMinor, currency)} to ${money(finding.leak.exposure.highMinor, currency)}`
+          : `${finding.item.severity} severity`;
+      report.currentPage.drawText(report.fit(exposure, report.font, 7.5, stripW - 24), {
+        x: x + 12,
+        y: stripTop - 40,
+        size: 7.5,
+        font: report.font,
         color: MUTED,
       });
-      report.space(4);
-    }
-    report.space(4);
+      report.currentPage.drawText(`${finding.item.effort} effort`, {
+        x: x + 12,
+        y: stripTop - 53,
+        size: 7.5,
+        font: report.font,
+        color: MUTED,
+      });
+    });
+    report.setCursor(stripTop - stripH - 12);
+  }
+
+  for (const finding of findings) {
+    const titleHeight = report.measure(finding.item.title, { bold: true, size: 12.5, x: MARGIN + 38 });
+    const consequenceHeight = report.measure(finding.item.consequence, { size: 9.5, x: MARGIN + 38 });
+    const fixHeight = report.measure(finding.item.recommendedFix, { size: 9.5, x: MARGIN + 26 });
+    const height = 96 + titleHeight + consequenceHeight + fixHeight;
+    report.ensure(height + 12);
+    const yTop = report.cursor;
+    report.drawCard(MARGIN, yTop, CONTENT_W, height, finding.color);
+    report.rankBadge(MARGIN + 22, yTop - 18, finding.rank, finding.color);
+    report.currentPage.drawText(report.fit(finding.item.title, report.bold, 12.5, CONTENT_W - 56), {
+      x: MARGIN + 38,
+      y: yTop - 22,
+      size: 12.5,
+      font: report.bold,
+      color: INK,
+    });
+    let chipX = MARGIN + 38;
+    chipX += report.chip(chipX, yTop - 42, `${finding.item.severity} severity`, finding.color) + 6;
+    chipX += report.chip(chipX, yTop - 42, `${finding.item.effort} effort`, MUTED) + 6;
+    report.chip(chipX, yTop - 42, `${finding.item.confidence} confidence`, MUTED);
+    report.setCursor(yTop - 64);
+    report.text(finding.item.consequence, { size: 9.5, x: MARGIN + 38 });
+    const fixTop = report.cursor - 6;
+    const fixBlockH = fixHeight + 24;
+    report.currentPage.drawRectangle({
+      x: MARGIN + 14,
+      y: fixTop - fixBlockH,
+      width: CONTENT_W - 28,
+      height: fixBlockH,
+      color: PRIMARY_SOFT,
+    });
+    report.currentPage.drawRectangle({
+      x: MARGIN + 14,
+      y: fixTop - fixBlockH,
+      width: 3,
+      height: fixBlockH,
+      color: PRIMARY,
+    });
+    report.iconArrow(MARGIN + 24, fixTop - 16, PRIMARY);
+    report.currentPage.drawText("DO THIS NEXT", {
+      x: MARGIN + 38,
+      y: fixTop - 16,
+      size: 7.5,
+      font: report.bold,
+      color: PRIMARY,
+    });
+    report.setCursor(fixTop - 28);
+    report.text(finding.item.recommendedFix, { size: 9.5, x: MARGIN + 26, width: CONTENT_W - 44 });
+    report.setCursor(yTop - height - 12);
+  }
+
+  // Quick wins: two-column task cards.
+  section("Quick wins");
+  report.heading("Quick wins", { kicker: "Start this week" });
+  const totalQuickWinHours = narrative.quickWins.reduce(
+    (sum, win) => sum + Math.max(1, win.effortHours),
+    0,
+  );
+  report.text(
+    `Small moves you can finish this week. Total estimated time: about ${totalQuickWinHours} hours.`,
+    { size: 9.5, color: MUTED },
+  );
+  report.space(4);
+
+  const winGap = 12;
+  for (let i = 0; i < narrative.quickWins.length; i += 2) {
+    const pair = narrative.quickWins.slice(i, i + 2);
+    const cardW = pair.length === 1 ? CONTENT_W : (CONTENT_W - winGap) / 2;
+    const heights = pair.map((win, index) => {
+      const x = MARGIN + index * (cardW + winGap);
+      return (
+        56 +
+        report.measure(win.title, { bold: true, size: 11, x: x + 34 }) +
+        report.measure(win.what, { size: 9.5, x: x + 14 }) +
+        report.measure(`How: ${win.how}`, { size: 8.5, x: x + 14 })
+      );
+    });
+    const rowH = Math.max(...heights);
+    report.ensure(rowH + winGap);
+    const rowTop = report.cursor;
+    pair.forEach((win, index) => {
+      const x = MARGIN + index * (cardW + winGap);
+      const isFirst = i + index === 0;
+      report.drawCard(x, rowTop, cardW, rowH, isFirst ? PRIMARY : BORDER);
+      report.currentPage.drawRectangle({
+        x: x + 14,
+        y: rowTop - 25,
+        width: 12,
+        height: 12,
+        borderColor: isFirst ? PRIMARY : BORDER,
+        borderWidth: 0.9,
+        color: WHITE,
+      });
+      report.currentPage.drawText(report.fit(win.title, report.bold, 11, cardW - 44), {
+        x: x + 34,
+        y: rowTop - 22,
+        size: 11,
+        font: report.bold,
+        color: INK,
+      });
+      report.setCursor(rowTop - 36);
+      report.text(win.what, { size: 9.5, x: x + 14, width: cardW - 28 });
+      report.text(`How: ${win.how}`, { size: 8.5, color: MUTED, x: x + 14, width: cardW - 28 });
+      let chipX = x + 14;
+      const chipsY = rowTop - rowH + 12;
+      chipX += report.chip(chipX, chipsY, `When: ${win.when}`, MUTED) + 6;
+      chipX += report.chip(chipX, chipsY, `Time: ${Math.max(1, win.effortHours)}h`, PRIMARY, PRIMARY_SOFT) + 6;
+      if (isFirst) report.chip(chipX, chipsY, "START HERE", PRIMARY, PRIMARY_SOFT);
+    });
+    report.setCursor(rowTop - rowH - winGap);
+  }
+
+  // 30-day plan: timeline track and phase cards.
+  section("30-day plan");
+  report.heading("30-day plan", { kicker: "From findings to action" });
+  report.text(
+    "A focused 30-day sequence. One owner per action and one success metric per phase.",
+    { size: 9.5, color: MUTED },
+  );
+  report.space(6);
+
+  const trackH = 36;
+  const segmentShares = [7, 14, 9];
+  const totalDays = segmentShares.reduce((sum, value) => sum + value, 0);
+  const segGap = 4;
+  const usableW = CONTENT_W - segGap * 2;
+  const shades: RGB[] = [PRIMARY, rgb(0.18, 0.5, 1), rgb(0.42, 0.66, 1)];
+  report.ensure(trackH + 20);
+  const trackTop = report.cursor;
+  let trackX = MARGIN;
+  narrative.thirtyDayPlan.forEach((phase, index) => {
+    const width = (segmentShares[index]! / totalDays) * usableW;
+    report.currentPage.drawRectangle({
+      x: trackX,
+      y: trackTop - trackH,
+      width,
+      height: trackH,
+      color: shades[index] ?? PRIMARY,
+    });
+    report.currentPage.drawText(phase.window, {
+      x: trackX + 8,
+      y: trackTop - 15,
+      size: 8.5,
+      font: report.bold,
+      color: WHITE,
+    });
+    report.currentPage.drawText(report.fit(phase.focus, report.font, 7, width - 16), {
+      x: trackX + 8,
+      y: trackTop - 27,
+      size: 7,
+      font: report.font,
+      color: rgb(0.92, 0.96, 1),
+    });
+    trackX += width + segGap;
+  });
+  report.currentPage.drawCircle({ x: MARGIN + CONTENT_W - 2, y: trackTop - trackH / 2, size: 4, color: INK });
+  report.currentPage.drawText("Day 30", {
+    x: MARGIN + CONTENT_W - 44,
+    y: trackTop - trackH - 12,
+    size: 7.5,
+    font: report.bold,
+    color: MUTED,
+  });
+  report.setCursor(trackTop - trackH - 18);
+
+  for (const phase of narrative.thirtyDayPlan) {
+    const actionHeights = phase.actions.map((action) => {
+      const whatH = report.measure(action.what, { bold: true, size: 10, x: MARGIN + 38 });
+      const howH = report.measure(action.how, { size: 9.5, x: MARGIN + 38 });
+      return 18 + whatH + 4 + howH + 22;
+    });
+    const height = 46 + actionHeights.reduce((sum, value) => sum + value, 0) + 12;
+    report.ensure(height + 12);
+    const yTop = report.cursor;
+    report.drawCard(MARGIN, yTop, CONTENT_W, height, PRIMARY);
+    report.currentPage.drawRectangle({ x: MARGIN, y: yTop - 30, width: CONTENT_W, height: 30, color: SOFT });
+    report.currentPage.drawText(phase.window, {
+      x: MARGIN + 12,
+      y: yTop - 20,
+      size: 10.5,
+      font: report.bold,
+      color: PRIMARY,
+    });
+    report.currentPage.drawText(report.fit(phase.focus, report.bold, 9, CONTENT_W - 130), {
+      x: MARGIN + 118,
+      y: yTop - 19,
+      size: 9,
+      font: report.bold,
+      color: INK,
+    });
+    let cy = yTop - 46;
+    phase.actions.forEach((action, index) => {
+      report.rankBadge(MARGIN + 22, cy + 3, index + 1, PRIMARY);
+      report.currentPage.drawText(report.fit(action.what, report.bold, 10, CONTENT_W - 60), {
+        x: MARGIN + 38,
+        y: cy,
+        size: 10,
+        font: report.bold,
+        color: INK,
+      });
+      report.setCursor(cy - 14);
+      report.text(action.how, { size: 9.5, x: MARGIN + 38, width: CONTENT_W - 56 });
+      let chipX = MARGIN + 38;
+      const chipsY = report.cursor - 18;
+      chipX += report.chip(chipX, chipsY, `When: ${action.when}`, MUTED) + 6;
+      chipX += report.chip(chipX, chipsY, `Owner: ${action.ownerRole}`, PRIMARY, PRIMARY_SOFT) + 6;
+      report.chip(chipX, chipsY, `Success: ${action.successMetric}`, MUTED);
+      cy = chipsY - 18;
+    });
+    report.setCursor(yTop - height - 12);
+  }
+
+  const lastPhase = narrative.thirtyDayPlan[narrative.thirtyDayPlan.length - 1];
+  const lastAction = lastPhase?.actions[lastPhase.actions.length - 1];
+  if (lastAction) {
+    report.callout(`By day 30: ${lastAction.successMetric}`);
   }
 
   // Next step
