@@ -1,4 +1,13 @@
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
+import {
+  PDFArray,
+  PDFDocument,
+  PDFName,
+  StandardFonts,
+  rgb,
+  type PDFFont,
+  type PDFPage,
+  type RGB,
+} from "pdf-lib";
 import type { DiagnosticFacts, DiagnosticNarrative } from "./types";
 
 const PAGE_W = 612;
@@ -71,6 +80,11 @@ function shortDate(iso: string | null): string {
   return iso.slice(0, 10);
 }
 
+interface TocEntry {
+  title: string;
+  page: PDFPage;
+}
+
 function severityColor(severity: string): RGB {
   if (severity === "critical" || severity === "high") return DANGER;
   if (severity === "medium") return WARN;
@@ -109,6 +123,71 @@ class Report {
 
   get cursor(): number {
     return this.y;
+  }
+
+  get pageNumber(): number {
+    return this.pageNo;
+  }
+
+  private addLink(page: PDFPage, x: number, y: number, width: number, height: number, target: PDFPage): void {
+    const annot = this.doc.context.obj({
+      Type: "Annot",
+      Subtype: "Link",
+      Rect: [x, y, x + width, y + height],
+      Border: [0, 0, 0],
+      A: { S: "GoTo", D: [target.ref, "XYZ", 0, PAGE_H, 0] },
+    });
+    const ref = this.doc.context.register(annot);
+    const existing = page.node.lookup(PDFName.of("Annots"), PDFArray);
+    if (existing) existing.push(ref);
+    else page.node.set(PDFName.of("Annots"), this.doc.context.obj([ref]));
+  }
+
+  /** Draw the contents page reserved at the front, with clickable links. */
+  drawTocPage(page: PDFPage, pageNo: number, entries: TocEntry[]): void {
+    page.drawText("SNIPE Diagnostic™", { x: MARGIN, y: HEADER_Y, size: 8, font: this.bold, color: MUTED });
+    page.drawText("Confidential", { x: PAGE_W - MARGIN - 54, y: HEADER_Y, size: 8, font: this.font, color: MUTED });
+    page.drawLine({
+      start: { x: MARGIN, y: HEADER_Y - 8 },
+      end: { x: PAGE_W - MARGIN, y: HEADER_Y - 8 },
+      thickness: 0.6,
+      color: BORDER,
+    });
+    page.drawLine({
+      start: { x: MARGIN, y: 44 },
+      end: { x: PAGE_W - MARGIN, y: 44 },
+      thickness: 0.6,
+      color: BORDER,
+    });
+    page.drawText("GrowthSnipe", { x: MARGIN, y: 32, size: 8, font: this.font, color: MUTED });
+    page.drawText(`Page ${pageNo}`, { x: PAGE_W - MARGIN - 40, y: 32, size: 8, font: this.font, color: MUTED });
+
+    page.drawText("Contents", { x: MARGIN, y: CONTENT_TOP - 8, size: 26, font: this.bold, color: INK });
+    page.drawText("SNIPE Diagnostic™", {
+      x: MARGIN,
+      y: CONTENT_TOP - 26,
+      size: 9,
+      font: this.font,
+      color: MUTED,
+    });
+
+    const pages = this.doc.getPages();
+    let y = CONTENT_TOP - 70;
+    for (const entry of entries) {
+      const targetNo = pages.indexOf(entry.page) + 1;
+      page.drawText(entry.title, { x: MARGIN, y, size: 11, font: this.bold, color: INK });
+      const label = `${targetNo}`;
+      const labelWidth = this.font.widthOfTextAtSize(label, 10);
+      page.drawText(label, { x: PAGE_W - MARGIN - labelWidth, y, size: 10, font: this.font, color: MUTED });
+      const titleWidth = this.bold.widthOfTextAtSize(entry.title, 11);
+      const leaderStart = MARGIN + titleWidth + 8;
+      const leaderEnd = PAGE_W - MARGIN - labelWidth - 8;
+      for (let x = leaderStart; x < leaderEnd; x += 7) {
+        page.drawCircle({ x, y: y + 3, size: 0.55, color: BORDER });
+      }
+      this.addLink(page, MARGIN - 4, y - 5, CONTENT_W + 8, 20, entry.page);
+      y -= 26;
+    }
   }
 
   private chrome(): void {
@@ -376,37 +455,6 @@ class Report {
     this.y -= 12;
   }
 
-  scoreBars(entries: DiagnosticFacts["scorecard"]): void {
-    const rowH = 26;
-    for (const entry of entries) {
-      this.ensure(rowH);
-      const top = this.y;
-      this.page.drawText(this.fit(entry.label, this.font, 9, 130), {
-        x: MARGIN,
-        y: top - 12,
-        size: 9,
-        font: this.font,
-        color: INK,
-      });
-      const barX = MARGIN + 140;
-      const barW = CONTENT_W - 200;
-      this.page.drawRectangle({ x: barX, y: top - 11, width: barW, height: 8, color: SOFT, borderColor: BORDER, borderWidth: 0.5 });
-      const fill = Math.max(0, Math.min(1, entry.score / 100));
-      if (fill > 0) {
-        this.page.drawRectangle({ x: barX, y: top - 11, width: barW * fill, height: 8, color: statusColor(entry.status) });
-      }
-      this.page.drawText(entry.status === "unknown" ? "n/a" : `${entry.score}`, {
-        x: barX + barW + 8,
-        y: top - 12,
-        size: 9,
-        font: this.bold,
-        color: MUTED,
-      });
-      this.y = top - rowH;
-    }
-    this.y -= 6;
-  }
-
   barChart(points: Array<{ label: string; value: number }>, currency: string): void {
     const height = 150;
     const labelSpace = 18;
@@ -565,8 +613,18 @@ export async function renderDiagnosticPdf(
   cover.drawLine({ start: { x: MARGIN, y: 120 }, end: { x: PAGE_W - MARGIN, y: 120 }, thickness: 0.7, color: BORDER });
   cover.drawText("Confidential. Prepared for the named business.", { x: MARGIN, y: 100, size: 9, font, color: MUTED });
 
+  // Contents page reserved at the front; filled after all sections exist.
+  report.newPage(false);
+  const tocPage = report.currentPage;
+  const tocPageNo = report.pageNumber;
+  const tocEntries: TocEntry[] = [];
+  const section = (title: string) => {
+    report.newPage();
+    tocEntries.push({ title, page: report.currentPage });
+  };
+
   // Executive summary
-  report.newPage();
+  section("Executive summary");
   report.heading(narrative.snapshot.headline, { kicker: "Executive summary" });
   report.text(narrative.snapshot.summary, { size: 11 });
   report.space(4);
@@ -581,20 +639,83 @@ export async function renderDiagnosticPdf(
     report.space(2);
   }
 
-  // Snapshot and scorecard
-  report.newPage();
-  report.heading("Diagnostic snapshot", { kicker: "Where the business stands" });
-  report.text(narrative.snapshot.scoreRationale, { size: 10, color: MUTED });
+  // SNIPE Framework
+  section("SNIPE Framework");
+  report.heading("SNIPE Framework", { kicker: "The five pillars" });
+  report.text(narrative.snapshot.scoreRationale, { size: 9.5, color: MUTED });
   report.space(4);
-  report.scoreBars(facts.scorecard);
-  report.subheading("Scorecard notes");
-  for (const note of narrative.scorecardNotes) {
-    const entry = facts.scorecard.find((s) => s.dimension === note.dimension);
-    report.text(`${entry?.label ?? note.dimension}: ${note.note}`, { size: 9.5 });
+
+  const pillarStatusLabel = (pillar: DiagnosticFacts["framework"][number]): string => {
+    if (pillar.status === "not_assessed") return "Not assessed";
+    const label = pillar.status === "strength" ? "Strength" : pillar.status === "watch" ? "Watch" : "Leak";
+    return `${pillar.score} / 100 - ${label}`;
+  };
+
+  for (const pillar of facts.framework) {
+    const note = narrative.frameworkNotes.find((item) => item.pillar === pillar.code);
+    const header = `${pillar.code} - ${pillar.name}`;
+    const status = pillarStatusLabel(pillar);
+    const context = pillar.context.slice(0, 3).map((item) => `${item.label}: ${item.value}`).join("  |  ");
+    const blockHeight =
+      report.measure(header, { bold: true, size: 12 }) +
+      report.measure(context, { size: 8.5, x: MARGIN + 14 }) +
+      report.measure(note?.assessment ?? "", { size: 9.5, x: MARGIN + 14 }) +
+      report.measure(note?.commercialImplication ?? "", { size: 8.5, x: MARGIN + 14 }) +
+      report.measure(note?.strengthOpportunity ?? "", { size: 8.5, x: MARGIN + 14 }) +
+      24;
+    report.ensure(blockHeight);
+    const startY = report.cursor;
+    report.text(header, { bold: true, size: 12, x: MARGIN + 14 });
+    const statusWidth = report.bold.widthOfTextAtSize(status, 9);
+    report.currentPage.drawText(status, {
+      x: PAGE_W - MARGIN - statusWidth,
+      y: startY,
+      size: 9,
+      font: report.bold,
+      color: statusColor(pillar.status),
+    });
+    report.text(context, { size: 8.5, color: MUTED, x: MARGIN + 14 });
+    if (note) {
+      report.text(note.assessment, { size: 9.5, x: MARGIN + 14 });
+      report.text(`Commercial implication: ${note.commercialImplication}`, {
+        size: 8.5,
+        color: MUTED,
+        x: MARGIN + 14,
+      });
+      report.text(`Strength or opportunity: ${note.strengthOpportunity}`, {
+        size: 8.5,
+        color: MUTED,
+        x: MARGIN + 14,
+      });
+    }
+    const endY = report.cursor;
+    report.currentPage.drawRectangle({
+      x: MARGIN,
+      y: endY,
+      width: 3,
+      height: Math.max(20, startY + 8 - endY),
+      color: statusColor(pillar.status),
+    });
+    report.divider();
+  }
+
+  report.subheading("Key constraints");
+  for (const constraint of narrative.keyConstraints) {
+    report.text(`${constraint.title} (${constraint.pillar})`, { bold: true, size: 10 });
+    report.text(constraint.whatItMeans, { size: 9.5 });
+    report.space(2);
+  }
+  if (narrative.strengths.length > 0) {
+    report.subheading("Strengths and opportunities");
+    for (const strength of narrative.strengths) {
+      report.text(`${strength.title} (${strength.pillar})`, { bold: true, size: 10 });
+      report.text(strength.detail, { size: 9.5, color: MUTED });
+      report.space(2);
+    }
   }
 
   // Baseline dashboard
-  report.newPage();
+  section("Baseline dashboard");
   report.heading("Baseline dashboard", { kicker: "The last 12 months" });
   report.kpiRow([
     { label: "Completed revenue", value: money(facts.baseline.revenueMinor, currency) },
@@ -615,7 +736,7 @@ export async function renderDiagnosticPdf(
   );
 
   // Revenue trend
-  report.newPage();
+  section("Revenue trend");
   report.heading("Revenue trend", { kicker: "Seasonality and momentum" });
   report.barChart(facts.trend.monthly.map((m) => ({ label: monthLabel(m.month), value: m.revenueMinor })), currency);
   report.kvGrid(
@@ -639,7 +760,7 @@ export async function renderDiagnosticPdf(
   }
 
   // Referral performance
-  report.newPage();
+  section("Referral performance");
   report.heading("Referral performance", { kicker: "Demand and partnership" });
   report.text(
     `${facts.referrals.activeAgentCount} referring partners produced jobs in the period. Your largest partner accounts for ${pct(facts.referrals.topAgents[0]?.sharePct ?? null)} of referred jobs.`,
@@ -673,7 +794,7 @@ export async function renderDiagnosticPdf(
   }
 
   // Cancellations and loss
-  report.newPage();
+  section("Cancellations and loss");
   report.heading("Cancellations and loss", { kicker: "Booked work that did not happen" });
   report.kpiRow([
     { label: "Cancellations", value: `${facts.baseline.cancelled}` },
@@ -694,7 +815,7 @@ export async function renderDiagnosticPdf(
   }
 
   // Job value and job penetration
-  report.newPage();
+  section("Job value and job penetration");
   report.heading("Job value and job penetration", { kicker: "Ticket architecture" });
   report.kpiRow([
     { label: "Median ticket", value: money(facts.ticket.distributionMinor.p50, currency) },
@@ -724,7 +845,7 @@ export async function renderDiagnosticPdf(
   }
 
   // Repeat and retention
-  report.newPage();
+  section("Repeat and retention");
   report.heading("Repeat and retention", { kicker: "Revenue that comes back" });
   report.kpiRow([
     { label: "Repeat client share", value: pct(facts.clients.repeatClientSharePct) },
@@ -747,7 +868,7 @@ export async function renderDiagnosticPdf(
   }
 
   // Capacity and team
-  report.newPage();
+  section("Capacity and team");
   report.heading("Capacity and team", { kicker: "Throughput" });
   const avgUtilization =
     facts.team.inspectors.length > 0
@@ -775,7 +896,7 @@ export async function renderDiagnosticPdf(
   }
 
   // Leak map
-  report.newPage();
+  section("Leak map");
   report.heading("Leak map", { kicker: "Where the growth leaks out" });
   const ordered = [...narrative.leakNarratives].sort((a, b) => a.priorityRank - b.priorityRank);
   for (const item of ordered) {
@@ -852,7 +973,7 @@ export async function renderDiagnosticPdf(
   }
 
   // Priority findings
-  report.newPage();
+  section("Priority findings");
   report.heading("Priority findings", { kicker: "What to fix first" });
   ordered.forEach((item, index) => {
     const leak = leakById.get(item.leakId);
@@ -868,30 +989,41 @@ export async function renderDiagnosticPdf(
   });
 
   // Quick wins
-  report.newPage();
+  section("Quick wins");
   report.heading("Quick wins", { kicker: "Start this week" });
   narrative.quickWins.forEach((win, index) => {
-    report.ensure(70);
+    report.ensure(90);
     report.text(`${index + 1}. ${win.title}`, { bold: true, size: 11 });
-    report.text(win.action, { size: 9.5 });
+    report.text(`What: ${win.what}`, { size: 9.5 });
+    report.text(`When: ${win.when}`, { size: 9, color: MUTED });
+    report.text(`How: ${win.how}`, { size: 9.5 });
     report.text(`About ${win.effortHours} hours.`, { size: 8.5, color: MUTED });
     report.space(6);
   });
 
-  // 90-day plan
-  report.newPage();
-  report.heading("90-day plan", { kicker: "From findings to action" });
-  for (const phase of narrative.ninetyDayPlan) {
-    report.ensure(110);
+  // 30-day plan
+  section("30-day plan");
+  report.heading("30-day plan", { kicker: "From findings to action" });
+  for (const phase of narrative.thirtyDayPlan) {
+    report.ensure(150);
     report.subheading(phase.window);
-    report.text(phase.focus, { bold: true, size: 10 });
-    report.bullets(phase.actions);
-    report.text(`Success metric: ${phase.successMetric}`, { size: 9, color: MUTED });
+    report.text(`Focus: ${phase.focus}`, { bold: true, size: 10 });
+    for (const action of phase.actions) {
+      report.ensure(100);
+      report.text(`What: ${action.what}`, { size: 9.5 });
+      report.text(`When: ${action.when}`, { size: 9, color: MUTED });
+      report.text(`How: ${action.how}`, { size: 9.5 });
+      report.text(`Owner: ${action.ownerRole} | Success metric: ${action.successMetric}`, {
+        size: 8.5,
+        color: MUTED,
+      });
+      report.space(4);
+    }
     report.space(4);
   }
 
   // Next step
-  report.newPage();
+  section("Recommended next step");
   report.heading("Recommended next step", { kicker: "Keep moving" });
   report.kpiRow([{ label: "Recommendation", value: displayProduct(narrative.nextStep.recommendation) }]);
   report.text(narrative.nextStep.rationale, { size: 10.5 });
@@ -899,7 +1031,7 @@ export async function renderDiagnosticPdf(
   report.callout(narrative.nextStep.creditNote);
 
   // Methodology
-  report.newPage();
+  section("Methodology");
   report.heading("Methodology", { kicker: "How this report was built" });
   report.subheading("Sources");
   report.bullets(narrative.methodology.sources);
@@ -911,8 +1043,8 @@ export async function renderDiagnosticPdf(
   report.bullets(narrative.methodology.disclaimers);
 
   // Appendix
-  report.newPage();
-  report.heading("Appendix", { kicker: "Data tables" });
+  section("Appendix and scoring rules");
+  report.heading("Appendix", { kicker: "Data tables and scoring rules" });
   report.subheading("Monthly performance");
   report.table(
     ["Month", "Jobs", "Completed", "Revenue", "Avg ticket"],
@@ -936,5 +1068,28 @@ export async function renderDiagnosticPdf(
     report.text("No city data was available in the connected records.", { size: 9.5, color: MUTED });
   }
 
+  report.subheading("Pillar scoring rules");
+  report.text(
+    "Each pillar score is a weighted average of its available components. Status: 70 or above is a Strength, 45 to 69 is Watch, and below 45 is a Leak. Instant Capture is not assessed in Release 1.",
+    { size: 9, color: MUTED },
+  );
+  for (const pillar of facts.framework) {
+    report.subheading(`${pillar.code} - ${pillar.name}`);
+    if (pillar.code === "I") {
+      report.text(
+        "Not assessed in Release 1: no phone, lead, or CRM data is connected. No response-time or missed-lead findings are claimed.",
+        { size: 9 },
+      );
+      continue;
+    }
+    for (const component of pillar.components) {
+      report.text(
+        `${component.label} (${Math.round(component.weight * 100)}%): ${component.rule}`,
+        { size: 9 },
+      );
+    }
+  }
+
+  report.drawTocPage(tocPage, tocPageNo, tocEntries);
   return doc.save();
 }

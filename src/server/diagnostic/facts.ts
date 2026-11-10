@@ -3,8 +3,9 @@ import type { DiagnosticOrderInsert } from "./store";
 import type {
   DiagnosticFacts,
   DiagnosticLeak,
+  DiagnosticPillar,
   DiagnosticProvider,
-  DiagnosticScorecardEntry,
+  DiagnosticScoreComponent,
 } from "./types";
 
 interface ParsedOrder {
@@ -123,6 +124,10 @@ function pct1(value: number): number {
 
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function percent(value: number | null): string {
+  return value === null ? "n/a" : `${value}%`;
 }
 
 function percentile(sorted: number[], p: number): number | null {
@@ -519,24 +524,205 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       ? inspectors.reduce((s, i) => s + (i.utilizationPct ?? 0), 0) / inspectors.length
       : null;
 
-  const scoreOf = (dimension: DiagnosticScorecardEntry["dimension"], label: string, raw: number | null): DiagnosticScorecardEntry => {
-    if (raw === null) return { dimension, label, score: 0, status: "unknown" };
-    const score = Math.round(clamp(raw));
-    const status = score >= 70 ? "strength" : score >= 45 ? "watch" : "leak";
-    return { dimension, label, score, status };
+  const scorePillar = (components: DiagnosticScoreComponent[]): number | null => {
+    const available = components.filter((component) => component.points !== null);
+    const totalWeight = available.reduce((sum, component) => sum + component.weight, 0);
+    if (available.length === 0 || totalWeight <= 0) return null;
+    const weighted = available.reduce(
+      (sum, component) => sum + (component.points ?? 0) * component.weight,
+      0,
+    );
+    return Math.round(clamp(weighted / totalWeight));
   };
-  const demandScore = topAgentShare === null ? null : clamp(100 - Math.max(0, topAgentShare - 25) * 2);
-  const bookingScore = cancelRatePct === null ? null : clamp(100 - cancelRatePct * 4);
-  const ticketScore = addOnAttachPct === null ? null : clamp(addOnAttachPct * 1.6);
-  const repeatScore = repeatClientSharePct === null ? null : clamp(repeatClientSharePct * 1.5);
-  const capacityScore = avgUtilization === null ? null : clamp(100 - Math.abs(avgUtilization - 75));
-  const scorecard: DiagnosticScorecardEntry[] = [
-    scoreOf("demand", "Referral demand", demandScore),
-    scoreOf("booking", "Booking health", bookingScore),
-    scoreOf("ticket", "Ticket architecture", ticketScore),
-    scoreOf("repeat", "Repeat revenue", repeatScore),
-    scoreOf("capacity", "Capacity", capacityScore),
-    scoreOf("data", "Data visibility", identityCoveragePct),
+  const pillarStatus = (score: number | null): DiagnosticPillar["status"] => {
+    if (score === null) return "not_assessed";
+    if (score >= 70) return "strength";
+    if (score >= 45) return "watch";
+    return "leak";
+  };
+
+  const jobsPerWeekValue = days > 0 ? Math.round((jobs / (days / 7)) * 10) / 10 : null;
+  const firstHalfRevenue = monthly.slice(0, 6).reduce((sum, month) => sum + month.revenueMinor, 0);
+  const secondHalfRevenue = monthly.slice(6).reduce((sum, month) => sum + month.revenueMinor, 0);
+  const momentumPct =
+    firstHalfRevenue > 0
+      ? pct1(((secondHalfRevenue - firstHalfRevenue) / firstHalfRevenue) * 100)
+      : null;
+  const ticketSpread =
+    distributionMinor.p50 && distributionMinor.p90
+      ? distributionMinor.p90 / distributionMinor.p50
+      : null;
+  const topCitySharePct = topCities[0]?.sharePct ?? null;
+  const inspectorJobs = inspectors.map((inspector) => inspector.jobs);
+  const inspectorMean =
+    inspectorJobs.length > 0
+      ? inspectorJobs.reduce((sum, count) => sum + count, 0) / inspectorJobs.length
+      : null;
+  const inspectorCv =
+    inspectorMean && inspectorMean > 0
+      ? Math.sqrt(
+          inspectorJobs.reduce((sum, count) => sum + Math.pow(count - inspectorMean, 2), 0) /
+            inspectorJobs.length,
+        ) / inspectorMean
+      : null;
+  const sourceAgg = new Map<string, number>();
+  for (const row of jobsWithServices) {
+    const source = row.referralSource?.trim();
+    if (!source) continue;
+    sourceAgg.set(source, (sourceAgg.get(source) ?? 0) + 1);
+  }
+  const topSource = [...sourceAgg.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
+
+  const sComponents: DiagnosticScoreComponent[] = [
+    {
+      label: "Revenue momentum",
+      value: momentumPct === null ? "n/a" : `${momentumPct > 0 ? "+" : ""}${momentumPct}%`,
+      points: momentumPct === null ? null : clamp(60 + momentumPct * 1.5),
+      weight: 0.5,
+      rule: "Second-half completed revenue vs first half. 0% change = 60 points; each +1% adds 1.5; capped 0 to 100.",
+    },
+    {
+      label: "Booking health",
+      value: percent(cancelRatePct),
+      points: cancelRatePct === null ? null : clamp(100 - cancelRatePct * 4),
+      weight: 0.3,
+      rule: "0% cancellation = 100 points; each percentage point of cancellation rate costs 4 points.",
+    },
+    {
+      label: "Active months",
+      value: `${activeMonths} of 12`,
+      points: clamp((activeMonths / 12) * 100),
+      weight: 0.2,
+      rule: "Months with at least one job divided by 12, times 100.",
+    },
+  ];
+  const nComponents: DiagnosticScoreComponent[] = [
+    {
+      label: "Add-on attachment",
+      value: percent(addOnAttachPct),
+      points: addOnAttachPct === null ? null : clamp(addOnAttachPct * 2),
+      weight: 0.5,
+      rule: "Add-on attach rate times 2, capped at 100. 50% attachment = 100.",
+    },
+    {
+      label: "Service breadth",
+      value: avgServicesPerJob === null ? "n/a" : `${avgServicesPerJob} per job`,
+      points: avgServicesPerJob === null ? null : clamp(avgServicesPerJob * 40),
+      weight: 0.3,
+      rule: "Average services per job times 40, capped at 100. 2.5 services per job = 100.",
+    },
+    {
+      label: "Ticket spread",
+      value: ticketSpread === null ? "n/a" : `${ticketSpread.toFixed(2)}x`,
+      points: ticketSpread === null ? null : clamp((ticketSpread - 1) * 80),
+      weight: 0.2,
+      rule: "90th percentile ticket divided by the median. Ratio minus 1, times 80, capped 0 to 100. 2.25x = 100.",
+    },
+  ];
+  const pComponents: DiagnosticScoreComponent[] = [
+    {
+      label: "Partner concentration",
+      value: percent(topAgentShare),
+      points:
+        topAgentShare === null
+          ? null
+          : clamp(100 - Math.max(0, topAgentShare - 25) * 2),
+      weight: 0.5,
+      rule: "100 minus the amount by which the top partner share exceeds 25%, times 2. 25% = 100; 75% = 0.",
+    },
+    {
+      label: "Referral breadth",
+      value: `${agentAgg.size} partners`,
+      points: clamp(agentAgg.size * 8),
+      weight: 0.25,
+      rule: "Active referral partners times 8, capped at 100. 12.5 partners = 100.",
+    },
+    {
+      label: "Geographic spread",
+      value: percent(topCitySharePct),
+      points:
+        topCitySharePct === null
+          ? null
+          : clamp(100 - Math.max(0, topCitySharePct - 30) * 1.5),
+      weight: 0.25,
+      rule: "100 minus the amount by which the top city share exceeds 30%, times 1.5. 30% = 100; 90% = 10.",
+    },
+  ];
+  const eComponents: DiagnosticScoreComponent[] = [
+    {
+      label: "Repeat client share",
+      value: percent(repeatClientSharePct),
+      points:
+        repeatClientSharePct === null ? null : clamp(repeatClientSharePct * 1.5),
+      weight: 0.5,
+      rule: "Repeat client share times 1.5, capped at 100. 67% = 100.",
+    },
+    {
+      label: "Inspector balance",
+      value: inspectorCv === null ? "n/a" : `${pct1(inspectorCv * 100)}% variation`,
+      points: inspectorCv === null ? null : clamp(100 - inspectorCv * 100),
+      weight: 0.3,
+      rule: "100 minus the coefficient of variation of completed jobs across inspectors, times 100. Even distribution = 100.",
+    },
+    {
+      label: "Capacity utilization",
+      value: avgUtilization === null ? "n/a" : percent(pct1(avgUtilization)),
+      points:
+        avgUtilization === null ? null : clamp(100 - Math.abs(avgUtilization - 75)),
+      weight: 0.2,
+      rule: "100 minus the absolute distance from 75% average utilization. 75% = 100.",
+    },
+  ];
+
+  const makePillar = (
+    code: DiagnosticPillar["code"],
+    name: string,
+    components: DiagnosticScoreComponent[],
+    context: Array<{ label: string; value: string }>,
+  ): DiagnosticPillar => {
+    const score = scorePillar(components);
+    return { code, name, score, status: pillarStatus(score), context, components };
+  };
+
+  const framework: DiagnosticPillar[] = [
+    makePillar("S", "Size the Gap", sComponents, [
+      { label: "Completed revenue", value: money(revenueMinor, currency) },
+      { label: "Completed jobs", value: `${completedRows.length}` },
+      { label: "Average ticket", value: money(avgTicketMinor, currency) },
+      { label: "Jobs per week", value: jobsPerWeekValue === null ? "n/a" : `${jobsPerWeekValue}` },
+      { label: "Cancellation rate", value: percent(cancelRatePct) },
+    ]),
+    makePillar("N", "Net-Ticket Architecture", nComponents, [
+      { label: "Add-on attach", value: percent(addOnAttachPct) },
+      { label: "Services per job", value: avgServicesPerJob === null ? "n/a" : `${avgServicesPerJob}` },
+      { label: "Median ticket", value: money(distributionMinor.p50, currency) },
+      { label: "Top-decile ticket", value: money(distributionMinor.p90, currency) },
+    ]),
+    {
+      code: "I",
+      name: "Instant Capture",
+      score: null,
+      status: "not_assessed",
+      context: [
+        { label: "Connected data", value: "No phone, lead, or CRM data in Release 1" },
+        { label: "Response-time findings", value: "Not assessed" },
+      ],
+      components: [],
+    },
+    makePillar("P", "Pipeline Engine", pComponents, [
+      { label: "Active partners", value: `${agentAgg.size}` },
+      { label: "Top partner share", value: percent(topAgentShare) },
+      { label: "Top city share", value: percent(topCitySharePct) },
+      ...(topSource
+        ? [{ label: "Top referral source", value: `${topSource[0]} (${topSource[1]} jobs)` }]
+        : []),
+    ]),
+    makePillar("E", "Expand and Evaluate", eComponents, [
+      { label: "Repeat client share", value: percent(repeatClientSharePct) },
+      { label: "Jobs per client", value: avgJobsPerClient === null ? "n/a" : `${avgJobsPerClient}` },
+      { label: "Inspectors", value: `${inspectorAgg.size}` },
+      { label: "Average utilization", value: avgUtilization === null ? "n/a" : percent(pct1(avgUtilization)) },
+    ]),
   ];
 
   // Leak catalog
@@ -549,6 +735,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L1",
       category: "cancellation",
+      pillar: "S",
       title: "Cancellations are eroding booked revenue",
       evidence: [
         { metricRef: "baseline.cancelRatePct", value: `${cancelRatePct}%` },
@@ -571,6 +758,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L2",
       category: "ticket",
+      pillar: "N",
       title: "Add-ons are attached to too few jobs",
       evidence: [
         { metricRef: "services.addOnAttachPct", value: `${addOnAttachPct}%` },
@@ -588,6 +776,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L2",
       category: "ticket",
+      pillar: "N",
       title: "Add-ons are attached to too few jobs",
       evidence: [{ metricRef: "services.addOnAttachPct", value: `${addOnAttachPct}%` }],
       quantifiable: false,
@@ -598,6 +787,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L3",
       category: "referral",
+      pillar: "P",
       title: "Referral demand is concentrated in a few partners",
       evidence: [
         { metricRef: "referrals.topAgents[0].sharePct", value: `${topAgentShare}%` },
@@ -611,6 +801,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L4",
       category: "demand",
+      pillar: "P",
       title: "Previously active referrers have gone quiet",
       evidence: [
         { metricRef: "referrals.droppedAgents", value: `${droppedAgents.length} partners dormant 90+ days` },
@@ -623,6 +814,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L5",
       category: "repeat",
+      pillar: "E",
       title: "Most referring partners are one-job relationships",
       evidence: [{ metricRef: "referrals.repeatAgentSharePct", value: `${repeatAgentSharePct}% of jobs came from repeat referrers` }],
       quantifiable: false,
@@ -633,6 +825,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L6",
       category: "booking",
+      pillar: "S",
       title: "Completed jobs remain flagged unpaid",
       evidence: [
         { metricRef: "ticket.unpaid.count", value: `${unpaid.count} completed jobs` },
@@ -652,6 +845,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L7",
       category: "capacity",
+      pillar: "E",
       title: avgUtilization > 95 ? "Schedule is close to its practical ceiling" : "Capacity is underused",
       evidence: [{ metricRef: "team.inspectors[0].utilizationPct", value: `${pct1(avgUtilization)}% average utilization` }],
       quantifiable: false,
@@ -662,6 +856,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     pushLeak({
       id: "L1",
       category: "booking",
+      pillar: "S",
       title: "No material leak detected in the measurable data",
       evidence: [{ metricRef: "baseline.jobs", value: `${jobs} jobs reviewed` }],
       quantifiable: false,
@@ -688,7 +883,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       cancelRatePct,
       revenueMinor,
       avgTicketMinor,
-      jobsPerWeek: days > 0 ? Math.round((jobs / (days / 7)) * 10) / 10 : null,
+      jobsPerWeek: jobsPerWeekValue,
       revenuePerDayMinor: Math.round(revenueMinor / days),
       activeMonths,
     },
@@ -726,7 +921,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       identityCoveragePct,
     },
     geography: { topCities },
-    scorecard,
+    framework,
     leaks,
   };
 }

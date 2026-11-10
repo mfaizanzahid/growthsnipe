@@ -206,7 +206,7 @@ export function diagnosticReadyContent(input: {
     subject: "Your SNIPE Diagnostic™ is ready",
     html:
       `<p>Hi ${name},</p>` +
-      `<p>Your 12-month review is ready. It includes your baseline, referral performance, leak map, priority findings, and a 90-day plan.</p>` +
+      `<p>Your 12-month review is ready. It includes your baseline, SNIPE Framework scores, referral performance, leak map, priority findings, and a 30-day plan.</p>` +
       `<p><a href="${input.reportUrl}">Download your Diagnostic report</a></p>` +
       `<p>Want to walk through it together? <a href="${input.bookUrl}">Book your 60-minute readout</a>.</p>`,
   };

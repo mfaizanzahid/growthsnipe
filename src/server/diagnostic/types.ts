@@ -23,28 +23,37 @@ export interface DiagnosticExposure {
   method: string;
 }
 
+export type DiagnosticPillarCode = "S" | "N" | "I" | "P" | "E";
+
 export interface DiagnosticLeak {
   id: string;
   category: string;
+  pillar: DiagnosticPillarCode;
   title: string;
   evidence: DiagnosticEvidence[];
   quantifiable: boolean;
   exposure?: DiagnosticExposure;
 }
 
-export interface DiagnosticScorecardEntry {
-  dimension:
-    | "demand"
-    | "capture"
-    | "booking"
-    | "ticket"
-    | "repeat"
-    | "visibility"
-    | "capacity"
-    | "data";
+export interface DiagnosticScoreComponent {
   label: string;
-  score: number;
-  status: "strength" | "watch" | "leak" | "unknown";
+  value: string;
+  /** 0-100 contribution before weighting; null when the input is unavailable. */
+  points: number | null;
+  /** Weight within the pillar, 0-1. */
+  weight: number;
+  /** Human-readable rule shown in the scoring appendix. */
+  rule: string;
+}
+
+export interface DiagnosticPillar {
+  code: DiagnosticPillarCode;
+  name: string;
+  /** Weighted score 0-100; null for the not-assessed pillar. */
+  score: number | null;
+  status: "strength" | "watch" | "leak" | "not_assessed";
+  context: Array<{ label: string; value: string }>;
+  components: DiagnosticScoreComponent[];
 }
 
 export interface DiagnosticFacts {
@@ -164,24 +173,16 @@ export interface DiagnosticFacts {
       sharePct: number;
     }>;
   };
-  scorecard: DiagnosticScorecardEntry[];
+  framework: DiagnosticPillar[];
   leaks: DiagnosticLeak[];
 }
 
-const ScorecardDimensionSchema = z.enum([
-  "demand",
-  "capture",
-  "booking",
-  "ticket",
-  "repeat",
-  "visibility",
-  "capacity",
-  "data",
-]);
+const PillarCodeSchema = z.enum(["S", "N", "I", "P", "E"]);
 
 /**
  * Model output. The model narrates and ranks catalog leaks; it never supplies
- * numbers. Exposure always comes from `DiagnosticFacts.leaks`.
+ * numbers or scores. Exposure always comes from `DiagnosticFacts.leaks` and
+ * scores always come from `DiagnosticFacts.framework`.
  */
 export const DiagnosticNarrativeSchema = z.object({
   snapshot: z.object({
@@ -201,14 +202,37 @@ export const DiagnosticNarrativeSchema = z.object({
       )
       .max(3),
   }),
-  scorecardNotes: z
+  frameworkNotes: z
     .array(
       z.object({
-        dimension: ScorecardDimensionSchema,
-        note: z.string().min(1).max(320),
+        pillar: PillarCodeSchema,
+        assessment: z.string().min(1).max(420),
+        commercialImplication: z.string().min(1).max(420),
+        strengthOpportunity: z.string().min(1).max(340),
       }),
     )
-    .max(8),
+    .length(5),
+  keyConstraints: z
+    .array(
+      z.object({
+        pillar: PillarCodeSchema,
+        title: z.string().min(1).max(140),
+        whatItMeans: z.string().min(1).max(420),
+        metricRef: z.string().min(1).max(120),
+      }),
+    )
+    .min(1)
+    .max(4),
+  strengths: z
+    .array(
+      z.object({
+        pillar: PillarCodeSchema,
+        title: z.string().min(1).max(140),
+        detail: z.string().min(1).max(380),
+        metricRef: z.string().min(1).max(120),
+      }),
+    )
+    .max(4),
   leakNarratives: z
     .array(
       z.object({
@@ -228,20 +252,32 @@ export const DiagnosticNarrativeSchema = z.object({
     .array(
       z.object({
         title: z.string().min(1).max(120),
-        action: z.string().min(1).max(320),
-        effortHours: z.number().min(1).max(40),
+        what: z.string().min(1).max(280),
+        when: z.string().min(1).max(100),
+        how: z.string().min(1).max(340),
+        effortHours: z.number().min(0).max(40),
         metricRef: z.string().min(1).max(120),
       }),
     )
     .min(1)
     .max(5),
-  ninetyDayPlan: z
+  thirtyDayPlan: z
     .array(
       z.object({
-        window: z.enum(["Days 1-14", "Days 15-45", "Days 46-90"]),
+        window: z.enum(["Days 1-7", "Days 8-21", "Days 22-30"]),
         focus: z.string().min(1).max(180),
-        actions: z.array(z.string().min(1).max(220)).min(1).max(4),
-        successMetric: z.string().min(1).max(180),
+        actions: z
+          .array(
+            z.object({
+              what: z.string().min(1).max(240),
+              when: z.string().min(1).max(100),
+              how: z.string().min(1).max(360),
+              ownerRole: z.string().min(1).max(100),
+              successMetric: z.string().min(1).max(180),
+            }),
+          )
+          .min(1)
+          .max(4),
       }),
     )
     .length(3),

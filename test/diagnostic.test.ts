@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PDFDocument } from "pdf-lib";
+import { PDFArray, PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { buildFacts, metricValue } from "../src/server/diagnostic/facts";
 import { diagnosticWindow } from "../src/server/diagnostic/collect";
 import { fallbackNarrative, validateNarrative } from "../src/server/diagnostic/synthesize";
@@ -172,6 +172,17 @@ describe("diagnostic facts", () => {
     expect(f.leaks.some((leak) => leak.category === "referral")).toBe(true);
   });
 
+  it("scores the five SNIPE pillars and leaves Instant Capture not assessed", () => {
+    const f = facts();
+    expect(f.framework.map((pillar) => pillar.code)).toEqual(["S", "N", "I", "P", "E"]);
+    const instant = f.framework.find((pillar) => pillar.code === "I");
+    expect(instant?.score).toBeNull();
+    expect(instant?.status).toBe("not_assessed");
+    for (const pillar of f.framework.filter((item) => item.code !== "I")) {
+      expect(pillar.score === null || (pillar.score >= 0 && pillar.score <= 100)).toBe(true);
+    }
+  });
+
   it("resolves nested and indexed metric references", () => {
     const f = facts();
     expect(metricValue(f, "baseline.cancelRatePct")).toBe(16.7);
@@ -187,6 +198,12 @@ describe("diagnostic narrative validation", () => {
     expect(DiagnosticNarrativeSchema.safeParse(narrative).success).toBe(true);
     expect(validateNarrative(f, narrative).ok).toBe(true);
     expect(narrative.quickWins.length).toBeGreaterThan(0);
+    expect(narrative.frameworkNotes.map((note) => note.pillar)).toEqual(["S", "N", "I", "P", "E"]);
+    expect(narrative.thirtyDayPlan.map((phase) => phase.window)).toEqual([
+      "Days 1-7",
+      "Days 8-21",
+      "Days 22-30",
+    ]);
   });
 
   it("rejects an unknown leak id", () => {
@@ -202,7 +219,14 @@ describe("diagnostic narrative validation", () => {
     const f = facts();
     const narrative = fallbackNarrative(f);
     narrative.quickWins = [
-      { title: "Test", action: "Test action", effortHours: 2, metricRef: "made.up.metric" },
+      {
+        title: "Test",
+        what: "Test action",
+        when: "This week",
+        how: "Test how",
+        effortHours: 2,
+        metricRef: "made.up.metric",
+      },
     ];
     const result = validateNarrative(f, narrative);
     expect(result.ok).toBe(false);
@@ -241,6 +265,21 @@ describe("diagnostic pdf", () => {
     const bytes = await renderDiagnosticPdf(f, narrative);
     expect(bytes.byteLength).toBeGreaterThan(5000);
     const doc = await PDFDocument.load(bytes);
-    expect(doc.getPageCount()).toBeGreaterThanOrEqual(10);
+    expect(doc.getPageCount()).toBeGreaterThanOrEqual(15);
+  });
+
+  it("adds clickable table of contents links", async () => {
+    const f = facts();
+    const narrative = fallbackNarrative(f);
+    const bytes = await renderDiagnosticPdf(f, narrative);
+    const doc = await PDFDocument.load(bytes);
+    const tocPage = doc.getPage(1);
+    const annots = tocPage.node.lookup(PDFName.of("Annots"), PDFArray);
+    expect(annots).toBeDefined();
+    expect(annots!.size()).toBeGreaterThan(5);
+    const first = annots!.lookup(0) as PDFDict;
+    const action = first.lookup(PDFName.of("A"), PDFDict);
+    const destination = action.lookup(PDFName.of("D"), PDFArray);
+    expect(destination.size()).toBeGreaterThan(1);
   });
 });
