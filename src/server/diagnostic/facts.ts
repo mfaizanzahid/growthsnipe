@@ -133,7 +133,9 @@ function percentile(sorted: number[], p: number): number | null {
 
 function monthList(fromIso: string, toIso: string): string[] {
   const from = new Date(fromIso);
-  const to = new Date(toIso);
+  // The window end is exclusive (the first of the current month), so step back
+  // one millisecond to land on the last full month.
+  const to = new Date(new Date(toIso).getTime() - 1);
   const out: string[] = [];
   let y = from.getUTCFullYear();
   let m = from.getUTCMonth();
@@ -164,6 +166,14 @@ function money(minor: number | null, currency: string): string {
     currency,
     maximumFractionDigits: 0,
   }).format(minor / 100);
+}
+
+function monthYear(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 export function metricValue(facts: DiagnosticFacts, ref: string): unknown {
@@ -261,11 +271,16 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
   }));
 
   const yearMap = new Map<number, number>();
+  const monthsByYear = new Map<number, number>();
   for (const month of monthly) {
     const year = Number(month.month.slice(0, 4));
     yearMap.set(year, (yearMap.get(year) ?? 0) + month.revenueMinor);
+    monthsByYear.set(year, (monthsByYear.get(year) ?? 0) + 1);
   }
+  // A trailing 12-month window only has full calendar years when it starts in
+  // January, so year-over-year is hidden unless both years are complete.
   const yoy = [...yearMap.entries()]
+    .filter(([year]) => monthsByYear.get(year) === 12)
     .sort((a, b) => a[0] - b[0])
     .map(([year, revenue], index, all) => {
       const prev = index > 0 ? all[index - 1]![1] : null;
@@ -392,8 +407,9 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
   const repeatAgentJobs = [...agentAgg.values()].filter((a) => a.jobs >= 2).reduce((s, a) => s + a.jobs, 0);
   const repeatAgentSharePct = totalAgentJobs > 0 ? pct1((repeatAgentJobs / totalAgentJobs) * 100) : null;
 
-  // Services
-  interface ServiceAgg { jobs: number; revenueMinor: number }
+  // Services (job penetration only: revenue by service is not consistent
+  // across providers, so it is deliberately not reported).
+  interface ServiceAgg { jobs: number }
   const serviceAgg = new Map<string, ServiceAgg>();
   let addOnJobs = 0;
   let serviceItemCount = 0;
@@ -412,11 +428,8 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     }
     if (hasAddOn) addOnJobs += 1;
     for (const name of names) {
-      const agg = serviceAgg.get(name) ?? { jobs: 0, revenueMinor: 0 };
+      const agg = serviceAgg.get(name) ?? { jobs: 0 };
       agg.jobs += 1;
-      for (const item of row.services) {
-        if (item.name === name && typeof item.amountMinor === "number") agg.revenueMinor += item.amountMinor;
-      }
       serviceAgg.set(name, agg);
     }
   }
@@ -425,8 +438,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     .map(([name, agg]) => ({
       name,
       jobs: agg.jobs,
-      revenueMinor: agg.revenueMinor,
-      sharePct: totalServiceJobs > 0 ? pct1((agg.jobs / totalServiceJobs) * 100) : 0,
+      penetrationPct: totalServiceJobs > 0 ? pct1((agg.jobs / totalServiceJobs) * 100) : 0,
     }))
     .sort((a, b) => b.jobs - a.jobs)
     .slice(0, 8);
@@ -664,7 +676,9 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       currency,
       generatedAt: new Date(now).toISOString(),
       window: input.window,
-      periodLabel: `${input.window.from.slice(0, 10)} to ${input.window.to.slice(0, 10)}`,
+      periodLabel: `${monthYear(input.window.from)} to ${monthYear(
+        new Date(new Date(input.window.to).getTime() - 1).toISOString(),
+      )}`,
     },
     baseline: {
       jobs,

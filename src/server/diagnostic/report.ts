@@ -12,18 +12,26 @@ import {
 } from "../email/templates";
 import { PORTAL_NAME } from "../lib/brand";
 import {
+  claimDiagnosticOrdersForEnrichment,
   clearDiagnosticOrders,
+  countDiagnosticOrders,
+  countPendingEnrichment,
   createOrGetRun,
   failRun,
   getRunById,
   listDiagnosticOrders,
   logDiagnosticEvent,
+  saveDiagnosticOrderServices,
   saveFacts,
   saveNarrative,
   updateRun,
   type DiagnosticRunRow,
 } from "./store";
-import { collectAndPersist, diagnosticWindow } from "./collect";
+import {
+  collectAndPersist,
+  diagnosticWindow,
+  fetchDiagnosticEnrichment,
+} from "./collect";
 import { buildFacts } from "./facts";
 import { synthesizeDiagnostic } from "./synthesize";
 import { renderDiagnosticPdf } from "./pdf";
@@ -88,41 +96,114 @@ export async function startDiagnosticRun(
   return (await getRunById(db, run.id)) ?? run;
 }
 
+export interface PreparedDiagnosticRun {
+  provider: "spectora" | "isn";
+  pendingEnrichment: boolean;
+}
+
+function runProvider(run: DiagnosticRunRow): "spectora" | "isn" | null {
+  return run.provider === "spectora" || run.provider === "isn" ? run.provider : null;
+}
+
 /**
- * Collect, analyze, synthesize, and mark the run ready. Called by the
- * DiagnosticWorkflow (or inline in local dev). Idempotent: an already-ready run
- * is left alone.
+ * Fetch the listing (no ISN detail reads) and persist the temp rows. Workflow
+ * batches then claim and enrich only the rows that still need fee detail.
  */
-export async function processDiagnosticRun(env: Env, db: Db, runId: string): Promise<void> {
+export async function prepareDiagnosticRun(
+  env: Env,
+  db: Db,
+  runId: string,
+): Promise<PreparedDiagnosticRun> {
+  const run = await getRunById(db, runId);
+  if (!run) throw new Error("Diagnostic run not found");
+  const alreadyReady = run.status === "ready" || run.status === "ready_email_failed";
+  const loaded = alreadyReady ? null : await loadCredentials(db, env, runId);
+  if (!alreadyReady && !loaded) {
+    await failRun(db, runId, "awaiting_connection", "No credentials were saved for this run");
+    throw new Error("No credentials were saved for this run");
+  }
+  const provider = loaded?.provider ?? runProvider(run) ?? "isn";
+  if (alreadyReady) return { provider, pendingEnrichment: false };
+
+  const window = run.windowFrom && run.windowTo
+    ? { from: run.windowFrom, to: run.windowTo, monthsCovered: 12 }
+    : diagnosticWindow();
+
+  await updateRun(db, runId, {
+    provider,
+    status: "syncing",
+    stage: "collecting",
+    progress: 15,
+    windowFrom: window.from,
+    windowTo: window.to,
+  });
+  await logDiagnosticEvent(
+    db,
+    runId,
+    "collecting",
+    `Fetching ${provider} data for ${window.from.slice(0, 10)} to ${window.to.slice(0, 10)}`,
+  );
+
+  const collected = await collectAndPersist(
+    env,
+    db,
+    runId,
+    provider,
+    loaded!.credentials,
+    window,
+    Date.now(),
+    { enrich: false },
+  );
+  const pendingEnrichment = provider === "isn" && (await countPendingEnrichment(db, runId)) > 0;
+  await logDiagnosticEvent(
+    db,
+    runId,
+    "collecting",
+    `Fetched ${collected.retrieved} orders${collected.truncated ? " (listing was capped)" : ""}`,
+  );
+  return { provider, pendingEnrichment };
+}
+
+/** Enrich one bounded batch of ISN orders and persist their fee lines. */
+export async function enrichDiagnosticRunBatch(
+  env: Env,
+  db: Db,
+  runId: string,
+  providerOrderIds: string[],
+): Promise<number> {
+  if (providerOrderIds.length === 0) return 0;
+  const loaded = await loadCredentials(db, env, runId);
+  if (!loaded) throw new Error("Credentials are no longer available");
+  const updates = await fetchDiagnosticEnrichment(
+    env,
+    runId,
+    loaded.provider,
+    loaded.credentials,
+    providerOrderIds,
+  );
+  await saveDiagnosticOrderServices(db, runId, updates);
+  const total = await countDiagnosticOrders(db, runId);
+  const pending = await countPendingEnrichment(db, runId);
+  const progress = total > 0 ? 15 + Math.round(((total - pending) / total) * 45) : 50;
+  await updateRun(db, runId, { progress: Math.min(60, progress), stage: "collecting" });
+  return updates.length;
+}
+
+/** Analyze, synthesize, mark ready, and email the report. */
+export async function finalizeDiagnosticRun(env: Env, db: Db, runId: string): Promise<void> {
   const run = await getRunById(db, runId);
   if (!run) return;
   if (run.status === "ready" || run.status === "ready_email_failed") return;
 
   try {
-    const loaded = await loadCredentials(db, env, runId);
-    if (!loaded) {
-      await failRun(db, runId, "awaiting_connection", "No credentials were saved for this run");
-      return;
-    }
-    const provider = loaded.provider;
+    const provider = runProvider(run);
+    if (!provider) throw new Error("Diagnostic provider is missing");
     const order = await getOneTimeOrder(db, run.oneTimeOrderId);
     const window = run.windowFrom && run.windowTo
       ? { from: run.windowFrom, to: run.windowTo, monthsCovered: 12 }
       : diagnosticWindow();
 
-    await updateRun(db, runId, {
-      provider,
-      status: "syncing",
-      stage: "collecting",
-      progress: 15,
-      windowFrom: window.from,
-      windowTo: window.to,
-    });
-    await logDiagnosticEvent(db, runId, "collecting", `Fetching ${provider} data for ${window.from.slice(0, 10)} to ${window.to.slice(0, 10)}`);
-
-    const collected = await collectAndPersist(env, db, runId, provider, loaded.credentials, window);
-
-    await updateRun(db, runId, { status: "analyzing", stage: "analyzing", progress: 55 });
+    await updateRun(db, runId, { status: "analyzing", stage: "analyzing", progress: 60 });
     const rows = await listDiagnosticOrders(db, runId);
     const facts = buildFacts({
       provider,
@@ -137,7 +218,7 @@ export async function processDiagnosticRun(env: Env, db: Db, runId: string): Pro
       db,
       runId,
       "analyzing",
-      `Computed facts from ${collected.retrieved} orders${collected.truncated ? " (retrieval was capped)" : ""}`,
+      `Computed facts from ${rows.length} orders`,
     );
 
     await updateRun(db, runId, { stage: "writing", progress: 78 });
@@ -166,8 +247,33 @@ export async function processDiagnosticRun(env: Env, db: Db, runId: string): Pro
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await failRun(db, runId, run.stage ?? "processing", message);
-    // Let the workflow retry transient collection/AI/render faults. The run
-    // status stays failed until a retry succeeds and flips it to ready.
+    throw err;
+  }
+}
+
+/**
+ * Full pipeline for local/dev runs without a Workflow binding. The workflow
+ * uses the prepare/enrich-batch/finalize functions directly so each step stays
+ * under the per-invocation subrequest budget.
+ */
+export async function processDiagnosticRun(env: Env, db: Db, runId: string): Promise<void> {
+  const run = await getRunById(db, runId);
+  if (!run) return;
+  if (run.status === "ready" || run.status === "ready_email_failed") return;
+
+  try {
+    const prepared = await prepareDiagnosticRun(env, db, runId);
+    if (prepared.provider === "isn") {
+      for (let i = 0; i < 1000; i += 1) {
+        const ids = await claimDiagnosticOrdersForEnrichment(db, runId, 40);
+        if (ids.length === 0) break;
+        await enrichDiagnosticRunBatch(env, db, runId, ids);
+      }
+    }
+    await finalizeDiagnosticRun(env, db, runId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await failRun(db, runId, "processing", message);
     throw err;
   }
 }

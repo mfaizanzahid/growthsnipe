@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PDFDocument } from "pdf-lib";
 import { buildFacts, metricValue } from "../src/server/diagnostic/facts";
+import { diagnosticWindow } from "../src/server/diagnostic/collect";
 import { fallbackNarrative, validateNarrative } from "../src/server/diagnostic/synthesize";
 import { renderDiagnosticPdf } from "../src/server/diagnostic/pdf";
 import { signDiagnosticToken, verifyDiagnosticToken } from "../src/server/diagnostic/tokens";
@@ -30,6 +31,7 @@ function row(over: Partial<DiagnosticOrderInsert> & { providerOrderId: string })
     paid: 1,
     serviceType: "Base inspection",
     servicesJson: services([{ name: "Base inspection", kind: "base", amountMinor: null }]),
+    servicesEnriched: 1,
     inspectorNames: JSON.stringify(["Alex"]),
     buyerName: "Buyer One",
     buyerEmail: "buyer1@example.com",
@@ -110,6 +112,28 @@ function facts() {
   });
 }
 
+describe("diagnostic window", () => {
+  it("uses the last 12 full months, with the last full month as the end", () => {
+    const window = diagnosticWindow(new Date("2026-11-10T12:00:00.000Z").getTime());
+    expect(window.from).toBe("2025-11-01T00:00:00.000Z");
+    expect(window.to).toBe("2026-11-01T00:00:00.000Z");
+    expect(window.monthsCovered).toBe(12);
+  });
+
+  it("labels the period in months an owner recognises", () => {
+    const f = buildFacts({
+      provider: "isn",
+      businessName: "Hale Home Inspections",
+      trade: "Home inspection",
+      currency: "USD",
+      window: diagnosticWindow(new Date("2026-11-10T12:00:00.000Z").getTime()),
+      orders: sampleOrders(),
+      now: NOW,
+    });
+    expect(f.meta.periodLabel).toBe("Nov 2025 to Oct 2026");
+  });
+});
+
 describe("diagnostic facts", () => {
   it("computes the baseline from the reviewed orders", () => {
     const f = facts();
@@ -127,6 +151,15 @@ describe("diagnostic facts", () => {
     expect(f.referrals.topAgents[0]?.sharePct).toBe(60);
     expect(f.services.addOnAttachPct).toBe(20);
     expect(f.ticket.unpaid.amountMinor).toBe(30000);
+  });
+
+  it("reports job penetration by jobs, without per-service revenue", () => {
+    const f = facts();
+    const base = f.services.mix.find((item) => item.name === "Base inspection");
+    const radon = f.services.mix.find((item) => item.name === "Radon test");
+    expect(base?.penetrationPct).toBe(80);
+    expect(radon?.penetrationPct).toBe(20);
+    expect(f.services.mix.every((item) => !("revenueMinor" in item))).toBe(true);
   });
 
   it("produces a leak catalog with code-computed exposure", () => {
@@ -153,6 +186,7 @@ describe("diagnostic narrative validation", () => {
     const narrative = fallbackNarrative(f);
     expect(DiagnosticNarrativeSchema.safeParse(narrative).success).toBe(true);
     expect(validateNarrative(f, narrative).ok).toBe(true);
+    expect(narrative.quickWins.length).toBeGreaterThan(0);
   });
 
   it("rejects an unknown leak id", () => {

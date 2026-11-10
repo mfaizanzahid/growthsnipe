@@ -95,6 +95,7 @@ export const diagnosticOrders = sqliteTable('diagnostic_orders', {
   paid: integer('paid'),
   serviceType: text('service_type'),
   servicesJson: text('services_json'),
+  servicesEnriched: integer('services_enriched').notNull().default(0),
   inspectorNames: text('inspector_names').notNull().default('[]'),
   buyerName: text('buyer_name'),
   buyerEmail: text('buyer_email'),

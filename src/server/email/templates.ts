@@ -38,6 +38,13 @@ export function firstNameOf(name: string | null | undefined): string {
   return first ?? "there";
 }
 
+/** Add the ™ to the two one-time product names wherever they come from data. */
+function brandProductName(value: string): string {
+  return value
+    .replace(/SNIPE Diagnostic(?!™)/g, "SNIPE Diagnostic™")
+    .replace(/SNIPE Blueprint(?!™)/g, "SNIPE Blueprint™");
+}
+
 export function longDate(sec: number): string {
   return new Date(sec * 1000).toLocaleDateString("en-US", {
     month: "long",
@@ -137,12 +144,13 @@ export function oneTimeReceiptContent(input: {
   currency: string;
   orderRef: string;
 }): { subject: string; html: string } {
+  const branded = brandProductName(input.productName);
   return {
-    subject: `Payment received — ${input.productName}`,
+    subject: `Payment received - ${branded}`,
     html:
-      `<p>Your payment of ${money(input.amountMinor, input.currency)} for ${escapeHtml(input.productName)} succeeded.</p>` +
+      `<p>Your payment of ${money(input.amountMinor, input.currency)} for ${escapeHtml(branded)} succeeded.</p>` +
       `<p>Order reference: ${escapeHtml(input.orderRef)}</p>` +
-      `<p>Your next email has your intake checklist and data-submission instructions.</p>`,
+      `<p>Your next email has the next steps.</p>`,
   };
 }
 

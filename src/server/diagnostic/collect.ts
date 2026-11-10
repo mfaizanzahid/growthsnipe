@@ -13,12 +13,10 @@ import type { DiagnosticCredentialMap } from "./credentials";
 import type { DiagnosticProvider } from "./types";
 
 const DAY_MS = 86_400_000;
-const WINDOW_DAYS = 365;
 const ISN_CHUNK_DAYS = 90;
 const SPECTORA_MAX_PAGES = 40;
 const SPECTORA_CANCEL_MAX_PAGES = 12;
-const ENRICH_CAP = 1500;
-const ENRICH_CONCURRENCY = 8;
+const ENRICH_CONCURRENCY = 24;
 
 export interface DiagnosticWindow {
   from: string;
@@ -26,10 +24,20 @@ export interface DiagnosticWindow {
   monthsCovered: number;
 }
 
+/**
+ * The last 12 FULL months. A run started mid-November reviews November 1st of
+ * the prior year through October 31st, so the last month is always complete and
+ * every report is comparable.
+ */
 export function diagnosticWindow(now = Date.now()): DiagnosticWindow {
-  const from = new Date(now - WINDOW_DAYS * DAY_MS).toISOString();
-  const to = new Date(now).toISOString();
-  return { from, to, monthsCovered: 12 };
+  const d = new Date(now);
+  const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+  const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - 12, 1);
+  return {
+    from: new Date(start).toISOString(),
+    to: new Date(end).toISOString(),
+    monthsCovered: 12,
+  };
 }
 
 function pickString(source: Record<string, unknown> | undefined, keys: string[]): string | null {
@@ -72,6 +80,7 @@ function toRow(
 ): DiagnosticOrderInsert {
   const details = (order.details ?? {}) as Record<string, unknown>;
   const services = basketFor(order, enriched);
+  const servicesEnriched = provider === "spectora" || enriched !== null ? 1 : 0;
   return {
     id: `${runId}:${provider}:${order.id}`,
     runId,
@@ -84,6 +93,7 @@ function toRow(
     paid: order.paid === true ? 1 : order.paid === false ? 0 : null,
     serviceType: order.serviceType ?? null,
     servicesJson: JSON.stringify(services),
+    servicesEnriched,
     inspectorNames: JSON.stringify(splitPeople(order.inspectorName)),
     buyerName: order.buyerName ?? pickString(details, ["client_display", "buyerName"]),
     buyerEmail: pickString(details, ["client_email", "buyerEmail", "buyer_email"]),
@@ -187,13 +197,16 @@ export async function collectDiagnosticOrders(
   credentials: DiagnosticCredentialMap,
   window: DiagnosticWindow,
   now = Date.now(),
+  opts: { enrich?: boolean } = {},
 ): Promise<CollectedDiagnosticOrders> {
   const adapter = createProviderAdapter(env, { provider, credentials });
   const fetched = provider === "spectora" ? await fetchSpectora(adapter, window) : await fetchIsn(adapter, window);
 
   let enrichedById = new Map<string, BasketItem[]>();
-  if (provider === "isn" && fetched.orders.length > 0) {
-    const ids = fetched.orders.slice(0, ENRICH_CAP).map((o) => o.id);
+  if (provider === "isn" && fetched.orders.length > 0 && opts.enrich !== false) {
+    // Enrich every order (no cap): ISN fee detail lives only on the per-order
+    // read, and job penetration is only as good as the share of jobs covered.
+    const ids = fetched.orders.map((o) => o.id);
     const prefix = `diag:${runId}`;
     const result = await fetchEnrichBatch(adapter, prefix, ids, ENRICH_CONCURRENCY);
     enrichedById = new Map(
@@ -211,7 +224,7 @@ export async function collectDiagnosticOrders(
   return {
     rows,
     retrieved: rows.length,
-    truncated: fetched.truncated || (provider === "isn" && fetched.orders.length > ENRICH_CAP),
+    truncated: fetched.truncated,
   };
 }
 
@@ -224,9 +237,43 @@ export async function collectAndPersist(
   credentials: DiagnosticCredentialMap,
   window: DiagnosticWindow,
   now = Date.now(),
+  opts: { enrich?: boolean } = {},
 ): Promise<{ retrieved: number; truncated: boolean }> {
-  const collected = await collectDiagnosticOrders(env, runId, provider, credentials, window, now);
+  const collected = await collectDiagnosticOrders(env, runId, provider, credentials, window, now, opts);
   await clearDiagnosticOrders(db, runId);
   await insertDiagnosticOrders(db, collected.rows);
   return { retrieved: collected.retrieved, truncated: collected.truncated };
+}
+
+/**
+ * One bounded enrichment batch. Returns services for every claimed order,
+ * using an empty basket when the detail read failed, so the caller can mark the
+ * batch complete and the workflow always makes progress.
+ */
+export async function fetchDiagnosticEnrichment(
+  env: Env,
+  runId: string,
+  provider: DiagnosticProvider,
+  credentials: DiagnosticCredentialMap,
+  providerOrderIds: string[],
+): Promise<Array<{ providerOrderId: string; servicesJson: string }>> {
+  if (provider !== "isn" || providerOrderIds.length === 0) {
+    return providerOrderIds.map((providerOrderId) => ({ providerOrderId, servicesJson: "[]" }));
+  }
+  const adapter = createProviderAdapter(env, { provider, credentials });
+  const prefix = `diag:${runId}`;
+  const result = await fetchEnrichBatch(adapter, prefix, providerOrderIds, ENRICH_CONCURRENCY);
+  const key = `${prefix}:isn:`;
+  const byId = new Map(
+    result.results.map((r) => {
+      const id = r.orderId.startsWith(key) ? r.orderId.slice(key.length) : r.orderId;
+      return [id, r.items] as const;
+    }),
+  );
+  return providerOrderIds.map((providerOrderId) => ({
+    providerOrderId,
+    servicesJson: JSON.stringify(
+      (byId.get(providerOrderId) ?? []).filter((item) => item.name !== NO_CHARGE_MARKER),
+    ),
+  }));
 }

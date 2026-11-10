@@ -33,6 +33,25 @@ function pct(value: number | null): string {
   return value === null ? "n/a" : `${value}%`;
 }
 
+function compactMoney(minor: number, currency: string): string {
+  const value = minor / 100;
+  if (value >= 1_000_000) return `${currency === "USD" ? "$" : ""}${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${currency === "USD" ? "$" : ""}${Math.round(value / 1_000)}k`;
+  return `${currency === "USD" ? "$" : ""}${Math.round(value)}`;
+}
+
+const PRODUCT_LABELS: Record<string, string> = {
+  DIY: "DIY",
+  "SNIPE Loops": "SNIPE Loops™",
+  "SNIPE Blueprint": "SNIPE Blueprint™",
+  "SNIPE Engine Core": "SNIPE Engine™ Core",
+  "SNIPE Engine Command": "SNIPE Engine™ Command",
+};
+
+function displayProduct(name: string): string {
+  return PRODUCT_LABELS[name] ?? name;
+}
+
 function sanitize(value: string): string {
   return value
     .replace(/\u2014|\u2013/g, "-")
@@ -93,7 +112,7 @@ class Report {
   }
 
   private chrome(): void {
-    this.page.drawText("SNIPE Diagnostic", {
+    this.page.drawText("SNIPE Diagnostic™", {
       x: MARGIN,
       y: HEADER_Y,
       size: 8,
@@ -203,7 +222,7 @@ class Report {
         font: this.bold,
         color: PRIMARY,
       });
-      this.y -= 14;
+      this.y -= 24;
     }
     const size = opts.size ?? 20;
     for (const line of this.wrap(text, this.bold, size, CONTENT_W)) {
@@ -416,6 +435,17 @@ class Report {
         color: PRIMARY,
       });
       tops.push({ x: x + barW / 2, y: baseline + barH });
+      const valueLabel = compactMoney(point.value, currency);
+      const valueWidth = this.font.widthOfTextAtSize(valueLabel, 5.5);
+      if (step > 24) {
+        this.page.drawText(valueLabel, {
+          x: x + (barW - valueWidth) / 2,
+          y: baseline + barH + 4,
+          size: 5.5,
+          font: this.font,
+          color: MUTED,
+        });
+      }
       this.page.drawText(this.fit(point.label, this.font, 6.5, step - 2), {
         x: chartLeft + index * step + 1,
         y: baseline - 11,
@@ -515,7 +545,7 @@ export async function renderDiagnosticPdf(
   const cover = report.currentPage;
   cover.drawRectangle({ x: 0, y: PAGE_H - 220, width: PAGE_W, height: 220, color: PRIMARY });
   cover.drawText("GrowthSnipe", { x: MARGIN, y: PAGE_H - 70, size: 13, font: bold, color: WHITE });
-  cover.drawText("SNIPE Diagnostic", { x: MARGIN, y: PAGE_H - 130, size: 34, font: bold, color: WHITE });
+  cover.drawText("SNIPE Diagnostic™", { x: MARGIN, y: PAGE_H - 130, size: 34, font: bold, color: WHITE });
   cover.drawText("12-month performance review", { x: MARGIN, y: PAGE_H - 160, size: 14, font, color: rgb(0.85, 0.92, 1) });
   cover.drawText(sanitize(facts.meta.businessName ?? "Business review"), { x: MARGIN, y: PAGE_H - 280, size: 22, font: bold, color: INK });
   cover.drawText(sanitize(facts.meta.trade ?? "Home services"), { x: MARGIN, y: PAGE_H - 304, size: 11, font, color: MUTED });
@@ -537,7 +567,7 @@ export async function renderDiagnosticPdf(
   for (const finding of narrative.executiveSummary.topFindings) {
     report.ensure(40);
     report.text(finding.title, { bold: true, size: 10.5 });
-    report.text(`${finding.oneLine} (${finding.metricRef})`, { size: 9.5, color: MUTED });
+    report.text(finding.oneLine, { size: 9.5, color: MUTED });
     report.space(2);
   }
 
@@ -653,20 +683,24 @@ export async function renderDiagnosticPdf(
     }
   }
 
-  // Job value and service mix
+  // Job value and job penetration
   report.newPage();
-  report.heading("Job value and service mix", { kicker: "Ticket architecture" });
+  report.heading("Job value and job penetration", { kicker: "Ticket architecture" });
   report.kpiRow([
     { label: "Median ticket", value: money(facts.ticket.distributionMinor.p50, currency) },
     { label: "Top quartile", value: money(facts.ticket.distributionMinor.p75, currency) },
     { label: "Top decile", value: money(facts.ticket.distributionMinor.p90, currency) },
     { label: "Add-on attach", value: pct(facts.services.addOnAttachPct) },
   ]);
-  report.subheading("Service mix");
+  report.subheading("Job penetration");
+  report.text(
+    "Job penetration is the share of reviewed jobs that included each service or add-on.",
+    { size: 9, color: MUTED },
+  );
   report.table(
-    ["Service", "Jobs", "Revenue", "Share"],
-    facts.services.mix.map((s) => [s.name, `${s.jobs}`, money(s.revenueMinor, currency), `${s.sharePct}%`]),
-    [2.6, 0.7, 1.2, 0.7],
+    ["Service", "Jobs", "% of jobs"],
+    facts.services.mix.map((s) => [s.name, `${s.jobs}`, `${s.penetrationPct}%`]),
+    [3.2, 0.8, 1],
   );
   report.text(`Average services per job: ${facts.services.avgServicesPerJob === null ? "n/a" : facts.services.avgServicesPerJob}.`, { size: 10 });
   const ticketLeaks = facts.leaks.filter((leak) => leak.category === "ticket");
@@ -788,7 +822,7 @@ export async function renderDiagnosticPdf(
     report.ensure(70);
     report.text(`${index + 1}. ${win.title}`, { bold: true, size: 11 });
     report.text(win.action, { size: 9.5 });
-    report.text(`About ${win.effortHours} hours. Watch: ${win.metricRef}.`, { size: 8.5, color: MUTED });
+    report.text(`About ${win.effortHours} hours.`, { size: 8.5, color: MUTED });
     report.space(6);
   });
 
@@ -807,7 +841,7 @@ export async function renderDiagnosticPdf(
   // Next step
   report.newPage();
   report.heading("Recommended next step", { kicker: "Keep moving" });
-  report.kpiRow([{ label: "Recommendation", value: narrative.nextStep.recommendation }]);
+  report.kpiRow([{ label: "Recommendation", value: displayProduct(narrative.nextStep.recommendation) }]);
   report.text(narrative.nextStep.rationale, { size: 10.5 });
   report.space(4);
   report.callout(narrative.nextStep.creditNote);

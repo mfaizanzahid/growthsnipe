@@ -105,6 +105,7 @@ function testDb(): Db {
       paid INTEGER,
       service_type TEXT,
       services_json TEXT,
+      services_enriched INTEGER NOT NULL DEFAULT 0,
       inspector_names TEXT NOT NULL DEFAULT '[]',
       buyer_name TEXT,
       buyer_email TEXT,

@@ -20,6 +20,8 @@ const SYSTEM_PROMPT = [
   "- Write for a smart owner at an 8th-grade reading level. Short sentences. Second person. Direct, calm, concrete.",
   "- No em dashes. Use commas, periods, or colons.",
   "- No jargon, hype, filler, or praise. Prefer one specific next action over general advice.",
+  "- Never write internal metric identifiers or data field names in the prose. Describe measures the way an owner would say them.",
+  "- Write product names exactly as: SNIPE Diagnostic™, SNIPE Blueprint™, SNIPE Engine™ Core, SNIPE Engine™ Command, SNIPE Loops™.",
   "- Return ONLY valid JSON. No markdown, no commentary, no code fences.",
 ].join("\n");
 
@@ -39,8 +41,8 @@ function userPrompt(facts: DiagnosticFacts): string {
     "3. For each selected leak, write: a short title, the likely business consequence, the recommended fix, effort, and confidence. Cite evidence with metricRef and the exact value string found in the leak.",
     "4. Write a snapshot (headline, summary, score rationale) and an executive summary of one to three short paragraphs with up to three top findings.",
     "5. Write a short note for each scorecard dimension in FACTS.",
-    "6. Write up to five quick wins and a 90-day plan with exactly three windows: Days 1-14, Days 15-45, Days 46-90.",
-    "7. In nextStep, recommend one of: DIY, SNIPE Loops, SNIPE Blueprint, SNIPE Engine Core, SNIPE Engine Command, and explain why using the facts. Set creditNote to: 'The SNIPE Diagnostic fee is credited toward a SNIPE Blueprint purchased within 14 days of your readout.'",
+    "6. Write 3 to 5 quick wins for the next 14 days, and a 90-day plan with exactly three windows: Days 1-14, Days 15-45, Days 46-90.",
+    "7. In nextStep, recommend one of: DIY, SNIPE Loops, SNIPE Blueprint, SNIPE Engine Core, SNIPE Engine Command, and explain why using the facts. Set creditNote to: 'The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout.'",
     "8. In methodology, list sources (the provider and the 12-month window), the assumptions you used, and a short no-guarantee disclaimer.",
     "",
     "Return JSON with this exact shape:",
@@ -238,7 +240,7 @@ export function fallbackNarrative(facts: DiagnosticFacts): DiagnosticNarrative {
       effort: index === 0 ? "medium" : "low",
       priorityRank: index + 1,
     })),
-    quickWins: leaks.slice(0, 2).map((leak) => ({
+    quickWins: leaks.slice(0, 3).map((leak) => ({
       title: leak.title,
       action: leakFix(leak),
       effortHours: 4,
@@ -267,7 +269,7 @@ export function fallbackNarrative(facts: DiagnosticFacts): DiagnosticNarrative {
     nextStep: {
       recommendation: "SNIPE Blueprint",
       rationale: "A Blueprint turns the findings into a 12-month plan with targets, channel mix, workflows, and priorities.",
-      creditNote: "The SNIPE Diagnostic fee is credited toward a SNIPE Blueprint purchased within 14 days of your readout.",
+      creditNote: "The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout.",
     },
     methodology: {
       sources: [`${facts.meta.provider} order data, ${facts.meta.periodLabel}`],

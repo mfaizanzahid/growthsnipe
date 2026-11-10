@@ -131,11 +131,11 @@ export interface DiagnosticFacts {
     concentrationIndex: number | null;
   };
   services: {
+    /** Job penetration: share of reviewed jobs that included each service. */
     mix: Array<{
       name: string;
       jobs: number;
-      revenueMinor: number;
-      sharePct: number;
+      penetrationPct: number;
     }>;
     addOnAttachPct: number | null;
     avgServicesPerJob: number | null;
@@ -233,6 +233,7 @@ export const DiagnosticNarrativeSchema = z.object({
         metricRef: z.string().min(1).max(120),
       }),
     )
+    .min(1)
     .max(5),
   ninetyDayPlan: z
     .array(
