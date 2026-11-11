@@ -215,6 +215,19 @@ describe("diagnostic narrative validation", () => {
     expect(result.errors.join(" ")).toContain("unknown leakId");
   });
 
+  it("removes field names from the model prose", () => {
+    const f = facts();
+    const narrative = fallbackNarrative(f);
+    narrative.frameworkNotes[0]!.assessment =
+      "The cancellation rate is 22.5% (baseline.cancelRatePct), with 1445 cancelled jobs (baseline.cancelled).";
+    narrative.frameworkNotes[0]!.strengthOpportunity =
+      "All 12 months had activity (baseline.activeMonths).";
+    const result = validateNarrative(f, narrative);
+    expect(result.ok).toBe(true);
+    expect(result.narrative?.frameworkNotes[0]?.assessment).not.toContain("baseline.");
+    expect(result.narrative?.frameworkNotes[0]?.strengthOpportunity).not.toContain("baseline.");
+  });
+
   it("rejects an unknown metric reference", () => {
     const f = facts();
     const narrative = fallbackNarrative(f);

@@ -579,21 +579,21 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       value: momentumPct === null ? "n/a" : `${momentumPct > 0 ? "+" : ""}${momentumPct}%`,
       points: momentumPct === null ? null : clamp(60 + momentumPct * 1.5),
       weight: 0.5,
-      rule: "Second-half completed revenue vs first half. 0% change = 60 points; each +1% adds 1.5; capped 0 to 100.",
+      rule: "How your revenue in the last six months compares with the six months before. Flat revenue scores 60; each 1% of growth adds 1.5 points, up to 100.",
     },
     {
       label: "Booking health",
       value: percent(cancelRatePct),
       points: cancelRatePct === null ? null : clamp(100 - cancelRatePct * 4),
       weight: 0.3,
-      rule: "0% cancellation = 100 points; each percentage point of cancellation rate costs 4 points.",
+      rule: "How often jobs are cancelled. No cancellations scores 100; each percentage point of cancellation rate lowers the score by 4.",
     },
     {
       label: "Active months",
       value: `${activeMonths} of 12`,
       points: clamp((activeMonths / 12) * 100),
       weight: 0.2,
-      rule: "Months with at least one job divided by 12, times 100.",
+      rule: "How many of the 12 months had at least one job. Every active month adds points, up to 100.",
     },
   ];
   const nComponents: DiagnosticScoreComponent[] = [
@@ -602,21 +602,21 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       value: percent(addOnAttachPct),
       points: addOnAttachPct === null ? null : clamp(addOnAttachPct * 2),
       weight: 0.5,
-      rule: "Add-on attach rate times 2, capped at 100. 50% attachment = 100.",
+      rule: "How often jobs include an add-on. A 50% add-on rate scores 100; lower rates score lower.",
     },
     {
       label: "Service breadth",
       value: avgServicesPerJob === null ? "n/a" : `${avgServicesPerJob} per job`,
       points: avgServicesPerJob === null ? null : clamp(avgServicesPerJob * 40),
       weight: 0.3,
-      rule: "Average services per job times 40, capped at 100. 2.5 services per job = 100.",
+      rule: "How many services the average job includes. Two and a half services per job scores 100.",
     },
     {
       label: "Ticket spread",
       value: ticketSpread === null ? "n/a" : `${ticketSpread.toFixed(2)}x`,
       points: ticketSpread === null ? null : clamp((ticketSpread - 1) * 80),
       weight: 0.2,
-      rule: "90th percentile ticket divided by the median. Ratio minus 1, times 80, capped 0 to 100. 2.25x = 100.",
+      rule: "How much higher your best tickets are than your typical ticket. A wider gap scores higher, up to 100.",
     },
   ];
   const pComponents: DiagnosticScoreComponent[] = [
@@ -628,14 +628,14 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
           ? null
           : clamp(100 - Math.max(0, topAgentShare - 25) * 2),
       weight: 0.5,
-      rule: "100 minus the amount by which the top partner share exceeds 25%, times 2. 25% = 100; 75% = 0.",
+      rule: "How much of your referred work comes from one partner. No partner above 25% scores 100; each point above 25% costs 2 points.",
     },
     {
       label: "Referral breadth",
       value: `${agentAgg.size} partners`,
       points: clamp(agentAgg.size * 8),
       weight: 0.25,
-      rule: "Active referral partners times 8, capped at 100. 12.5 partners = 100.",
+      rule: "How many referral partners send you work. Twelve or more active partners scores 100; fewer score lower.",
     },
     {
       label: "Geographic spread",
@@ -645,7 +645,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
           ? null
           : clamp(100 - Math.max(0, topCitySharePct - 30) * 1.5),
       weight: 0.25,
-      rule: "100 minus the amount by which the top city share exceeds 30%, times 1.5. 30% = 100; 90% = 10.",
+      rule: "How spread out your work is across cities. No city above 30% of jobs scores 100; each point above 30% costs 1.5 points.",
     },
   ];
   const eComponents: DiagnosticScoreComponent[] = [
@@ -655,14 +655,14 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       points:
         repeatClientSharePct === null ? null : clamp(repeatClientSharePct * 1.5),
       weight: 0.5,
-      rule: "Repeat client share times 1.5, capped at 100. 67% = 100.",
+      rule: "How many clients come back. A 67% repeat rate scores 100; lower rates score lower.",
     },
     {
       label: "Inspector balance",
       value: inspectorCv === null ? "n/a" : `${pct1(inspectorCv * 100)}% variation`,
       points: inspectorCv === null ? null : clamp(100 - inspectorCv * 100),
       weight: 0.3,
-      rule: "100 minus the coefficient of variation of completed jobs across inspectors, times 100. Even distribution = 100.",
+      rule: "How evenly completed jobs are spread across inspectors. Even spread scores 100; uneven spread scores lower.",
     },
     {
       label: "Capacity utilization",
@@ -670,7 +670,7 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
       points:
         avgUtilization === null ? null : clamp(100 - Math.abs(avgUtilization - 75)),
       weight: 0.2,
-      rule: "100 minus the absolute distance from 75% average utilization. 75% = 100.",
+      rule: "How full the schedule is compared with a two-job-per-day baseline. Around 75% scores 100; being far above or below lowers the score.",
     },
   ];
 
@@ -925,3 +925,4 @@ export function buildFacts(input: BuildFactsInput): DiagnosticFacts {
     leaks,
   };
 }
+

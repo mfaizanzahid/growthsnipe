@@ -10,7 +10,7 @@ import {
   type RGB,
 } from "pdf-lib";
 import { OFFER_CREDITS, OFFERS } from "../../lib/offers";
-import type { DiagnosticFacts, DiagnosticNarrative } from "./types";
+import type { DiagnosticFacts, DiagnosticNarrative, DiagnosticPillarCode } from "./types";
 
 const PAGE_W = 612;
 const PAGE_H = 792;
@@ -104,6 +104,57 @@ function pillarColor(pillar: string): RGB {
   if (pillar === "N" || pillar === "S") return DANGER;
   if (pillar === "P") return WARN;
   return GOOD;
+}
+
+const SHORT_PILLAR: Record<DiagnosticPillarCode, string> = {
+  S: "Size the Gap",
+  N: "Net-Ticket",
+  I: "Instant Capture",
+  P: "Pipeline",
+  E: "Expand and Evaluate",
+};
+
+function pillarForRef(ref: string): DiagnosticPillarCode | null {
+  if (ref.startsWith("baseline.") || ref.startsWith("trend.")) return "S";
+  if (ref.startsWith("ticket.") || ref.startsWith("services.")) return "N";
+  if (ref.startsWith("referrals.") || ref.startsWith("geography.")) return "P";
+  if (ref.startsWith("clients.") || ref.startsWith("team.")) return "E";
+  return null;
+}
+
+function pillarForText(text: string): DiagnosticPillarCode | null {
+  const value = text.toLowerCase();
+  if (/referr|partner|agent|pipeline|concentration|city|geograph|source/.test(value)) return "P";
+  if (/add.?on|ticket|price|package|upsell|penetration|service mix|average/.test(value)) return "N";
+  if (/repeat|client|capacity|inspector|schedule|utilization|team|retention/.test(value)) return "E";
+  if (/cancel|no.?show|confirm|booking|unpaid|revenue|margin/.test(value)) return "S";
+  return null;
+}
+
+function findLeakForFinding(
+  finding: DiagnosticNarrative["executiveSummary"]["topFindings"][number],
+  leaks: DiagnosticFacts["leaks"],
+): DiagnosticFacts["leaks"][number] | null {
+  const words = `${finding.title} ${finding.oneLine}`
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length > 3);
+  let best: DiagnosticFacts["leaks"][number] | null = null;
+  let bestScore = 0;
+  for (const leak of leaks) {
+    const title = leak.title.toLowerCase();
+    const score = words.reduce((sum, word) => sum + (title.includes(word) ? 1 : 0), 0);
+    if (score > bestScore) {
+      best = leak;
+      bestScore = score;
+    }
+  }
+  if (bestScore >= 2) return best;
+  return (
+    leaks.find((leak) =>
+      leak.evidence.some((evidence) => evidence.metricRef === finding.metricRef),
+    ) ?? null
+  );
 }
 
 class Report {
@@ -423,11 +474,42 @@ class Report {
     this.y -= 6;
   }
 
-  subheading(text: string): void {
-    this.ensure(34);
+  subheading(text: string, keep = 0, accent?: RGB): void {
+    this.ensure(34 + keep);
     this.y -= 4;
-    this.page.drawText(sanitize(text), { x: MARGIN, y: this.y, size: 11.5, font: this.bold, color: INK });
+    const x = accent ? MARGIN + 14 : MARGIN;
+    if (accent) {
+      this.page.drawRectangle({ x: MARGIN, y: this.y - 2, width: 4, height: 13, color: accent });
+    }
+    this.page.drawText(sanitize(text), { x, y: this.y, size: 11.5, font: this.bold, color: INK });
     this.y -= 18;
+  }
+
+  wrapLines(text: string, opts: { size?: number; bold?: boolean; width?: number } = {}): string[] {
+    const size = opts.size ?? 10;
+    const font = opts.bold ? this.bold : this.font;
+    const width = opts.width ?? CONTENT_W;
+    return this.wrap(text, font, size, width);
+  }
+
+  drawLines(
+    lines: string[],
+    x: number,
+    yTop: number,
+    opts: { size?: number; bold?: boolean; color?: RGB; leading?: number } = {},
+  ): void {
+    const size = opts.size ?? 10;
+    const font = opts.bold ? this.bold : this.font;
+    const leading = opts.leading ?? size * 1.4;
+    lines.forEach((line, index) => {
+      this.page.drawText(line, {
+        x,
+        y: yTop - index * leading,
+        size,
+        font,
+        color: opts.color ?? INK,
+      });
+    });
   }
 
   divider(): void {
@@ -497,17 +579,22 @@ class Report {
     this.y = top - cardH - 16;
   }
 
-  table(headers: string[], rows: string[][], widths: number[]): void {
+  table(headers: string[], rows: string[][], widths: number[], accent?: RGB): void {
     const headerH = 18;
     const lineH = 12;
     const size = 8.5;
+    const offset = accent ? 14 : 0;
+    const tableLeft = MARGIN + offset;
+    const tableWidth = CONTENT_W - offset;
     const total = widths.reduce((sum, width) => sum + width, 0);
-    const cols = widths.map((width) => (width / total) * CONTENT_W);
+    const cols = widths.map((width) => (width / total) * tableWidth);
+    const startPage = this.page;
+    const startY = this.y;
     this.ensure(headerH + 8);
     const drawHeader = () => {
       const top = this.y;
-      this.page.drawRectangle({ x: MARGIN, y: top - headerH, width: CONTENT_W, height: headerH, color: SOFT });
-      let x = MARGIN + 6;
+      this.page.drawRectangle({ x: tableLeft, y: top - headerH, width: tableWidth, height: headerH, color: SOFT });
+      let x = tableLeft + 6;
       headers.forEach((header, i) => {
         this.page.drawText(sanitize(header), {
           x,
@@ -534,14 +621,14 @@ class Report {
       const top = this.y;
       if (rowIndex % 2 === 1) {
         this.page.drawRectangle({
-          x: MARGIN,
+          x: tableLeft,
           y: top - rowH,
-          width: CONTENT_W,
+          width: tableWidth,
           height: rowH,
           color: rgb(0.985, 0.988, 0.995),
         });
       }
-      let x = MARGIN + 6;
+      let x = tableLeft + 6;
       cellLines.forEach((lines, i) => {
         const font = i === 0 ? this.bold : this.font;
         const numeric = /^[-+]?\$?[\d,]+(\.\d+)?%?$/.test(row[i]!.replace(/\s+/g, ""));
@@ -558,14 +645,42 @@ class Report {
         x += cols[i]!;
       });
       this.page.drawLine({
-        start: { x: MARGIN, y: top - rowH },
-        end: { x: PAGE_W - MARGIN, y: top - rowH },
+        start: { x: tableLeft, y: top - rowH },
+        end: { x: tableLeft + tableWidth, y: top - rowH },
         thickness: 0.5,
         color: BORDER,
       });
       this.y = top - rowH;
     }
     this.y -= 12;
+    if (accent) {
+      const endY = this.y + 2;
+      if (this.page === startPage) {
+        startPage.drawRectangle({
+          x: MARGIN,
+          y: endY,
+          width: 4,
+          height: Math.max(20, startY - endY),
+          color: accent,
+        });
+      } else {
+        const firstBottom = CONTENT_BOTTOM + 6;
+        startPage.drawRectangle({
+          x: MARGIN,
+          y: firstBottom,
+          width: 4,
+          height: Math.max(20, startY - firstBottom),
+          color: accent,
+        });
+        this.page.drawRectangle({
+          x: MARGIN,
+          y: endY,
+          width: 4,
+          height: Math.max(20, CONTENT_TOP - endY),
+          color: accent,
+        });
+      }
+    }
   }
 
   barChart(points: Array<{ label: string; value: number }>, currency: string): void {
@@ -765,23 +880,37 @@ export async function renderDiagnosticPdf(
     const top = report.cursor;
     topFindings.forEach((finding, index) => {
       const x = MARGIN + index * (cardW + gap);
-      const leak = facts.leaks.find((item) =>
-        item.evidence.some((evidence) => evidence.metricRef === finding.metricRef),
-      );
-      const color = leak ? pillarColor(leak.pillar) : PRIMARY;
+      const leak = findLeakForFinding(finding, facts.leaks);
+      const pillarCode =
+        leak?.pillar ??
+        pillarForText(`${finding.title} ${finding.oneLine}`) ??
+        pillarForRef(finding.metricRef) ??
+        facts.framework.find((item) => item.status === "leak" || item.status === "watch")?.code ??
+        "S";
+      const pillar = facts.framework.find((item) => item.code === pillarCode);
+      const leakNarrative = leak
+        ? narrative.leakNarratives.find((item) => item.leakId === leak.id)
+        : undefined;
+      const fallbackSeverity =
+        pillar?.status === "leak" ? "high" : pillar?.status === "watch" ? "medium" : "low";
+      const color = severityColor(leakNarrative?.severity ?? fallbackSeverity);
       report.drawCard(x, top, cardW, cardH, color);
       report.rankBadge(x + 18, top - 18, index + 1, color);
       report.setCursor(top - 18);
       report.text(finding.title, { bold: true, size: 9.5, x: x + 32, width: cardW - 44 });
       report.text(finding.oneLine, { size: 8.5, color: MUTED, x: x + 12, width: cardW - 24 });
-      if (leak) {
-        report.chip(x + 12, top - cardH + 8, `${leak.pillar} pillar`, PRIMARY, PRIMARY_SOFT);
-      }
+      report.chip(
+        x + 12,
+        top - cardH + 8,
+        `${pillarCode} ${SHORT_PILLAR[pillarCode]}`,
+        color,
+        SOFT,
+      );
     });
     report.setCursor(top - cardH - 12);
   }
 
-  report.subheading("The full picture");
+  report.subheading("The full picture", 60);
   for (const paragraph of narrative.executiveSummary.paragraphs) {
     report.text(paragraph, { size: 10.5 });
   }
@@ -855,7 +984,7 @@ export async function renderDiagnosticPdf(
     report.setCursor(yTop - height - 12);
   }
 
-  report.subheading("Key constraints");
+  report.subheading("Key constraints", 110);
   for (let i = 0; i < narrative.keyConstraints.length; i += 2) {
     const pair = narrative.keyConstraints.slice(i, i + 2);
     const gap = 10;
@@ -884,7 +1013,7 @@ export async function renderDiagnosticPdf(
   }
 
   if (narrative.strengths.length > 0) {
-    report.subheading("Strengths and opportunities");
+    report.subheading("Strengths and opportunities", 110);
     for (let i = 0; i < narrative.strengths.length; i += 2) {
       const pair = narrative.strengths.slice(i, i + 2);
       const gap = 10;
@@ -925,30 +1054,30 @@ export async function renderDiagnosticPdf(
     { label: "Jobs per week", value: facts.baseline.jobsPerWeek === null ? "n/a" : `${facts.baseline.jobsPerWeek}` },
     { label: "Active months", value: `${facts.baseline.activeMonths} of ${facts.trend.monthly.length}` },
     { label: "Active partners", value: `${facts.referrals.activeAgentCount}` },
-    { label: "Add-on attach", value: pct(facts.services.addOnAttachPct) },
+    { label: "Add-on rate", value: pct(facts.services.addOnAttachPct) },
   ]);
-  report.subheading("What this means");
+  report.subheading("What this means", 70);
   report.callout(
     `${facts.baseline.jobs} jobs were booked and ${facts.baseline.completed} were completed, producing ${money(facts.baseline.revenueMinor, currency)} at an average ticket of ${money(facts.baseline.avgTicketMinor, currency)}. ${facts.baseline.cancelled} jobs were cancelled.`,
   );
 
   // Revenue trend
   section("Revenue trend");
-  report.heading("Revenue trend", { kicker: "Seasonality and momentum" });
+  report.heading("Revenue trend", { kicker: "Monthly pattern and direction" });
   report.barChart(facts.trend.monthly.map((m) => ({ label: monthLabel(m.month), value: m.revenueMinor })), currency);
   report.kvGrid(
     [
       { label: "Best month", value: facts.trend.bestMonth ?? "n/a" },
       { label: "Quietest month", value: facts.trend.worstMonth ?? "n/a" },
       {
-        label: "Seasonality",
+        label: "Monthly spread",
         value: facts.trend.seasonalityIndex === null ? "n/a" : `${facts.trend.seasonalityIndex}% range`,
       },
     ],
     3,
   );
   if (facts.trend.yoy.length > 1) {
-    report.subheading("Year over year");
+    report.subheading("Year over year", 70);
     report.table(
       ["Year", "Revenue", "Growth"],
       facts.trend.yoy.map((row) => [String(row.year), money(row.revenueMinor, currency), row.growthPct === null ? "n/a" : `${row.growthPct}%`]),
@@ -963,14 +1092,14 @@ export async function renderDiagnosticPdf(
     `${facts.referrals.activeAgentCount} referring partners produced jobs in the period. Your largest partner accounts for ${pct(facts.referrals.topAgents[0]?.sharePct ?? null)} of referred jobs.`,
     { size: 10 },
   );
-  report.subheading("Top referring agents");
+  report.subheading("Top referring agents", 80);
   report.table(
     ["Agent", "Jobs", "Revenue", "Share", "Status"],
     facts.referrals.topAgents.map((a) => [a.name, `${a.jobs}`, money(a.revenueMinor, currency), `${a.sharePct}%`, a.status]),
     [2.2, 0.6, 1.1, 0.7, 0.9],
   );
   if (facts.referrals.topAgencies.length > 0) {
-    report.subheading("Top agencies");
+    report.subheading("Top agencies", 80);
     report.table(
       ["Agency", "Jobs", "Revenue", "Share"],
       facts.referrals.topAgencies.map((a) => [a.name, `${a.jobs}`, money(a.revenueMinor, currency), `${a.sharePct}%`]),
@@ -980,38 +1109,46 @@ export async function renderDiagnosticPdf(
   report.kvGrid(
     [
       { label: "Repeat referrer share", value: pct(facts.referrals.repeatAgentSharePct) },
-      { label: "Concentration index", value: facts.referrals.concentrationIndex === null ? "n/a" : `${facts.referrals.concentrationIndex}` },
+      { label: "Partner concentration", value: facts.referrals.concentrationIndex === null ? "n/a" : `${facts.referrals.concentrationIndex}` },
       { label: "Dormant partners", value: `${facts.referrals.droppedAgents.length}` },
     ],
     3,
   );
   if (facts.referrals.newAgents.length > 0) {
-    report.subheading("New partners in the last 90 days");
+    const gap = 10;
+    const rows: Array<{
+      pair: Array<(typeof facts.referrals.newAgents)[number]>;
+      cardW: number;
+      rowH: number;
+    }> = [];
     for (let i = 0; i < facts.referrals.newAgents.length; i += 2) {
       const pair = facts.referrals.newAgents.slice(i, i + 2);
-      const gap = 10;
       const cardW = pair.length === 1 ? CONTENT_W : (CONTENT_W - gap) / 2;
       const nameHeights = pair.map((agent, index) => {
         const x = MARGIN + index * (cardW + gap);
         return report.measure(agent.name, { bold: true, size: 10, x: x + 12, width: cardW - 74 });
       });
-      const rowH = 34 + Math.max(...nameHeights) + 22;
-      report.ensure(rowH + 10);
+      rows.push({ pair, cardW, rowH: 34 + Math.max(...nameHeights) + 22 });
+    }
+    const totalHeight = rows.reduce((sum, row) => sum + row.rowH + 10, 0);
+    report.ensure(34 + totalHeight);
+    report.subheading("New partners in the last 90 days");
+    for (const row of rows) {
       const top = report.cursor;
-      pair.forEach((agent, index) => {
-        const x = MARGIN + index * (cardW + gap);
-        report.drawCard(x, top, cardW, rowH, GOOD);
+      row.pair.forEach((agent, index) => {
+        const x = MARGIN + index * (row.cardW + gap);
+        report.drawCard(x, top, row.cardW, row.rowH, GOOD);
         report.setCursor(top - 18);
-        report.text(agent.name, { bold: true, size: 10, x: x + 12, width: cardW - 74 });
+        report.text(agent.name, { bold: true, size: 10, x: x + 12, width: row.cardW - 74 });
         report.text(`${agent.jobs} jobs  |  ${money(agent.revenueMinor, currency)}`, {
           size: 8.5,
           color: MUTED,
           x: x + 12,
-          width: cardW - 24,
+          width: row.cardW - 24,
         });
-        report.chip(x + cardW - 52, top - 26, "NEW", GOOD);
+        report.chip(x + row.cardW - 52, top - 26, "NEW", GOOD);
       });
-      report.setCursor(top - rowH - 10);
+      report.setCursor(top - row.rowH - 10);
     }
   }
 
@@ -1077,12 +1214,12 @@ export async function renderDiagnosticPdf(
   section("Job value and job penetration");
   report.heading("Job value and job penetration", { kicker: "Ticket architecture" });
   report.kpiRow([
-    { label: "Median ticket", value: money(facts.ticket.distributionMinor.p50, currency) },
-    { label: "Top quartile", value: money(facts.ticket.distributionMinor.p75, currency) },
-    { label: "Top decile", value: money(facts.ticket.distributionMinor.p90, currency) },
-    { label: "Add-on attach", value: pct(facts.services.addOnAttachPct) },
+    { label: "Typical ticket", value: money(facts.ticket.distributionMinor.p50, currency) },
+    { label: "Upper range", value: money(facts.ticket.distributionMinor.p75, currency) },
+    { label: "High-end jobs", value: money(facts.ticket.distributionMinor.p90, currency) },
+    { label: "Add-on rate", value: pct(facts.services.addOnAttachPct) },
   ]);
-  report.subheading("Job penetration");
+  report.subheading("Job penetration", 80);
   report.text(
     "Job penetration is the share of reviewed jobs that included each service or add-on.",
     { size: 9, color: MUTED },
@@ -1103,14 +1240,21 @@ export async function renderDiagnosticPdf(
     { label: "Repeat client share", value: pct(facts.clients.repeatClientSharePct) },
     { label: "Jobs per client", value: facts.clients.avgJobsPerClient === null ? "n/a" : `${facts.clients.avgJobsPerClient}` },
     { label: "Repeat referrer share", value: pct(facts.referrals.repeatAgentSharePct) },
-    { label: "Client match rate", value: pct(facts.clients.identityCoveragePct) },
+    { label: "Clients identified", value: pct(facts.clients.identityCoveragePct) },
   ]);
   if (facts.referrals.droppedAgents.length > 0) {
-    report.subheading("Partners who have gone quiet");
+    const accent = pillarColor("P");
+    report.subheading("Partners who have gone quiet", 80, accent);
     report.table(
       ["Partner", "Jobs", "Revenue", "Last job"],
-      facts.referrals.droppedAgents.map((a) => [a.name, `${a.jobs}`, money(a.revenueMinor, currency), shortDate(a.lastSeen)]),
+      facts.referrals.droppedAgents.map((agent) => [
+        agent.name,
+        `${agent.jobs}`,
+        money(agent.revenueMinor, currency),
+        shortDate(agent.lastSeen),
+      ]),
       [2.4, 0.7, 1.2, 1],
+      accent,
     );
   }
   const repeatLeaks = facts.leaks.filter((leak) => leak.category === "repeat" || leak.category === "referral");
@@ -1125,13 +1269,13 @@ export async function renderDiagnosticPdf(
       : null;
   report.kpiRow([
     { label: "Inspectors", value: `${facts.team.inspectorCount}` },
-    { label: "Team job share", value: pct(facts.team.teamJobSharePct) },
-    { label: "Avg utilization", value: avgUtilization === null ? "n/a" : `${Math.round(avgUtilization)}%` },
+    { label: "Team jobs", value: pct(facts.team.teamJobSharePct) },
+    { label: "Average schedule use", value: avgUtilization === null ? "n/a" : `${Math.round(avgUtilization)}%` },
   ]);
   if (facts.team.inspectors.length > 0) {
-    report.subheading("Inspector throughput");
+    report.subheading("Work per inspector", 80);
     report.table(
-      ["Inspector", "Jobs", "Revenue", "Avg ticket", "Utilization"],
+      ["Inspector", "Jobs", "Revenue", "Avg ticket", "Schedule use"],
       facts.team.inspectors.map((i) => [
         i.name,
         `${i.jobs}`,
@@ -1141,7 +1285,7 @@ export async function renderDiagnosticPdf(
       ]),
       [2, 0.6, 1.2, 1.1, 1],
     );
-    report.text("Utilization is measured against a two-job-per-day baseline and is directional, not a target.", { size: 8.5, color: MUTED });
+    report.text("Schedule use compares each inspector with a two-job-per-day baseline. Treat it as a direction, not a target.", { size: 8.5, color: MUTED });
   }
 
   // Leak map
@@ -1329,7 +1473,7 @@ export async function renderDiagnosticPdf(
     const stripTop = report.cursor;
     const exposureFor = (finding: (typeof topThree)[number]): string =>
       finding.leak?.quantifiable && finding.leak.exposure
-        ? `Exposure ${money(finding.leak.exposure.lowMinor, currency)} to ${money(finding.leak.exposure.highMinor, currency)}`
+        ? `Estimated range ${money(finding.leak.exposure.lowMinor, currency)} to ${money(finding.leak.exposure.highMinor, currency)}`
         : `${finding.item.severity} severity`;
     const titleHeights = topThree.map((finding, index) => {
       const x = MARGIN + index * (stripW + stripGap);
@@ -1419,10 +1563,12 @@ export async function renderDiagnosticPdf(
     const heights = pair.map((win, index) => {
       const x = MARGIN + index * (cardW + winGap);
       return (
-        56 +
-        report.measure(win.title, { bold: true, size: 11, x: x + 34 }) +
-        report.measure(win.what, { size: 9.5, x: x + 14 }) +
-        report.measure(`How: ${win.how}`, { size: 8.5, x: x + 14 })
+        60 +
+        report.measure(win.title, { bold: true, size: 11, x: x + 34, width: cardW - 44 }) +
+        report.measure(win.what, { size: 9.5, x: x + 14, width: cardW - 28 }) +
+        report.measure(`How: ${win.how}`, { size: 8.5, x: x + 14, width: cardW - 28 }) +
+        report.measure(`When: ${win.when}`, { size: 8.5, x: x + 14, width: cardW - 28 }) +
+        18
       );
     });
     const rowH = Math.max(...heights);
@@ -1445,9 +1591,9 @@ export async function renderDiagnosticPdf(
       report.text(win.title, { bold: true, size: 11, x: x + 34, width: cardW - 44 });
       report.text(win.what, { size: 9.5, x: x + 14, width: cardW - 28 });
       report.text(`How: ${win.how}`, { size: 8.5, color: MUTED, x: x + 14, width: cardW - 28 });
-      let chipX = x + 14;
+      report.text(`When: ${win.when}`, { size: 8.5, color: MUTED, x: x + 14, width: cardW - 28 });
       const chipsY = rowTop - rowH + 12;
-      chipX += report.chip(chipX, chipsY, `When: ${win.when}`, MUTED) + 6;
+      let chipX = x + 14;
       chipX += report.chip(chipX, chipsY, `Time: ${Math.max(1, win.effortHours)}h`, PRIMARY, PRIMARY_SOFT) + 6;
       if (isFirst) report.chip(chipX, chipsY, "START HERE", PRIMARY, PRIMARY_SOFT);
     });
@@ -1463,17 +1609,22 @@ export async function renderDiagnosticPdf(
   );
   report.space(6);
 
-  const trackH = 36;
   const segmentShares = [7, 14, 9];
   const totalDays = segmentShares.reduce((sum, value) => sum + value, 0);
   const segGap = 4;
   const usableW = CONTENT_W - segGap * 2;
+  const segmentWidths = segmentShares.map((share) => (share / totalDays) * usableW);
+  const focusLines = narrative.thirtyDayPlan.map((phase, index) =>
+    report.wrapLines(phase.focus, { size: 7.5, width: segmentWidths[index]! - 16 }),
+  );
+  const maxFocusLines = Math.max(...focusLines.map((lines) => lines.length), 1);
+  const trackH = 26 + maxFocusLines * 10.5 + 6;
   const shades: RGB[] = [PRIMARY, rgb(0.18, 0.5, 1), rgb(0.42, 0.66, 1)];
   report.ensure(trackH + 20);
   const trackTop = report.cursor;
   let trackX = MARGIN;
   narrative.thirtyDayPlan.forEach((phase, index) => {
-    const width = (segmentShares[index]! / totalDays) * usableW;
+    const width = segmentWidths[index]!;
     report.currentPage.drawRectangle({
       x: trackX,
       y: trackTop - trackH,
@@ -1483,10 +1634,15 @@ export async function renderDiagnosticPdf(
     });
     report.currentPage.drawText(phase.window, {
       x: trackX + 8,
-      y: trackTop - 15,
+      y: trackTop - 16,
       size: 8.5,
       font: report.bold,
       color: WHITE,
+    });
+    report.drawLines(focusLines[index]!, trackX + 8, trackTop - 30, {
+      size: 7.5,
+      color: rgb(0.92, 0.96, 1),
+      leading: 10.5,
     });
     trackX += width + segGap;
   });
@@ -1601,7 +1757,7 @@ export async function renderDiagnosticPdf(
     report.text(`Your Blueprint will focus on ${focusFindings.join(" and ")}.`, { size: 10 });
   }
 
-  report.subheading("What the Blueprint gives you");
+  report.subheading("What the Blueprint gives you", 100);
   const benefits = [
     "A personalized plan built from your actual numbers.",
     "12-month targets, economics, channel mix, and budget.",
@@ -1637,14 +1793,14 @@ export async function renderDiagnosticPdf(
   }
   report.setCursor(benefitsTop - benefitsH - 12);
 
-  report.subheading("Your credit");
+  report.subheading("Your credit", 70);
   const creditDays = OFFER_CREDITS.diagnosticToBlueprint.days;
   const diagnosticPrice = OFFERS.diagnostic.price.label;
   report.callout(
     `You have already paid ${diagnosticPrice} for this SNIPE Diagnostic™. Purchase the SNIPE Blueprint™ within ${creditDays} days of your readout and the full ${diagnosticPrice} is credited.`,
   );
 
-  report.subheading("What happens next");
+  report.subheading("What happens next", 110);
   const nextSteps = [
     { title: "Open the Blueprint page", body: "Review the plan and choose your start date." },
     { title: "Complete the short intake", body: "We already have your 12 months of data, so this is quick." },
@@ -1665,7 +1821,7 @@ export async function renderDiagnosticPdf(
   });
   report.setCursor(stepsTop - stepH - 12);
 
-  report.subheading("What owners say");
+  report.subheading("What owners say", 120);
   const testimonials = [
     {
       quote: "They found $4,800 a month in missed calls before we signed anything. That number made the decision easy.",
@@ -1702,7 +1858,7 @@ export async function renderDiagnosticPdf(
   });
   report.setCursor(quotesTop - quoteH - 12);
 
-  report.subheading("Take the next step");
+  report.subheading("Take the next step", 110);
   report.ensure(110);
   const ctaTop = report.cursor;
   report.linkButton("Get My SNIPE Blueprint™", blueprintUrl, MARGIN, ctaTop, CONTENT_W, true);
@@ -1721,19 +1877,19 @@ export async function renderDiagnosticPdf(
   // Methodology
   section("Methodology");
   report.heading("Methodology", { kicker: "How this report was built" });
-  report.subheading("Sources");
+  report.subheading("Sources", 60);
   report.bullets(narrative.methodology.sources);
   if (narrative.methodology.assumptions.length > 0) {
-    report.subheading("Assumptions");
+    report.subheading("Assumptions", 60);
     report.bullets(narrative.methodology.assumptions);
   }
-  report.subheading("Disclaimers");
+  report.subheading("Disclaimers", 70);
   report.callout(narrative.methodology.disclaimers.join(" "), "warn");
 
   // Appendix
   section("Appendix and scoring rules");
   report.heading("Appendix", { kicker: "Data tables and scoring rules" });
-  report.subheading("Monthly performance");
+  report.subheading("Monthly performance", 80);
   report.table(
     ["Month", "Jobs", "Completed", "Revenue", "Avg ticket"],
     facts.trend.monthly.map((m) => [
@@ -1745,7 +1901,7 @@ export async function renderDiagnosticPdf(
     ]),
     [1, 0.6, 0.9, 1.2, 1.1],
   );
-  report.subheading("Top cities");
+  report.subheading("Top cities", 80);
   if (facts.geography.topCities.length > 0) {
     report.table(
       ["City", "Jobs", "Revenue", "Share"],
@@ -1756,13 +1912,13 @@ export async function renderDiagnosticPdf(
     report.text("No city data was available in the connected records.", { size: 9.5, color: MUTED });
   }
 
-  report.subheading("Pillar scoring rules");
+  report.subheading("How the pillar scores work", 80);
   report.text(
     "Each pillar score is a weighted average of its available components. Status: 70 or above is a Strength, 45 to 69 is Watch, and below 45 is a Leak. Instant Capture is not assessed in Release 1.",
     { size: 9, color: MUTED },
   );
   for (const pillar of facts.framework) {
-    report.subheading(`${pillar.code} - ${pillar.name}`);
+    report.subheading(`${pillar.code} - ${pillar.name}`, 60);
     if (pillar.code === "I") {
       report.text(
         "Not assessed in Release 1: no phone, lead, or CRM data is connected. No response-time or missed-lead findings are claimed.",
@@ -1781,3 +1937,5 @@ export async function renderDiagnosticPdf(
   report.drawTocPage(tocPage, tocPageNo, tocEntries);
   return doc.save();
 }
+
+

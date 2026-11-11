@@ -20,10 +20,10 @@ const SYSTEM_PROMPT = [
   "- Write for a smart owner at an 8th-grade reading level. Short sentences. Second person. Direct, calm, concrete.",
   "- No em dashes. Use commas, periods, or colons.",
   "- No jargon, hype, filler, or praise. Prefer one specific next action over general advice.",
-  "- Never write internal metric identifiers or data field names in the prose. Describe measures the way an owner would say them.",
+  "- Never write internal metric identifiers or data field names in the prose. Describe measures the way an owner would say them. For example, never write baseline.cancelRatePct or any name containing a dot.",
   "- Write product names exactly as: SNIPE Diagnostic™, SNIPE Blueprint™, SNIPE Engine™ Core, SNIPE Engine™ Command, SNIPE Loops™.",
   "- Follow the five SNIPE pillars: S Size the Gap, N Net-Ticket Architecture, I Instant Capture, P Pipeline Engine, E Expand and Evaluate.",
-  "- Framework scores are calculated in the backend. Never propose, change, or restate a score. Explain what the score and evidence mean.",
+  "- Framework scores are calculated for you from the business data using fixed rules. Never propose, change, or restate a score. Explain what the score and evidence mean.",
   "- Instant Capture is not assessed in Release 1. Never mention response times, missed calls, missed leads, answer rates, or call handling as a finding.",
   "- Every recommendation must state what to do, when to do it, and how to do it.",
   "- Return ONLY valid JSON. No markdown, no commentary, no code fences.",
@@ -44,7 +44,7 @@ function userPrompt(facts: DiagnosticFacts): string {
     "2. Rank them by likely impact and practical effort, using priorityRank 1 as the highest priority.",
     "3. For each selected leak, write: a short title, the likely business consequence, the recommended fix, effort, and confidence. Cite evidence with metricRef and the exact value string found in the leak.",
     "4. Write a snapshot (headline, summary, score rationale) and an executive summary of one to three short paragraphs with up to three top findings.",
-    "5. Explain each of the five pillars in facts.framework, using the backend score and the evidence. For S, N, P, and E write: what the numbers say, the commercial implication, and a strength or opportunity. For I write that Instant Capture is not assessed in Release 1 because no phone, lead, or CRM data is connected. Do not invent response-time or missed-lead findings.",
+    "5. Explain each of the five pillars in facts.framework, using the score provided and the evidence. For S, N, P, and E write: what the numbers say, the commercial implication, and a strength or opportunity. For I write that Instant Capture is not assessed in Release 1 because no phone, lead, or CRM data is connected. Do not invent response-time or missed-lead findings.",
     "6. Identify 1 to 4 key constraints and up to 4 strengths. Cite a metricRef for each.",
     "7. Write 3 to 5 quick wins for the next 14 days. Each must state what to do, when to do it, and how to do it.",
     "8. Write a 30-day plan with exactly three windows: Days 1-7, Days 8-21, Days 22-30. Each action must state what to do, when to do it, how to do it, the owner role, and the success metric.",
@@ -115,6 +115,34 @@ export interface NarrativeValidation {
   narrative?: DiagnosticNarrative;
 }
 
+const METRIC_REF_PATTERN =
+  /\b(?:baseline|trend|ticket|referrals|services|team|clients|geography|framework|leaks)\.[a-zA-Z0-9_]+(?:\[\d+\])?(?:\.[a-zA-Z0-9_]+(?:\[\d+\])?)*/g;
+
+/** Remove any dot-separated field names the model leaks into the prose. */
+function cleanProse(value: string): string {
+  return value
+    .replace(new RegExp(`\\s*\\(${METRIC_REF_PATTERN.source}\\)`, "g"), "")
+    .replace(METRIC_REF_PATTERN, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;:])/g, "$1")
+    .trim();
+}
+
+function stripMetricRefs<T>(value: T): T {
+  if (typeof value === "string") return cleanProse(value) as T;
+  if (Array.isArray(value)) return value.map((item) => stripMetricRefs(item)) as T;
+  if (value && typeof value === "object") {
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      if (key === "metricRef") continue;
+      (value as Record<string, unknown>)[key] = stripMetricRefs(
+        (value as Record<string, unknown>)[key],
+      );
+    }
+    return value;
+  }
+  return value;
+}
+
 function normalizeNarrativeInput(raw: unknown): unknown {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return raw;
   const copy = { ...(raw as Record<string, unknown>) };
@@ -139,7 +167,7 @@ export function validateNarrative(facts: DiagnosticFacts, raw: unknown): Narrati
   if (!parsed.success) {
     return { ok: false, errors: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).slice(0, 8) };
   }
-  const narrative = parsed.data;
+  const narrative = stripMetricRefs(parsed.data);
   // The model sometimes reports a sub-hour estimate as 0; show a sane minimum.
   for (const win of narrative.quickWins) {
     if (win.effortHours < 1) win.effortHours = 1;
@@ -305,7 +333,7 @@ export function fallbackNarrative(facts: DiagnosticFacts): DiagnosticNarrative {
       headline: top ? `${cap(top.title)}` : "A clear view of the last 12 months",
       summary: `A 12-month review of ${facts.baseline.jobs} jobs, ${facts.baseline.cancelled} cancellations, and ${money(facts.baseline.revenueMinor, facts.meta.currency)} in completed revenue.`,
       scoreRationale:
-        "Pillar scores are calculated from the connected business data using fixed backend rules. The appendix lists each rule.",
+        "We calculate your pillar scores from your business data using the same fixed rules for every review. The appendix lists each rule.",
     },
     executiveSummary: {
       paragraphs,
