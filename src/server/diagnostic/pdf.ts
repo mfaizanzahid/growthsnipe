@@ -10,6 +10,7 @@ import {
   type RGB,
 } from "pdf-lib";
 import { OFFER_CREDITS, OFFERS } from "../../lib/offers";
+import { formatCreditExpiry } from "../../lib/credit-coupon";
 import type { DiagnosticFacts, DiagnosticNarrative, DiagnosticPillarCode } from "./types";
 
 const PAGE_W = 612;
@@ -815,9 +816,18 @@ class Report {
   }
 }
 
+export interface DiagnosticCredit {
+  code: string;
+  amountLabel: string;
+  expiresAt: number | null;
+  targetName: string;
+  instructions: string;
+}
+
 export interface DiagnosticPdfLinks {
   blueprintUrl?: string;
   bookUrl?: string;
+  credit?: DiagnosticCredit | null;
 }
 
 export async function renderDiagnosticPdf(
@@ -832,6 +842,8 @@ export async function renderDiagnosticPdf(
   const currency = facts.meta.currency;
   const blueprintUrl = links.blueprintUrl ?? "https://growthsnipe.com/blueprint";
   const bookUrl = links.bookUrl ?? "https://growthsnipe.com/book";
+  const credit = links.credit ?? null;
+  const creditExpiry = credit ? formatCreditExpiry(credit.expiresAt) : "";
   const leakById = new Map(facts.leaks.map((leak) => [leak.id, leak]));
 
   // Cover
@@ -1752,11 +1764,6 @@ export async function renderDiagnosticPdf(
   });
   report.setCursor(ribbonY - ribbonH - 12);
 
-  const focusFindings = narrative.executiveSummary.topFindings.slice(0, 2).map((item) => item.title);
-  if (focusFindings.length > 0) {
-    report.text(`Your Blueprint will focus on ${focusFindings.join(" and ")}.`, { size: 10 });
-  }
-
   report.subheading("What the Blueprint gives you", 100);
   const benefits = [
     "A personalized plan built from your actual numbers.",
@@ -1793,12 +1800,23 @@ export async function renderDiagnosticPdf(
   }
   report.setCursor(benefitsTop - benefitsH - 12);
 
-  report.subheading("Your credit", 70);
+  report.subheading("Your credit", credit ? 130 : 70);
   const creditDays = OFFER_CREDITS.diagnosticToBlueprint.days;
   const diagnosticPrice = OFFERS.diagnostic.price.label;
-  report.callout(
-    `You have already paid ${diagnosticPrice} for this SNIPE Diagnostic™. Purchase the SNIPE Blueprint™ within ${creditDays} days of your readout and the full ${diagnosticPrice} is credited.`,
-  );
+  if (credit) {
+    report.callout(
+      `Your ${credit.amountLabel} ${credit.targetName} credit is ready. Use code ${credit.code} at checkout${creditExpiry ? ` by ${creditExpiry}` : ""}. ${credit.instructions}`,
+    );
+    report.space(4);
+    report.text(`Code: ${credit.code}`, { bold: true, size: 13, color: PRIMARY });
+    if (creditExpiry) {
+      report.text(`Valid through ${creditExpiry}.`, { size: 9, color: MUTED });
+    }
+  } else {
+    report.callout(
+      `You have already paid ${diagnosticPrice} for this SNIPE Diagnostic™. Purchase the SNIPE Blueprint™ within ${creditDays} days of your readout and the full ${diagnosticPrice} is credited.`,
+    );
+  }
 
   report.subheading("What happens next", 110);
   const nextSteps = [
@@ -1866,7 +1884,9 @@ export async function renderDiagnosticPdf(
   report.linkButton("Book a Free Growth Fit Call", bookUrl, MARGIN, report.cursor, CONTENT_W, false);
   report.setCursor(ctaTop - 88);
   report.text(
-    `Opens the Blueprint page. The ${diagnosticPrice} credit applies within ${creditDays} days of your readout.`,
+    credit
+      ? `Opens the Blueprint page. Use your ${credit.amountLabel} credit code at checkout${creditExpiry ? ` by ${creditExpiry}` : ""}.`
+      : `Opens the Blueprint page. The ${diagnosticPrice} credit applies within ${creditDays} days of your readout.`,
     { size: 8, color: MUTED },
   );
   report.text(

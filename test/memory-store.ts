@@ -85,10 +85,20 @@ export function memoryStore(): BillingStore & IdempotencyBackend & {
       return [...coupons.values()].find((c) => c.code === n) ?? null;
     },
     getCouponById: async (id) => coupons.get(id) ?? null,
+    getCouponBySourceOrderId: async (sourceOrderId) =>
+      [...coupons.values()].find((c) => c.sourceOrderId === sourceOrderId) ?? null,
     listCouponPlans: async (couponId) => [...(couponPlans.get(couponId) ?? [])],
     bumpCouponRedemptions: async (couponId) => {
       const c = coupons.get(couponId);
       if (c) coupons.set(couponId, { ...c, redeemedCount: (c.redeemedCount ?? 0) + 1 });
+    },
+    bumpCouponRedemptionsIfAvailable: async (couponId) => {
+      const c = coupons.get(couponId);
+      if (!c || c.active !== 1) return false;
+      const count = c.redeemedCount ?? 0;
+      if (c.maxRedemptions !== null && count >= c.maxRedemptions) return false;
+      coupons.set(couponId, { ...c, redeemedCount: count + 1 });
+      return true;
     },
     getOrgSubscription: async (orgId) => {
       const billable = ["active", "trialing", "scheduled", "past_due"];
@@ -459,6 +469,9 @@ export function memoryStore(): BillingStore & IdempotencyBackend & {
           redeemedCount: 0,
           validFrom: null,
           validUntil: null,
+          restrictedEmail: null,
+          oneTimeProductSlug: null,
+          sourceOrderId: null,
           active: 1,
           createdBy: null,
           createdAt: nowMs(),

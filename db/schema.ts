@@ -181,6 +181,12 @@ export const coupons = sqliteTable("coupons", {
   redeemedCount: integer("redeemed_count").notNull().default(0),
   validFrom: integer("valid_from"),
   validUntil: integer("valid_until"),
+  /** Buyer email this coupon is restricted to (credit coupons). Null = anyone. */
+  restrictedEmail: text("restricted_email"),
+  /** One-time product slug this coupon applies to (credit coupons). Null = plans. */
+  oneTimeProductSlug: text("one_time_product_slug"),
+  /** Source one-time order that issued this credit coupon. */
+  sourceOrderId: text("source_order_id"),
   active: integer("active").notNull().default(1),
   createdBy: text("created_by"),
   createdAt: integer("created_at").notNull(),
@@ -305,6 +311,13 @@ export const oneTimeOrders = sqliteTable("one_time_orders", {
   tracker: text("tracker").unique(),
   chargeId: text("charge_id"),
   idempotencyKey: text("idempotency_key").unique().notNull(),
+  /** Credit coupon applied to this order, if any. */
+  couponId: text("coupon_id"),
+  couponCode: text("coupon_code"),
+  /** Amount discounted from the product price, in minor units. */
+  discountMinor: integer("discount_minor").notNull().default(0),
+  /** When the applied coupon's redemption was counted. */
+  couponRedeemedAt: integer("coupon_redeemed_at"),
   receiptSentAt: integer("receipt_sent_at"),
   intakeSentAt: integer("intake_sent_at"),
   createdAt: integer("created_at").notNull(),

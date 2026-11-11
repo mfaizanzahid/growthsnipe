@@ -1,7 +1,8 @@
 import type { Db } from "../repositories/db";
 import type { Env } from "../types";
 import { getSetting } from "../repositories/index";
-import { getOneTimeOrder } from "../repositories/billing";
+import { drizzleStore, getOneTimeOrder } from "../repositories/billing";
+import { creditForDiagnosticCoupon, ensureDiagnosticCreditCoupon } from "../billing/credits";
 import { sendEmail } from "../lib/email";
 import {
   diagnosticConnectContent,
@@ -283,12 +284,24 @@ async function sendReportReadyEmail(db: Db, env: Env, run: DiagnosticRunRow, now
   const token = await signDiagnosticToken(env, { orderId: run.oneTimeOrderId, purpose: "report", now });
   const reportUrl = `${baseUrl(env)}/api/diagnostic/report?token=${encodeURIComponent(token)}`;
   const bookUrl = `${baseUrl(env)}/book`;
+  const blueprintUrl = `${baseUrl(env)}/blueprint`;
   const order = await getOneTimeOrder(db, run.oneTimeOrderId);
+  let credit = null;
+  if (order) {
+    try {
+      const coupon = await ensureDiagnosticCreditCoupon(drizzleStore(db), order, now);
+      credit = creditForDiagnosticCoupon(coupon);
+    } catch (err) {
+      console.error("[diagnostic] could not ensure the Blueprint credit:", (err as Error)?.message ?? err);
+    }
+  }
   const support = await supportEmail(db);
   const content = diagnosticReadyContent({
     firstName: firstNameOf(order?.name ?? null),
     reportUrl,
     bookUrl,
+    blueprintUrl,
+    credit,
   });
   await sendEmail(
     env,
@@ -328,11 +341,28 @@ export function parseNarrative(run: DiagnosticRunRow): DiagnosticNarrative | nul
 }
 
 /** Render the report on demand from the stored facts and narrative. */
-export async function renderRunReport(run: DiagnosticRunRow): Promise<Uint8Array | null> {
+export async function renderRunReport(
+  db: Db,
+  run: DiagnosticRunRow,
+): Promise<Uint8Array | null> {
   const facts = parseFacts(run);
   const narrative = parseNarrative(run);
   if (!facts || !narrative) return null;
-  return renderDiagnosticPdf(facts, narrative);
+  const order = await getOneTimeOrder(db, run.oneTimeOrderId);
+  let credit = null;
+  if (order) {
+    try {
+      const coupon = await ensureDiagnosticCreditCoupon(
+        drizzleStore(db),
+        order,
+        run.readyAt ?? Date.now(),
+      );
+      credit = creditForDiagnosticCoupon(coupon);
+    } catch (err) {
+      console.error("[diagnostic] could not load the Blueprint credit:", (err as Error)?.message ?? err);
+    }
+  }
+  return renderDiagnosticPdf(facts, narrative, { credit });
 }
 
 /** Escape helper re-exported for route error messages that include email text. */

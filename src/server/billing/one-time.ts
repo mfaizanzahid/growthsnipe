@@ -13,9 +13,17 @@ import {
 } from "../email/templates";
 import { BillingError } from "./errors";
 import type { Gateway } from "./gateway";
+import { CouponError, validateOneTimeCoupon } from "./coupons";
+import {
+  creditForBlueprintCoupon,
+  creditForDiagnosticCoupon,
+  issueBlueprintCreditCoupon,
+  issueDiagnosticCreditCoupon,
+} from "./credits";
 import { startDiagnosticRun } from "../diagnostic/report";
 import {
   createOneTimeOrder,
+  drizzleStore,
   findOneTimeOrderByIdempotencyKey,
   findOneTimeOrderByTracker,
   getOneTimeOrder,
@@ -23,6 +31,7 @@ import {
   getOneTimeProductBySlug,
   listOneTimeProducts,
   updateOneTimeOrder,
+  type CouponRow,
   type OneTimeOrderRow,
 } from "../repositories/billing";
 
@@ -37,6 +46,7 @@ export interface OneTimeSessionInput {
   country: string;
   businessName?: string | null;
   trade?: string | null;
+  couponCode?: string | null;
   idempotencyKey?: string | null;
 }
 
@@ -90,7 +100,7 @@ export async function createOneTimeSession(
           merchantApiKey: env.SAFEPAY_PUBLIC_KEY,
           mode: "payment",
           currency: "USD",
-          amountMinor: product.amountMinor,
+          amountMinor: existing.amountMinor,
           entryMode: "raw",
         }),
         gateway.createClientAuthToken(),
@@ -107,6 +117,31 @@ export async function createOneTimeSession(
     }
   }
 
+  const store = drizzleStore(db);
+  let couponId: string | null = null;
+  let couponCode: string | null = null;
+  let discountMinor = 0;
+  let amountMinor = product.amountMinor;
+  if (input.couponCode?.trim()) {
+    try {
+      const valid = await validateOneTimeCoupon(
+        store,
+        input.couponCode.trim(),
+        product.slug,
+        product.amountMinor,
+        email,
+        Math.floor(now / 1000),
+      );
+      couponId = valid.coupon.id;
+      couponCode = valid.coupon.code;
+      discountMinor = valid.discountMinor;
+      amountMinor = valid.amountMinor;
+    } catch (err) {
+      if (err instanceof CouponError) throw new BillingError(err.message, err.status);
+      throw err;
+    }
+  }
+
   const orderId = crypto.randomUUID();
   const key = input.idempotencyKey ?? `oto:${orderId}`;
   await createOneTimeOrder(db, {
@@ -117,10 +152,13 @@ export async function createOneTimeSession(
     phone: input.phone,
     businessName: input.businessName ?? null,
     trade: input.trade ?? null,
-    amountMinor: product.amountMinor,
+    amountMinor,
     currency: "USD",
     tracker: null,
     idempotencyKey: key,
+    couponId,
+    couponCode,
+    discountMinor,
     now,
   });
   const [tracker, clientToken] = await Promise.all([
@@ -134,7 +172,7 @@ export async function createOneTimeSession(
       merchantApiKey: env.SAFEPAY_PUBLIC_KEY,
       mode: "payment",
       currency: "USD",
-      amountMinor: product.amountMinor,
+      amountMinor,
       entryMode: "raw",
     }),
     gateway.createClientAuthToken(),
@@ -145,7 +183,7 @@ export async function createOneTimeSession(
     tracker,
     clientToken,
     environment: env.SAFEPAY_ENV ?? "sandbox",
-    amountMinor: product.amountMinor,
+    amountMinor,
     cached: false,
   };
 }
@@ -182,8 +220,16 @@ export async function confirmOneTimeOrder(
   }
   const product = await getOneTimeProduct(db, order.productId);
   if (!product || product.active !== 1) throw new BillingError("Product is not available", 422);
-  if (order.amountMinor !== product.amountMinor || order.currency !== "USD" || product.currency !== "USD") {
-    throw new BillingError("Order amount does not match the product price", 422);
+  const discountMinor = order.discountMinor ?? 0;
+  const expectedMinor = product.amountMinor - discountMinor;
+  if (
+    discountMinor < 0 ||
+    discountMinor >= product.amountMinor ||
+    order.amountMinor !== expectedMinor ||
+    order.currency !== "USD" ||
+    product.currency !== "USD"
+  ) {
+    throw new BillingError("Order amount does not match the expected total", 422);
   }
   const status = await gateway.checkTrackerStatus(input.tracker);
   if (status === "pending") throw new BillingError("Payment has not completed yet", 402);
@@ -216,10 +262,39 @@ export async function completeOneTimePaidOrder(
   if (order.status !== "pending") return { transitioned: false, order };
   const product = await getOneTimeProduct(db, order.productId);
   if (!product) return { transitioned: false, order };
-  await updateOneTimeOrder(db, order.id, { status: "paid", chargeId, paidAt: now, updatedAt: now });
+  const store = drizzleStore(db);
+
+  if (order.couponId && !order.couponRedeemedAt) {
+    const consumed = await store.bumpCouponRedemptionsIfAvailable(order.couponId);
+    if (!consumed) {
+      console.error("[one-time] coupon could not be redeemed:", order.couponId);
+    }
+  }
+
+  let creditCoupon: CouponRow | null = null;
+  try {
+    const paidOrder = { ...order, paidAt: now };
+    creditCoupon =
+      product.slug === "diagnostic"
+        ? await issueDiagnosticCreditCoupon(store, paidOrder, now)
+        : product.slug === "blueprint"
+          ? await issueBlueprintCreditCoupon(store, paidOrder, now)
+          : null;
+  } catch (err) {
+    console.error("[one-time] could not issue credit coupon:", (err as Error)?.message ?? err);
+  }
+
+  await updateOneTimeOrder(db, order.id, {
+    status: "paid",
+    chargeId,
+    paidAt: now,
+    updatedAt: now,
+    ...(order.couponId && !order.couponRedeemedAt ? { couponRedeemedAt: now } : {}),
+  });
   const fresh = (await getOneTimeOrder(db, order.id)) ?? order;
+
   if (!fresh.receiptSentAt) {
-    await sendOneTimeEmails(db, env, fresh, product.name, product.slug as OneTimeSlug);
+    await sendOneTimeEmails(db, env, fresh, product.name, product.slug as OneTimeSlug, creditCoupon);
     await updateOneTimeOrder(db, order.id, { receiptSentAt: now, intakeSentAt: now, updatedAt: now });
   }
   if (product.slug === "diagnostic") {
@@ -252,16 +327,31 @@ async function sendOneTimeEmails(
   order: OneTimeOrderRow,
   productName: string,
   slug: OneTimeSlug,
+  creditCoupon: CouponRow | null,
 ): Promise<void> {
   const support = (await getSetting(db, "support_email").catch(() => null)) ?? "";
+  const credit =
+    slug === "blueprint"
+      ? creditForBlueprintCoupon(creditCoupon)
+      : creditForDiagnosticCoupon(creditCoupon);
+  const base = env.APP_BASE_URL ?? "";
   const receipt = oneTimeReceiptContent({
     productName,
     amountMinor: order.amountMinor,
     currency: order.currency,
     orderRef: order.id.slice(0, 8).toUpperCase(),
+    discountMinor: order.discountMinor,
+    couponCode: order.couponCode,
+    credit,
   });
-  const intake = oneTimeIntakeContent({ productSlug: slug === "blueprint" ? "blueprint" : "diagnostic", firstName: firstNameOf(order.name) });
-  const billingUrl = `${env.APP_BASE_URL ?? ""}/`;
+  const intake = oneTimeIntakeContent({
+    productSlug: slug === "blueprint" ? "blueprint" : "diagnostic",
+    firstName: firstNameOf(order.name),
+    credit,
+    blueprintUrl: `${base}/blueprint`,
+    bookUrl: `${base}/book`,
+  });
+  const billingUrl = `${base}/`;
   const from = env.RESEND_FROM_EMAIL;
   await sendEmail(
     env,

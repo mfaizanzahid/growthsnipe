@@ -202,6 +202,21 @@ describe("coupons management", () => {
     const updated = await updateCoupon(store, c.id, { active: 0 });
     expect(updated.active).toBe(0);
   });
+
+  it("extends a coupon expiry from superadmin", async () => {
+    const store = memoryStore();
+    const coupon = await createCoupon(
+      store,
+      { code: "EXTEND30", kind: "fixed", amountOffMinor: 19900, duration: "once" },
+      "boss",
+    );
+    const validUntil = Math.floor(Date.now() / 1000) + 30 * 86400;
+    const updated = await updateCoupon(store, coupon.id, { validUntil });
+    expect(updated.validUntil).toBe(validUntil);
+    await expect(updateCoupon(store, coupon.id, { validUntil: -1 })).rejects.toMatchObject({
+      status: 422,
+    });
+  });
 });
 
 describe("clients", () => {

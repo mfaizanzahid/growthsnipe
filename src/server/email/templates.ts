@@ -10,6 +10,8 @@
  *   safe to interpolate raw.
  */
 
+import { formatCreditExpiry } from "../../lib/credit-coupon";
+
 export interface OutgoingEmail {
   to: string;
   subject: string;
@@ -43,6 +45,26 @@ function brandProductName(value: string): string {
   return value
     .replace(/SNIPE Diagnostic(?!™)/g, "SNIPE Diagnostic™")
     .replace(/SNIPE Blueprint(?!™)/g, "SNIPE Blueprint™");
+}
+
+export interface EmailCreditCoupon {
+  code: string;
+  amountLabel: string;
+  expiresAt: number | null;
+  targetName: string;
+  instructions: string;
+}
+
+function creditBlock(credit: EmailCreditCoupon | null | undefined): string {
+  if (!credit) return "";
+  const expires = formatCreditExpiry(credit.expiresAt);
+  return (
+    `<div style="margin-top:16px;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;background-color:#f9fafb">` +
+    `<p style="margin:0 0 4px 0;font-size:15px;font-weight:bold">Your ${escapeHtml(credit.amountLabel)} ${escapeHtml(credit.targetName)} credit is ready.</p>` +
+    `<p style="margin:0 0 4px 0">Use code <strong style="font-size:16px;letter-spacing:0.5px">${escapeHtml(credit.code)}</strong>${expires ? ` by <strong>${escapeHtml(expires)}</strong>` : ""}.</p>` +
+    `<p style="margin:0;font-size:13px;color:#4b5563">${escapeHtml(credit.instructions)}</p>` +
+    `</div>`
+  );
 }
 
 export function longDate(sec: number): string {
@@ -143,13 +165,22 @@ export function oneTimeReceiptContent(input: {
   amountMinor: number;
   currency: string;
   orderRef: string;
+  discountMinor?: number;
+  couponCode?: string | null;
+  credit?: EmailCreditCoupon | null;
 }): { subject: string; html: string } {
   const branded = brandProductName(input.productName);
+  const discountLine =
+    input.discountMinor && input.discountMinor > 0
+      ? `<p>Credit applied: ${money(input.discountMinor, input.currency)}${input.couponCode ? ` (code ${escapeHtml(input.couponCode)})` : ""}.</p>`
+      : "";
   return {
     subject: `Payment received - ${branded}`,
     html:
       `<p>Your payment of ${money(input.amountMinor, input.currency)} for ${escapeHtml(branded)} succeeded.</p>` +
+      discountLine +
       `<p>Order reference: ${escapeHtml(input.orderRef)}</p>` +
+      creditBlock(input.credit) +
       `<p>Your next email has the next steps.</p>`,
   };
 }
@@ -158,24 +189,38 @@ export function oneTimeReceiptContent(input: {
 export function oneTimeIntakeContent(input: {
   productSlug: "diagnostic" | "blueprint";
   firstName: string;
+  credit?: EmailCreditCoupon | null;
+  blueprintUrl?: string;
+  bookUrl?: string;
 }): { subject: string; html: string } {
   const name = escapeHtml(input.firstName);
+  const credit = creditBlock(input.credit);
   if (input.productSlug === "blueprint") {
+    const cta = input.bookUrl
+      ? `<p><a href="${input.bookUrl}">Book your Engine fit call</a></p>`
+      : "";
     return {
-      subject: "Let's build your growth plan — intake inside",
+      subject: "Let's build your growth plan: intake inside",
       html:
         `<p>Hi ${name},</p>` +
         `<p>Thank you for purchasing the SNIPE Blueprint™. Complete the intake and provide the requested business information. The 10-business-day delivery window begins once the required information is complete.</p>` +
-        `<p>You will receive:</p><ul><li>Your intake checklist.</li><li>Secure data-submission instructions.</li><li>A confirmation when the information is complete.</li><li>A scheduling link for your 90-minute Blueprint presentation.</li></ul>`,
+        `<p>You will receive:</p><ul><li>Your intake checklist.</li><li>Secure data-submission instructions.</li><li>A confirmation when the information is complete.</li><li>A scheduling link for your 90-minute Blueprint presentation.</li></ul>` +
+        credit +
+        cta,
     };
   }
+  const cta = input.blueprintUrl
+    ? `<p><a href="${input.blueprintUrl}">Get My SNIPE Blueprint™</a></p>`
+    : "";
   return {
     subject: "Your SNIPE Diagnostic™ is underway",
     html:
       `<p>Hi ${name},</p>` +
       `<p>Thank you for purchasing the SNIPE Diagnostic™. The next step is to connect your booking software so we can review your last 12 months of jobs, revenue, referrals, and service mix.</p>` +
       `<p>Watch for a separate email with your secure connect link. The connection is encrypted, used only for this review, and removed once your report is ready.</p>` +
-      `<p>Once connected, we will email your report and coordinate your 60-minute readout.</p>`,
+      `<p>Once connected, we will email your report and coordinate your 60-minute readout.</p>` +
+      credit +
+      cta,
   };
 }
 
@@ -200,15 +245,22 @@ export function diagnosticReadyContent(input: {
   firstName: string;
   reportUrl: string;
   bookUrl: string;
+  blueprintUrl?: string;
+  credit?: EmailCreditCoupon | null;
 }): { subject: string; html: string } {
   const name = escapeHtml(input.firstName);
+  const blueprintCta = input.blueprintUrl
+    ? `<p><a href="${input.blueprintUrl}">Get My SNIPE Blueprint™</a></p>`
+    : "";
   return {
     subject: "Your SNIPE Diagnostic™ is ready",
     html:
       `<p>Hi ${name},</p>` +
       `<p>Your 12-month review is ready. It includes your baseline, SNIPE Framework scores, referral performance, leak map, priority findings, and a 30-day plan.</p>` +
       `<p><a href="${input.reportUrl}">Download your Diagnostic report</a></p>` +
-      `<p>Want to walk through it together? <a href="${input.bookUrl}">Book your 60-minute readout</a>.</p>`,
+      creditBlock(input.credit) +
+      `<p>Want to walk through it together? <a href="${input.bookUrl}">Book your 60-minute readout</a>.</p>` +
+      blueprintCta,
   };
 }
 

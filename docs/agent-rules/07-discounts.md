@@ -9,6 +9,9 @@ Superadmin-managed, Stripe-style. Tables: `coupons`, `coupon_plans`, `subscripti
 - `duration`: `once` (first invoice only) | `repeating` (`duration_cycles` N) | `forever`.
 - `applies_to_setup`: 0 by default — discounts reduce recurring lines only. When 1, they also reduce the setup fee line.
 - `max_redemptions` / `redeemed_count`, `valid_from` / `valid_until`, `active` flag.
+- `restricted_email`: buyer email a credit coupon is bound to. Null = no email binding.
+- `one_time_product_slug`: one-time product a credit coupon applies to. Null = plan coupons.
+- `source_order_id`: one-time order that issued the credit coupon. Unique, so issuance is idempotent.
 
 ## Applicability
 
@@ -28,3 +31,12 @@ Superadmin-managed, Stripe-style. Tables: `coupons`, `coupon_plans`, `subscripti
 - Attaching a coupon creates a `subscription_coupons` row (`cycles_applied=0`). Each billed period increments it; when a `repeating` coupon exhausts its cycles its status becomes `exhausted` and it stops applying. `forever` never exhausts.
 - `redeemed_count` increments once per subscription attach (not per cycle), guarded by the same idempotency key as the signup charge.
 - Deactivating a coupon stops NEW redemptions; already-attached `subscription_coupons` keep their schedule.
+
+## Credit coupons (one-time purchases)
+
+- A paid Diagnostic issues a $199 coupon for the Blueprint checkout: fixed, `one_time_product_slug=blueprint`, `restricted_email` = buyer, `duration=once`, `max_redemptions=1`, expires 14 days after purchase.
+- A paid Blueprint issues a $999 coupon for SNIPE Engine setup: fixed, `applies_to_setup=1`, applicable to `engine-core` and `engine-command`, `restricted_email` = buyer, `duration=once`, `max_redemptions=1`, expires 45 days after purchase. Engine plans are contact-only, so the team applies the credit manually during onboarding.
+- `source_order_id` makes issuance idempotent. Codes are random (`DIAG-XXXXXX`, `BP-XXXXXX`).
+- One-time coupons are rejected at subscription signup (they set `one_time_product_slug`). Subscription coupons are rejected at one-time checkout (they do not match the product slug).
+- Email-bound coupons only redeem for the buyer's email. Superadmin attaches bypass the email check.
+- Superadmin can change `valid_until` from the Coupons page at any time. The Diagnostic PDF is rendered on demand and picks up the new date; already-sent emails keep the date they were sent with.

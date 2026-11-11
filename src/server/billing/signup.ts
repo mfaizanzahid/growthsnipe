@@ -17,6 +17,8 @@ export interface SignupInput {
   planId: string;
   interval: "month" | "year";
   couponCode?: string | null;
+  /** Buyer email for email-bound credit coupons. */
+  buyerEmail?: string | null;
   /** Browser payment tracker (required when the total exceeds zero). */
   tracker?: string | null;
   /** Client idempotency key (header). Falls back to a tracker-derived key. */
@@ -67,7 +69,7 @@ export async function confirmSignup(
   let couponId: string | null = null;
   if (input.couponCode) {
     try {
-      const valid = await validateCoupon(store, input.couponCode, plan.id, now);
+      const valid = await validateCoupon(store, input.couponCode, plan.id, now, input.buyerEmail);
       couponTerms = valid.terms;
       couponId = valid.coupon.id;
     } catch (err) {

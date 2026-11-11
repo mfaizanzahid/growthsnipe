@@ -124,7 +124,7 @@ export function createDiagnosticRoutes(deps: {
     if (run.status !== "ready" && run.status !== "ready_email_failed") {
       return c.json({ error: "Your report is still being prepared." }, 409);
     }
-    const pdf = await renderRunReport(run);
+    const pdf = await renderRunReport(db, run);
     if (!pdf) return c.json({ error: "The report could not be rendered." }, 500);
     const businessName = parseFacts(run)?.meta.businessName ?? null;
     const headers = new Headers({

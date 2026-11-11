@@ -12,7 +12,14 @@ import { memoryStore } from "./memory-store";
 import { createOneTimeRoutes } from "../src/server/routes/one-time";
 import { completeOneTimePaidOrder, confirmOneTimeOrder, failOneTimeOrder } from "../src/server/billing/one-time";
 import { handleSafepayWebhook } from "../src/server/billing/webhooks";
-import { findOneTimeOrderByTracker, getOneTimeOrder } from "../src/server/repositories/billing";
+import {
+  drizzleStore,
+  findOneTimeOrderByTracker,
+  getCouponBySourceOrderId,
+  getOneTimeOrder,
+  type CouponRow,
+} from "../src/server/repositories/billing";
+import { formatCreditExpiry } from "../src/lib/credit-coupon";
 
 const SECRET = "wh_shared_secret";
 const ENV = {
@@ -57,6 +64,10 @@ function testDb(): Db {
       tracker TEXT UNIQUE,
       charge_id TEXT,
       idempotency_key TEXT UNIQUE NOT NULL,
+      coupon_id TEXT,
+      coupon_code TEXT,
+      discount_minor INTEGER NOT NULL DEFAULT 0,
+      coupon_redeemed_at INTEGER,
       receipt_sent_at INTEGER,
       intake_sent_at INTEGER,
       created_at INTEGER NOT NULL,
@@ -66,6 +77,35 @@ function testDb(): Db {
     CREATE INDEX one_time_orders_email_idx ON one_time_orders (email);
     CREATE INDEX one_time_orders_status_idx ON one_time_orders (status);
     CREATE INDEX one_time_orders_tracker_idx ON one_time_orders (tracker);
+    CREATE TABLE coupons (
+      id TEXT PRIMARY KEY,
+      code TEXT UNIQUE NOT NULL,
+      kind TEXT NOT NULL,
+      percent_off INTEGER,
+      amount_off_minor INTEGER,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      duration TEXT NOT NULL DEFAULT 'once',
+      duration_cycles INTEGER,
+      applies_to_setup INTEGER NOT NULL DEFAULT 0,
+      max_redemptions INTEGER,
+      redeemed_count INTEGER NOT NULL DEFAULT 0,
+      valid_from INTEGER,
+      valid_until INTEGER,
+      restricted_email TEXT,
+      one_time_product_slug TEXT,
+      source_order_id TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_by TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX coupons_source_order_idx ON coupons (source_order_id)
+      WHERE source_order_id IS NOT NULL;
+    CREATE TABLE coupon_plans (
+      coupon_id TEXT NOT NULL,
+      plan_id TEXT NOT NULL,
+      UNIQUE(coupon_id, plan_id)
+    );
     CREATE TABLE diagnostic_runs (
       id TEXT PRIMARY KEY,
       one_time_order_id TEXT NOT NULL UNIQUE,
@@ -181,6 +221,36 @@ const BUYER = {
   country: "US",
   businessName: "Ada Inspections",
 };
+
+async function seedDiagnosticCoupon(
+  db: Db,
+  overrides: Partial<CouponRow> = {},
+): Promise<CouponRow> {
+  const store = drizzleStore(db);
+  const now = Math.floor(Date.now() / 1000);
+  const row = {
+    id: `cpn_${Math.random().toString(36).slice(2, 10)}`,
+    code: "DIAG-TEST01",
+    kind: "fixed",
+    percentOff: null,
+    amountOffMinor: 19900,
+    currency: "USD",
+    duration: "once",
+    durationCycles: null,
+    appliesToSetup: 0,
+    maxRedemptions: 1,
+    redeemedCount: 0,
+    validFrom: now - 60,
+    validUntil: now + 14 * 86400,
+    restrictedEmail: "owner@example.com",
+    oneTimeProductSlug: "blueprint",
+    sourceOrderId: null,
+    active: 1,
+    createdBy: "test",
+    ...overrides,
+  } as Omit<CouponRow, "createdAt" | "updatedAt">;
+  return store.insertCoupon(row);
+}
 
 beforeEach(() => {
   captureEmails();
@@ -347,5 +417,145 @@ describe("one-time webhook reconcile", () => {
     const body = envelope("evt_3", "payment.succeeded", { tracker: session.tracker });
     await handleSafepayWebhook(ENV, store, body, await sign(body), undefined, oneTimeAdapter(db));
     expect((await getOneTimeOrder(db, session.orderId))?.status).toBe("paid");
+  });
+});
+
+describe("credit coupons", () => {
+  it("applies a Diagnostic credit to the Blueprint checkout and issues the Engine credit", async () => {
+    const db = testDb();
+    const store = drizzleStore(db);
+    const coupon = await seedDiagnosticCoupon(db);
+    const app = buildApp(db, fakeGateway("succeeded"));
+    const outbox = captureEmails();
+    const buyer = { ...BUYER, slug: "blueprint", email: "owner@example.com" };
+
+    const preview = await req(app, "/api/one-time/coupon", {
+      slug: "blueprint",
+      email: buyer.email,
+      code: coupon.code,
+    });
+    expect(preview.status).toBe(200);
+    expect(await preview.json()).toMatchObject({ discountMinor: 19900, amountMinor: 80000 });
+
+    const session = await req(app, "/api/one-time/session", {
+      ...buyer,
+      couponCode: coupon.code,
+      idempotencyKey: "bp-credit-01",
+    });
+    expect(session.status).toBe(200);
+    const body = (await session.json()) as { orderId: string; tracker: string; amountMinor: number };
+    expect(body.amountMinor).toBe(80000);
+
+    const confirm = await req(app, "/api/one-time/confirm", {
+      orderId: body.orderId,
+      tracker: body.tracker,
+    });
+    expect(confirm.status).toBe(200);
+    expect((await store.getCouponById(coupon.id))?.redeemedCount).toBe(1);
+
+    expect(outbox).toHaveLength(2);
+    expect(outbox[0]?.html).toContain("Credit applied");
+    expect(outbox[0]?.html).toContain(coupon.code);
+    expect(outbox[1]?.html).toContain("Engine");
+
+    const engine = await getCouponBySourceOrderId(db, body.orderId);
+    expect(engine).toMatchObject({
+      kind: "fixed",
+      amountOffMinor: 99900,
+      appliesToSetup: 1,
+      restrictedEmail: "owner@example.com",
+    });
+    expect(engine?.validUntil).toBeTruthy();
+    const expectedExpiry = formatCreditExpiry(engine?.validUntil ?? null);
+    expect(expectedExpiry).not.toBe("");
+    expect(outbox[0]?.html).toContain(expectedExpiry);
+    expect(outbox[0]?.html).toContain(engine?.code ?? "");
+    expect((await store.listCouponPlans(engine!.id)).sort()).toEqual([
+      "engine-command",
+      "engine-core",
+    ]);
+  });
+
+  it("rejects a credit code for the wrong email or product", async () => {
+    const db = testDb();
+    const coupon = await seedDiagnosticCoupon(db);
+    const app = buildApp(db, fakeGateway());
+
+    const wrongEmail = await req(app, "/api/one-time/coupon", {
+      slug: "blueprint",
+      email: "other@example.com",
+      code: coupon.code,
+    });
+    expect(wrongEmail.status).toBe(422);
+
+    const wrongProduct = await req(app, "/api/one-time/coupon", {
+      slug: "diagnostic",
+      email: "owner@example.com",
+      code: coupon.code,
+    });
+    expect(wrongProduct.status).toBe(422);
+  });
+
+  it("rejects an expired or already used code", async () => {
+    const db = testDb();
+    const now = Math.floor(Date.now() / 1000);
+    const expired = await seedDiagnosticCoupon(db, {
+      code: "DIAG-EXPIRED",
+      validUntil: now - 60,
+    });
+    const used = await seedDiagnosticCoupon(db, {
+      code: "DIAG-USED",
+      redeemedCount: 1,
+    });
+    const app = buildApp(db, fakeGateway());
+
+    expect(
+      (
+        await req(app, "/api/one-time/coupon", {
+          slug: "blueprint",
+          email: "owner@example.com",
+          code: expired.code,
+        })
+      ).status,
+    ).toBe(422);
+    expect(
+      (
+        await req(app, "/api/one-time/coupon", {
+          slug: "blueprint",
+          email: "owner@example.com",
+          code: used.code,
+        })
+      ).status,
+    ).toBe(422);
+  });
+
+  it("issues the Blueprint credit when a Diagnostic is paid", async () => {
+    const db = testDb();
+    const app = buildApp(db, fakeGateway("succeeded"));
+    const outbox = captureEmails();
+    const session = (await (
+      await req(app, "/api/one-time/session", { ...BUYER, idempotencyKey: "diag-credit-01" })
+    ).json()) as { orderId: string; tracker: string };
+
+    const confirm = await req(app, "/api/one-time/confirm", {
+      orderId: session.orderId,
+      tracker: session.tracker,
+    });
+    expect(confirm.status).toBe(200);
+
+    const coupon = await getCouponBySourceOrderId(db, session.orderId);
+    expect(coupon).toMatchObject({
+      kind: "fixed",
+      amountOffMinor: 19900,
+      oneTimeProductSlug: "blueprint",
+      restrictedEmail: "owner@example.com",
+      maxRedemptions: 1,
+    });
+    expect(coupon?.validUntil).toBeGreaterThan(Math.floor(Date.now() / 1000));
+    expect(outbox).toHaveLength(3);
+    const all = outbox.map((email) => email.html).join("\n");
+    expect(all).toContain(coupon!.code);
+    expect(all).toContain("$199");
+    expect(all).toContain("Blueprint");
   });
 });

@@ -143,7 +143,7 @@ export function createBillingRoutes(deps: BillingDeps = {}) {
         let terms = null;
         if (couponCode) {
           try {
-            terms = (await validateCoupon(store, couponCode, plan.id)).terms;
+            terms = (await validateCoupon(store, couponCode, plan.id, undefined, user.email)).terms;
           } catch (err) {
             const e = toErrorResponse(err);
             return c.json({ error: e.message }, e.status as 422);
@@ -233,6 +233,7 @@ export function createBillingRoutes(deps: BillingDeps = {}) {
           couponCode: parsed.data.couponCode,
           tracker: parsed.data.tracker,
           idempotencyKey: c.req.header("Idempotency-Key"),
+          buyerEmail: user.email,
           recipientEmails: [...new Set([...admins, user.email])],
         },
       );
@@ -285,6 +286,7 @@ export function createBillingRoutes(deps: BillingDeps = {}) {
           couponCode: parsed.data.couponCode,
           tracker: parsed.data.tracker,
           idempotencyKey: c.req.header("Idempotency-Key"),
+          buyerEmail: user.email,
           recipientEmails: [...new Set([...admins, user.email])],
         },
       );

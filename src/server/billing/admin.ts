@@ -606,6 +606,9 @@ export async function createCoupon(
     redeemedCount: 0,
     validFrom: input.validFrom ?? null,
     validUntil: input.validUntil ?? null,
+    restrictedEmail: null,
+    oneTimeProductSlug: null,
+    sourceOrderId: null,
     active: 1,
     createdBy,
   });
@@ -620,6 +623,20 @@ export async function updateCoupon(
 ): Promise<CouponRow> {
   const coupon = await store.getCouponById(id);
   if (!coupon) throw new BillingError("Coupon not found", 404);
+  if (
+    patch.validFrom !== undefined &&
+    patch.validFrom !== null &&
+    (!Number.isInteger(patch.validFrom) || patch.validFrom <= 0)
+  ) {
+    throw new BillingError("validFrom must be a positive timestamp", 422);
+  }
+  if (
+    patch.validUntil !== undefined &&
+    patch.validUntil !== null &&
+    (!Number.isInteger(patch.validUntil) || patch.validUntil <= 0)
+  ) {
+    throw new BillingError("validUntil must be a positive timestamp", 422);
+  }
   await store.updateCoupon(id, patch);
   return (await store.getCouponById(id))!;
 }

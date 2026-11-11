@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import {
   couponPlans,
   coupons,
@@ -95,6 +95,40 @@ export async function bumpCouponRedemptions(db: Db, couponId: string): Promise<v
     .update(coupons)
     .set({ redeemedCount: sql`${coupons.redeemedCount} + 1`, updatedAt: nowMs() })
     .where(eq(coupons.id, couponId));
+}
+
+/** Consume one redemption only while the coupon is active and under its cap. */
+export async function bumpCouponRedemptionsIfAvailable(
+  db: Db,
+  couponId: string,
+): Promise<boolean> {
+  const updated = await db
+    .update(coupons)
+    .set({ redeemedCount: sql`${coupons.redeemedCount} + 1`, updatedAt: nowMs() })
+    .where(
+      and(
+        eq(coupons.id, couponId),
+        eq(coupons.active, 1),
+        or(
+          isNull(coupons.maxRedemptions),
+          sql`${coupons.redeemedCount} < ${coupons.maxRedemptions}`,
+        ),
+      ),
+    )
+    .returning({ id: coupons.id });
+  return updated.length > 0;
+}
+
+export async function getCouponBySourceOrderId(
+  db: Db,
+  sourceOrderId: string,
+): Promise<CouponRow | null> {
+  const rows = await db
+    .select()
+    .from(coupons)
+    .where(eq(coupons.sourceOrderId, sourceOrderId))
+    .limit(1);
+  return rows[0] ?? null;
 }
 
 /* Subscriptions */
@@ -906,6 +940,9 @@ export async function createOneTimeOrder(
     currency: string;
     tracker?: string | null;
     idempotencyKey: string;
+    couponId?: string | null;
+    couponCode?: string | null;
+    discountMinor?: number;
     now: number;
   },
 ): Promise<OneTimeOrderRow> {
@@ -923,6 +960,10 @@ export async function createOneTimeOrder(
     tracker: row.tracker ?? null,
     chargeId: null,
     idempotencyKey: row.idempotencyKey,
+    couponId: row.couponId ?? null,
+    couponCode: row.couponCode ?? null,
+    discountMinor: row.discountMinor ?? 0,
+    couponRedeemedAt: null,
     receiptSentAt: null,
     intakeSentAt: null,
     createdAt: row.now,
@@ -952,7 +993,7 @@ export async function findOneTimeOrderByIdempotencyKey(db: Db, key: string): Pro
 export async function updateOneTimeOrder(
   db: Db,
   id: string,
-  patch: Partial<Pick<OneTimeOrderRow, "status" | "tracker" | "chargeId" | "receiptSentAt" | "intakeSentAt" | "paidAt" | "updatedAt">>,
+  patch: Partial<Pick<OneTimeOrderRow, "status" | "tracker" | "chargeId" | "couponId" | "couponCode" | "discountMinor" | "couponRedeemedAt" | "receiptSentAt" | "intakeSentAt" | "paidAt" | "updatedAt">>,
 ): Promise<void> {
   await db.update(oneTimeOrders).set(patch).where(eq(oneTimeOrders.id, id));
 }
@@ -1077,8 +1118,10 @@ export interface BillingStore {
   listAllInvoicesWithOrgs(): Promise<Array<InvoiceRow & { orgName: string | null }>>;
   getCouponByCode(code: string): Promise<CouponRow | null>;
   getCouponById(id: string): Promise<CouponRow | null>;
+  getCouponBySourceOrderId(sourceOrderId: string): Promise<CouponRow | null>;
   listCouponPlans(couponId: string): Promise<string[]>;
   bumpCouponRedemptions(couponId: string): Promise<void>;
+  bumpCouponRedemptionsIfAvailable(couponId: string): Promise<boolean>;
   getOrgSubscription(orgId: string): Promise<SubscriptionRow | null>;
   /** Latest subscription regardless of status (access checks, not billing). */
   getAnySubscription(orgId: string): Promise<SubscriptionRow | null>;
@@ -1208,8 +1251,11 @@ export function drizzleStore(db: Db): BillingStore {
     listAllInvoicesWithOrgs: () => listAllInvoicesWithOrgs(db),
     getCouponByCode: (code) => getCouponByCode(db, code),
     getCouponById: (id) => getCouponById(db, id),
+    getCouponBySourceOrderId: (sourceOrderId) => getCouponBySourceOrderId(db, sourceOrderId),
     listCouponPlans: (couponId) => listCouponPlans(db, couponId),
     bumpCouponRedemptions: (couponId) => bumpCouponRedemptions(db, couponId),
+    bumpCouponRedemptionsIfAvailable: (couponId) =>
+      bumpCouponRedemptionsIfAvailable(db, couponId),
     getOrgSubscription: (orgId) => getOrgSubscription(db, orgId),
     getAnySubscription: (orgId) => getAnySubscription(db, orgId),
     getSubscription: (id) => getSubscription(db, id),

@@ -33,6 +33,7 @@ export function OneTimeCheckout({
   includes,
   checkoutNote,
   thankYouPath,
+  showCoupon = false,
 }: {
   slug: string;
   eyebrow: string;
@@ -41,6 +42,7 @@ export function OneTimeCheckout({
   includes: string[];
   checkoutNote: string;
   thankYouPath: string;
+  showCoupon?: boolean;
 }) {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
@@ -55,6 +57,15 @@ export function OneTimeCheckout({
   const [session, setSession] = useState<{ orderId: string; tracker: string; clientToken: string; environment: string; amountMinor: number } | null>(null);
   const [pending, setPending] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountMinor: number;
+    amountMinor: number;
+    currency: string;
+    expiresOn: string;
+  } | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   useEffect(() => {
     fetch("/api/one-time/products")
@@ -70,6 +81,50 @@ export function OneTimeCheckout({
       .catch(() => setFailed(true));
   }, [slug]);
 
+  async function applyCoupon() {
+    if (!product) return;
+    if (!EMAIL_RE.test(email.trim())) {
+      toast.error("Enter a valid email first");
+      return;
+    }
+    if (!couponCode.trim()) {
+      toast.error("Enter a credit or discount code");
+      return;
+    }
+    setApplyingCoupon(true);
+    try {
+      const res = await fetch("/api/one-time/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, email: email.trim(), code: couponCode.trim() }),
+      });
+      const data = (await res.json()) as {
+        code?: string;
+        discountMinor?: number;
+        amountMinor?: number;
+        currency?: string;
+        expiresOn?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.code || data.discountMinor == null || data.amountMinor == null) {
+        throw new Error(data.error ?? "Could not apply this code");
+      }
+      setAppliedCoupon({
+        code: data.code,
+        discountMinor: data.discountMinor,
+        amountMinor: data.amountMinor,
+        currency: data.currency ?? product.currency,
+        expiresOn: data.expiresOn ?? "",
+      });
+      toast.success(`Code applied. You save ${formatMoney(data.discountMinor, product.currency)}.`);
+    } catch (err) {
+      setAppliedCoupon(null);
+      toast.error(err instanceof Error ? err.message : "Could not apply this code");
+    } finally {
+      setApplyingCoupon(false);
+    }
+  }
+
   async function start(e: React.FormEvent) {
     e.preventDefault();
     if (!product) return;
@@ -79,6 +134,10 @@ export function OneTimeCheckout({
     }
     if (!EMAIL_RE.test(email.trim())) {
       toast.error("Enter a valid email address");
+      return;
+    }
+    if (showCoupon && couponCode.trim() && !appliedCoupon) {
+      toast.error("Apply your code first, or clear it");
       return;
     }
     const selected = COUNTRIES.find((c) => c.code === countryCode);
@@ -107,6 +166,7 @@ export function OneTimeCheckout({
           phone: `+${selected.dial}${digits}`,
           country: selected.code,
           businessName: businessName.trim() || undefined,
+          couponCode: appliedCoupon?.code,
         }),
       });
       const data = (await res.json()) as { orderId?: string; tracker?: string; clientToken?: string; environment?: string; amountMinor?: number; error?: string };
@@ -173,8 +233,23 @@ export function OneTimeCheckout({
               </ul>
               <div className="flex justify-between border-t pt-3 text-base font-semibold">
                 <span>Due today</span>
-                <span>{formatMoney(product.amountMinor, product.currency)}</span>
+                <span className="flex items-baseline gap-2">
+                  {appliedCoupon && appliedCoupon.discountMinor > 0 && (
+                    <span className="text-sm font-normal text-muted-foreground line-through">
+                      {formatMoney(product.amountMinor, product.currency)}
+                    </span>
+                  )}
+                  <span>
+                    {formatMoney(appliedCoupon?.amountMinor ?? product.amountMinor, product.currency)}
+                  </span>
+                </span>
               </div>
+              {appliedCoupon && (
+                <p className="text-sm text-green-700 dark:text-green-400">
+                  {appliedCoupon.code} applied. You save {formatMoney(appliedCoupon.discountMinor, product.currency)}.
+                  {appliedCoupon.expiresOn ? ` Valid through ${appliedCoupon.expiresOn}.` : ""}
+                </p>
+              )}
               {session ? (
                 <div className="space-y-3">
                   <SafepayPayment
@@ -204,7 +279,17 @@ export function OneTimeCheckout({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="oto-email">Work email</Label>
-                      <Input id="oto-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={200} />
+                      <Input
+                        id="oto-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setAppliedCoupon(null);
+                        }}
+                        required
+                        maxLength={200}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -229,6 +314,35 @@ export function OneTimeCheckout({
                     <Label htmlFor="oto-business">Business name (optional)</Label>
                     <Input id="oto-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} maxLength={160} />
                   </div>
+                  {showCoupon && (
+                    <div className="space-y-2 rounded-md border p-3">
+                      <Label htmlFor="oto-coupon">Credit or discount code</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="oto-coupon"
+                          value={couponCode}
+                          onChange={(e) => {
+                            setCouponCode(e.target.value.toUpperCase());
+                            setAppliedCoupon(null);
+                          }}
+                          placeholder="DIAG-XXXXXX"
+                          maxLength={64}
+                          autoComplete="off"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => void applyCoupon()}
+                          disabled={applyingCoupon || !couponCode.trim()}
+                        >
+                          {applyingCoupon ? "Applying…" : "Apply"}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Use the code from your SNIPE Diagnostic™ report or SNIPE Blueprint™ confirmation.
+                      </p>
+                    </div>
+                  )}
                   <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} />
                   <label className="flex cursor-pointer items-start gap-2 text-xs/relaxed text-muted-foreground">
                     <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(v === true)} aria-label="Agree to Terms of Service and Privacy Policy" />
@@ -239,7 +353,9 @@ export function OneTimeCheckout({
                     </span>
                   </label>
                   <Button type="submit" className="w-full" disabled={pending || !agreed || !billingAddressValid(billingAddress, countryCode)}>
-                    {pending ? "Starting payment…" : `Continue to payment, ${formatMoney(product.amountMinor, product.currency)}`}
+                    {pending
+                      ? "Starting payment…"
+                      : `Continue to payment, ${formatMoney(appliedCoupon?.amountMinor ?? product.amountMinor, product.currency)}`}
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">{checkoutNote}</p>
                 </form>

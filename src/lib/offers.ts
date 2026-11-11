@@ -63,6 +63,12 @@ export const OFFER_CREDITS = {
   },
   blueprintToEngine: {
     days: 30,
+    /**
+     * Coupon expiry from the Blueprint purchase date. The extra 15 days
+     * approximate the 10-business-day delivery window before the 30-day
+     * presentation credit window starts. Superadmin can extend it.
+     */
+    expiryDays: 45,
     text: "Your $999 SNIPE Blueprint™ fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your Blueprint presentation.",
   },
 } as const;

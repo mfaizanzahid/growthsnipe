@@ -6,13 +6,15 @@ import type { Db } from "../repositories/db";
 import type { Auth } from "../auth";
 import { safepayGateway, type Gateway } from "../billing/gateway";
 import { BillingError } from "../billing/errors";
+import { CouponError, validateOneTimeCoupon } from "../billing/coupons";
 import {
   confirmOneTimeOrder,
   createOneTimeSession,
   listProducts,
   ONE_TIME_SLUGS,
 } from "../billing/one-time";
-import { getOneTimeProductBySlug } from "../repositories/billing";
+import { drizzleStore, getOneTimeProductBySlug } from "../repositories/billing";
+import { formatCreditExpiry } from "../../lib/credit-coupon";
 
 const SessionBody = z.object({
   slug: z.enum(ONE_TIME_SLUGS),
@@ -22,7 +24,14 @@ const SessionBody = z.object({
   country: z.string().trim().length(2),
   businessName: z.string().trim().max(160).optional(),
   trade: z.string().trim().max(120).optional(),
+  couponCode: z.string().trim().max(64).optional(),
   idempotencyKey: z.string().trim().min(8).max(128).optional(),
+});
+
+const CouponPreviewBody = z.object({
+  slug: z.enum(ONE_TIME_SLUGS),
+  email: z.string().trim().email().max(200),
+  code: z.string().trim().min(1).max(64),
 });
 
 const ConfirmBody = z.object({
@@ -67,6 +76,35 @@ export function createOneTimeRoutes(deps: {
     });
   });
 
+  routes.post("/api/one-time/coupon", async (c) => {
+    const parsed = CouponPreviewBody.safeParse(await c.req.json().catch(() => undefined));
+    if (!parsed.success) return c.json({ error: "Provide a valid email and code" }, 422);
+    const db = c.get("db") as Db;
+    const product = await getOneTimeProductBySlug(db, parsed.data.slug);
+    if (!product || product.active !== 1) {
+      return c.json({ error: "Product is not available" }, 422);
+    }
+    try {
+      const valid = await validateOneTimeCoupon(
+        drizzleStore(db),
+        parsed.data.code,
+        product.slug,
+        product.amountMinor,
+        parsed.data.email,
+      );
+      return c.json({
+        code: valid.coupon.code,
+        discountMinor: valid.discountMinor,
+        amountMinor: valid.amountMinor,
+        currency: product.currency,
+        expiresOn: formatCreditExpiry(valid.coupon.validUntil),
+      });
+    } catch (err) {
+      if (err instanceof CouponError) return c.json({ error: err.message }, err.status);
+      return c.json({ error: "Could not apply this code" }, 400);
+    }
+  });
+
   routes.post("/api/one-time/session", async (c) => {
     const env = c.env as Env;
     const parsed = SessionBody.safeParse(await c.req.json().catch(() => undefined));
@@ -80,6 +118,7 @@ export function createOneTimeRoutes(deps: {
         country: parsed.data.country.toUpperCase(),
         businessName: parsed.data.businessName ?? null,
         trade: parsed.data.trade ?? null,
+        couponCode: parsed.data.couponCode ?? null,
         idempotencyKey: parsed.data.idempotencyKey ?? c.req.header("Idempotency-Key") ?? null,
       });
       return c.json(result);

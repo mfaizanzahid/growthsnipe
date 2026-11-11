@@ -78,6 +78,8 @@ export interface SubscribeInput {
   planId: string;
   interval: "month" | "year";
   couponCode?: string | null;
+  /** Buyer email for email-bound credit coupons. */
+  buyerEmail?: string | null;
   tracker?: string | null;
   idempotencyKey?: string | null;
   recipientEmails: string[];
@@ -137,7 +139,7 @@ export async function subscribe(
   let couponId: string | null = null;
   if (input.couponCode) {
     try {
-      const valid = await validateCoupon(store, input.couponCode, plan.id, now);
+      const valid = await validateCoupon(store, input.couponCode, plan.id, now, input.buyerEmail);
       couponTerms = valid.terms;
       couponId = valid.coupon.id;
     } catch (err) {

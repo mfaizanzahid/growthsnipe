@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { PDFArray, PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
+import {
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFName,
+  PDFRawStream,
+  PDFRef,
+  PDFString,
+  decodePDFRawStream,
+} from "pdf-lib";
 import { buildFacts, metricValue } from "../src/server/diagnostic/facts";
 import { diagnosticWindow } from "../src/server/diagnostic/collect";
 import { fallbackNarrative, validateNarrative } from "../src/server/diagnostic/synthesize";
@@ -316,5 +325,39 @@ describe("diagnostic pdf", () => {
       }
     }
     expect(found).toBe(true);
+  });
+
+  it("prints the Blueprint credit code and expiry", async () => {
+    const f = facts();
+    const narrative = fallbackNarrative(f);
+    const expiresAt = Date.UTC(2026, 11, 9, 23, 59, 59) / 1000;
+    const bytes = await renderDiagnosticPdf(f, narrative, {
+      credit: {
+        code: "DIAG-ABC123",
+        amountLabel: "$199",
+        expiresAt,
+        targetName: "SNIPE Blueprint™",
+        instructions: "Use it at the Blueprint checkout.",
+      },
+    });
+    const doc = await PDFDocument.load(bytes);
+    let text = "";
+    for (const page of doc.getPages()) {
+      const contents = page.node.Contents();
+      if (!contents) continue;
+      const streams =
+        contents instanceof PDFArray
+          ? contents.asArray().map((entry) => doc.context.lookup(entry as PDFRef))
+          : [contents];
+      for (const stream of streams) {
+        if (stream instanceof PDFRawStream) {
+          text += new TextDecoder().decode(decodePDFRawStream(stream).decode());
+        }
+      }
+    }
+    const hex = (value: string) =>
+      Buffer.from(value, "utf8").toString("hex").toUpperCase();
+    expect(text).toContain(hex("DIAG-ABC123"));
+    expect(text).toContain(hex("December 9, 2026"));
   });
 });
