@@ -167,19 +167,27 @@ export function createAnalyticsRoutes(deps: {
         await ensureListingLink(wenv.SYNC_WORKFLOW, db, orgId, nowMs).catch(() => null);
       } else if (st.status === "live") {
         const org = await buildOrgAdapter(wenv, db, orgId).catch(() => null);
-        if (org) await ensureEnrichmentParent(wenv.SYNC_WORKFLOW, db, orgId, org.provider, nowMs).catch(() => null);
         const hourAgo = Math.floor(nowMs / 1000) - 3600;
         const stale = (st.lastSyncedAt ?? 0) < hourAgo;
         const draining = stale ? false : await hasEnrichmentBacklog(db, orgId).catch(() => false);
+        let busy = false;
         if (stale || draining) {
           if (!(await claimRunLease(db, orgId, nowMs))) {
-            return c.json({ error: "A scheduled sync is already running for this workspace. Wait a minute and try again." }, 409);
+            busy = true;
+          } else {
+            try {
+              await runAnalyticsSyncForOrg(env, db, orgId, { maxChunks: 1, head: true, enrich: false, nowMs });
+            } finally {
+              await releaseRunLease(db, orgId, nowMs);
+            }
           }
-          try {
-            await runAnalyticsSyncForOrg(env, db, orgId, { maxChunks: 1, head: true, enrich: false, nowMs });
-          } finally {
-            await releaseRunLease(db, orgId, nowMs);
-          }
+        }
+        // Ensure the parent AFTER the head: a stale head can add brand-new bare
+        // orders, and the click must drain that fresh backlog itself instead of
+        // waiting for the next cron tick (dev never dispatches cron at all).
+        if (org) await ensureEnrichmentParent(wenv.SYNC_WORKFLOW, db, orgId, org.provider, nowMs).catch(() => null);
+        if (busy) {
+          return c.json({ error: "A scheduled sync is already running for this workspace. Wait a minute and try again." }, 409);
         }
       }
       return c.json({ summary: null, triggered: true });

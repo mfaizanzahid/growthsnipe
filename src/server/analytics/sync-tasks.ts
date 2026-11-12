@@ -358,15 +358,18 @@ export async function runWorkflowSupervisor(
         if (link) links += 1;
       } else if (s.status === "live") {
         const org = await buildOrgAdapter(env, db, s.organizationId).catch(() => null);
-        if (org) {
-          const parent = await ensureEnrichmentParent(binding, db, s.organizationId, org.provider, nowMs);
-          if (parent && !parent.reused) parents += 1;
-        }
         const stale = (s.lastSyncedAt ?? 0) < hourAgo;
         const draining = stale ? false : await hasEnrichmentBacklog(db, s.organizationId);
         if (stale || draining) {
           await doHead(s.organizationId);
           heads += 1;
+        }
+        // Ensure the parent AFTER the head: a stale head can add brand-new bare
+        // orders, and this tick must start their enrichment instead of leaving
+        // the fresh backlog for the next tick.
+        if (org) {
+          const parent = await ensureEnrichmentParent(binding, db, s.organizationId, org.provider, nowMs);
+          if (parent && !parent.reused) parents += 1;
         }
       }
       if (heads >= 5) break;

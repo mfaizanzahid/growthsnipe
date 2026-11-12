@@ -628,4 +628,36 @@ describe("workflow supervisor", () => {
     expect(out).toEqual({ links: 0, parents: 0, heads: 0 });
     expect(binding.created).toEqual([]);
   });
+
+  it("starts enrichment for bare orders added by the head", async () => {
+    // Regression: the parent was ensured before the head ran. A stale head
+    // then added new bare orders, leaving them unenriched until the next tick
+    // (and forever in dev, where cron never dispatches).
+    const db = memoryDb();
+    await seedConnection(db, "isn");
+    await liveState(db, 1);
+    const binding = fakeBinding();
+    const heads: string[] = [];
+    const out = await runWorkflowSupervisor(binding, ENV, db, NOW, async (orgId) => {
+      heads.push(orgId);
+      await db.insert(schema.orgOrders).values({
+        id: "o1:isn:new",
+        organizationId: ORG,
+        provider: "isn",
+        providerOrderId: "new",
+        status: "completed",
+        scheduledAt: "2026-10-22T10:00:00Z",
+        syncedAt: Math.floor(NOW / 1000),
+      });
+      await db
+        .update(schema.orgSyncState)
+        .set({ ordersTotal: 1, lastSyncedAt: Math.floor(NOW / 1000) })
+        .where(eq(schema.orgSyncState.organizationId, ORG));
+    });
+
+    expect(out.parents).toBe(1);
+    expect(out.heads).toBe(1);
+    expect(heads).toEqual([ORG]);
+    expect(binding.created).toEqual([enrichParentId(ORG, NOW)]);
+  });
 });
