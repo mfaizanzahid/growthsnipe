@@ -81,7 +81,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 
 - Scope every D1 query to an organization. Treat provider text as untrusted data. Audit every write.
 - Never log secrets or tokens. Hash MCP tokens; encrypt gateway references at rest.
-- Public `VITE_*` values ship in the client bundle. Never put a secret in a `VITE_` key.
+- Public runtime config (`GA_MEASUREMENT_ID`, `EMBED_APP_HTML`, `EMBED_MARKETING_HTML`) is served unauthenticated by `GET /api/runtime-config` and ships to every visitor. Never put a secret in any of them.
 - Provider credentials stay server-side and encrypted.
 
 ## Testing (minimum)
@@ -97,7 +97,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 
 - Production deploys are manual only (`npm run deploy:prod`) and only on the owner's explicit request. There is no auto-deploy on push to `main`.
 - **Apply the production migration before pushing code that reads new columns.** `npm run db:migrate:prod`.
-- `VITE_*` values are build variables and only take effect on the next build. A `.env` file needs `\$` for a literal dollar sign; a Cloudflare build variable takes a plain `$`.
+- `GA_MEASUREMENT_ID`, `EMBED_APP_HTML`, and `EMBED_MARKETING_HTML` are Worker runtime vars (top-level and `env.production` `vars` in `wrangler.jsonc`), served by `GET /api/runtime-config`. No client rebuild is required to change them.
 - CI runs typecheck, test, and build on PRs and `main`. It deploys nothing.
 
 ## Source-of-truth rules

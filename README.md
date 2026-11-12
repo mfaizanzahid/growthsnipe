@@ -61,7 +61,7 @@ Apply the production migration before pushing code that reads new columns:
 npm run db:migrate:prod
 ```
 
-`VITE_*` values are build variables and only take effect on the next build. A `.env` file needs `\$` for a literal dollar sign; a Cloudflare build variable takes a plain `$`.
+`GA_MEASUREMENT_ID`, `EMBED_APP_HTML`, and `EMBED_MARKETING_HTML` are Worker runtime vars in `wrangler.jsonc` (and the Cloudflare dashboard), served to the browser by `GET /api/runtime-config`. Changing one takes effect without a client rebuild.
 
 ## Source of truth
 

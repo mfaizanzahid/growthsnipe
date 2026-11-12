@@ -57,7 +57,10 @@
     "SAFEPAY_ENV": "sandbox",
     "SAFEPAY_API_BASE": "https://sandbox.api.getsafepay.com",
     "APP_BASE_URL": "http://localhost:5173",
-    "LOG_RETENTION_DAYS": "90"
+    "LOG_RETENTION_DAYS": "90",
+    "GA_MEASUREMENT_ID": "",
+    "EMBED_APP_HTML": "",
+    "EMBED_MARKETING_HTML": ""
   },
   "triggers": {
     "crons": ["0 3 * * *", "0 * * * *", "* * * * *"]
@@ -80,7 +83,10 @@
 			"SAFEPAY_API_BASE": "https://sandbox.api.getsafepay.com",
 			"SAFEPAY_ENV": "sandbox",
 			"SUPERADMIN_EMAILS": "mfaizanzahid@gmail.com",
-			"LOG_RETENTION_DAYS": "90"
+			"LOG_RETENTION_DAYS": "90",
+			"GA_MEASUREMENT_ID": "GTM-MNQ45DBH",
+			"EMBED_APP_HTML": "<script>window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}</script><script id=\"zsiqscript\" src=\"https://salesiq.zohopublic.com/widget?wc=siq468e5f801848e5904a9b7053f9b977f00a3d6406ab04b113ea78bf8c583463eb\" defer></script>",
+			"EMBED_MARKETING_HTML": "<!--EMBED-->"
       },
       "d1_databases": [
         {

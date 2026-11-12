@@ -43,11 +43,15 @@ OPENAI_API_KEY=
 DEFAULT_TIMEZONE=America/New_York
 BRIEFING_FROM_EMAIL=briefings@example.com
 
-# Operator-configured embed snippets (chat widget, trackers) are NOT here: they
-# live in wrangler.jsonc "vars" (plaintext - the snippet ships to every
-# visitor of that surface and is visible in page source, so it must never
-# hold a secret). Local development reads them from that file; add a key here
-# only to override the value for your machine.
+# Public runtime config (analytics + operator embed snippets). These live in
+# wrangler.jsonc "vars" - GA_MEASUREMENT_ID, EMBED_APP_HTML,
+# EMBED_MARKETING_HTML - and are served to the browser by
+# GET /api/runtime-config. They are plaintext and public by design (visible in
+# page source), so never put a secret in them. Local development reads them
+# from that file; add a key here only to override the value for your machine.
+# Google tag ID: GA4/Ads/Floodlight (G-, AW-, DC-) or Tag Manager (GTM-).
+# Empty disables analytics.
+#GA_MEASUREMENT_ID=G-XXXXXXXXXX
 # Zoho SalesIQ chat widget - authenticated app pages only.
 #EMBED_APP_HTML=<script>window.$zoho=window.$zoho || {};$zoho.salesiq=$zoho.salesiq||{ready:function(){}}</script><script id="zsiqscript" src="https://salesiq.zohopublic.com/widget?wc=REPLACE_ME" defer></script>
 # Public marketing pages (chat widget, trackers).

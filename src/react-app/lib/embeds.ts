@@ -1,22 +1,21 @@
 /**
  * Operator-configured embed snippets (chat widgets, trackers, ...).
  *
- * The snippets are public build-time values (VITE_EMBED_APP_HTML /
- * VITE_EMBED_MARKETING_HTML), inlined into the client bundle by Vite the same
- * way VITE_GA_MEASUREMENT_ID is. They are injected client-side, as the last
+ * The snippets are public runtime values (Worker vars EMBED_APP_HTML /
+ * EMBED_MARKETING_HTML) fetched from GET /api/runtime-config, so they can
+ * change without a client rebuild. They are injected client-side, as the last
  * child of <body> — the position a server-side "before </body>" injection would
  * produce. The Worker never serves the app HTML (Cloudflare Static Assets do),
  * so this is the only available seam.
  *
  * Two rules make this safe to operate:
- * 1. The snippet is PUBLIC. It ships to every visitor and is visible in the
- *    downloaded bundle. Never put a secret in it, and never let a tenant set
- *    it. A VITE_ value is inlined into the client bundle by definition, so
- *    treat every VITE_ key as public.
+ * 1. The snippet is PUBLIC. It ships to every visitor and is visible in page
+ *    source. Never put a secret in it, and never let a tenant set it.
  * 2. Injection happens once per surface per page load. React StrictMode
  *    double-invokes effects in dev, and a second load of a chat widget script
  *    renders a duplicate widget.
  */
+import type { RuntimeConfig } from "./runtime-config";
 
 export const EMBED_SURFACES = ["marketing", "app"] as const;
 
@@ -114,27 +113,14 @@ export function clearEmbedContainer(surface: EmbedSurface, doc: Document): void 
 }
 
 /**
- * The snippet for one surface, read from the build-time Vite env var.
+ * The snippet for one surface from the public runtime config.
  *
- * Vite only inlines statically referenced keys, so both names are written out
- * literally. An empty value means "no snippet for this surface"; an
- * UNDEFINED value means the key is missing from the build environment, which
- * is a misconfiguration worth surfacing in production.
+ * An empty value means "no snippet for this surface". The server already
+ * treats blank and oversized values as unset; this trims defensively.
  */
-export function embedSnippetFor(surface: EmbedSurface): string | null {
-  const raw =
-    surface === "marketing"
-      ? (import.meta.env.VITE_EMBED_MARKETING_HTML as string | undefined)
-      : (import.meta.env.VITE_EMBED_APP_HTML as string | undefined);
-  if (raw === undefined) {
-    if (import.meta.env.PROD) {
-      console.warn(
-        `[embeds] VITE_EMBED_${surface === "marketing" ? "MARKETING" : "APP"}_HTML is not set - no ${surface} snippet will be injected.`,
-      );
-    }
-    return null;
-  }
-  const value = raw.trim();
+export function embedSnippetFor(surface: EmbedSurface, config: RuntimeConfig): string | null {
+  const raw = surface === "marketing" ? config.embedMarketingHtml : config.embedAppHtml;
+  const value = raw?.trim() ?? "";
   return value ? value : null;
 }
 

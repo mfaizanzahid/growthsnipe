@@ -12,8 +12,9 @@ const tree = (
   </React.StrictMode>
 );
 
-// Analytics: load gtag once (no-op without VITE_GA_MEASUREMENT_ID) and
-// record every SPA navigation, including the initial load.
+// Analytics: load gtag once from the public runtime config (no-op without
+// GA_MEASUREMENT_ID) and record every SPA navigation, including the initial
+// load. Pageviews recorded before the config resolves are queued.
 initAnalytics();
 trackPageview(window.location.pathname);
 router.subscribe((state) => {

@@ -20,6 +20,7 @@ Base: same origin (Worker serves the SPA). Auth: Better Auth session cookie on e
 | GET/POST | `/api/orgs` | session | list / create orgs |
 | GET/PATCH | `/api/orgs/:orgId` | admin | org profile; member/invitation sub-routes |
 | GET | `/api/plans` | public (active only) | signup plan list (incl. comma-separated `features` bullets) |
+| GET | `/api/runtime-config` | public | `ga_measurement_id` (GA4/Ads/Floodlight or GTM), `embed_app_html`, `embed_marketing_html` from Worker runtime vars (public by design; 60s cache) |
 | POST/PATCH | `/api/superadmin/plans` | superadmin | plans CRUD (max 4 active; delete blocked with subscribers; `features` comma-separated bullets) |
 | GET/PUT | `/api/superadmin/settings` | superadmin | `portal_name`, `support_email` |
 | POST | `/api/billing/signup` | session+`orgId` | plan+interval+coupon+payment-method → setup+first-period charge → subscription + invoice (legacy paid-first path) |

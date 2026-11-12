@@ -42,6 +42,12 @@ export interface Env {
   DIAGNOSTIC_TOKEN_SECRET?: string;
   /** Cloudflare Workflow entrypoint for Diagnostic collection and rendering. */
   DIAGNOSTIC_WORKFLOW?: DiagnosticWorkflowBinding;
+  /** Google Analytics measurement ID (public; empty disables analytics). */
+  GA_MEASUREMENT_ID?: string;
+  /** Third-party embed snippet for authenticated app pages (public). */
+  EMBED_APP_HTML?: string;
+  /** Third-party embed snippet for public marketing pages (public). */
+  EMBED_MARKETING_HTML?: string;
 }
 
 export interface DiagnosticWorkflowInstanceHandle {

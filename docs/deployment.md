@@ -95,14 +95,12 @@ integration watches the repo; a push to `main` builds and deploys
 (Worker → Settings → Build):
 
 - **Build command:** `npm run build` (includes the marketing prerender step: 16 static route files + robots.txt + sitemap.xml are emitted into `dist/client` automatically)
-- **Build environment** (Worker → Settings → Build → Build variables): the
-  `VITE_*` values are inlined into the client bundle by Vite, so they must be
-  set **in the build environment**, not in the Worker runtime:
-  - `VITE_GA_MEASUREMENT_ID` (Google Analytics ID, e.g. `G-…`); when empty, no analytics loads.
-  - `VITE_EMBED_APP_HTML` — third-party embed snippet for authenticated app pages (chat widget). Public by design.
-  - `VITE_EMBED_MARKETING_HTML` — the same for public marketing pages; empty means "no snippet on that surface".
-  - Editing a build variable only takes effect on the **next build** — push again (or run a manual build) to pick it up.
-- **`$` is escaped differently in the two places.** A `.env` **file** is dotenv-expanded, so a `$` in a snippet must be written `\$` there (otherwise `window.$zoho` is expanded to `window.`). A **build variable is copied verbatim** — no expansion — so the same snippet must use a plain `$` there. Pasting the `.env` form into the dashboard leaves a stray backslash in the bundle and the snippet fails with a syntax error.
+- **Runtime config** (Worker → Settings → Variables and Secrets, or `wrangler.jsonc` `vars`):
+  - `GA_MEASUREMENT_ID` (Google tag ID: GA4/Ads/Floodlight `G-` / `AW-` / `DC-`, or Tag Manager `GTM-`); when empty, no analytics loads.
+  - `EMBED_APP_HTML` - third-party embed snippet for authenticated app pages (chat widget). Public by design.
+  - `EMBED_MARKETING_HTML` - the same for public marketing pages; empty means "no snippet on that surface".
+  - These are Worker runtime values, served to the browser by `GET /api/runtime-config`; changing one takes effect without a client rebuild (allow up to 60 seconds for the cached config response).
+- **These values are public.** They ship to every visitor and are visible in page source, so never put a secret in them. Worker vars are copied verbatim, so the old `.env` `$`-escaping rule does not apply.
 - **Deploy command:** `npx wrangler deploy --config wrangler.jsonc --env production`
   (plain `wrangler deploy` uses the Vite plugin's flattened config without
   environments — it would deploy DEV values to production)

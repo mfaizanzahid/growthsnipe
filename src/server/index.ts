@@ -14,6 +14,7 @@ import { createLoopLibraryRoutes } from "./routes/loop-library";
 import { createOneTimeRoutes } from "./routes/one-time";
 import { createDiagnosticRoutes } from "./routes/diagnostic";
 import { createPendingEmailRoutes } from "./routes/pending-email";
+import { runtimeConfigRoutes } from "./routes/runtime-config";
 import { createBillingRoutes } from "./routes/billing";
 import { createSidekickRoutes } from "./routes/sidekick";
 import { createAnalyticsRoutes } from "./routes/analytics";
@@ -140,6 +141,7 @@ export function createApp() {
   app.route("/", createOneTimeRoutes());
   app.route("/", createDiagnosticRoutes());
   app.route("/", createPendingEmailRoutes());
+  app.route("/", runtimeConfigRoutes);
   app.route("/", createBillingRoutes());
   app.route("/", createSidekickRoutes());
   app.route("/", createAnalyticsRoutes());
