@@ -30,7 +30,10 @@ export function ProfileMenu({ email, userName, role, superadmin }: Props) {
 
   async function signOut() {
     await authClient.signOut();
-    navigate("/login");
+    // Full reload after sign-out. A SPA navigation unmounts the app shell and
+    // removes our embed container, but a third-party widget (Zoho, chat, etc.)
+    // can leave its own DOM behind. Reloading /login guarantees a clean page.
+    window.location.replace("/login");
   }
 
   return (
