@@ -11,8 +11,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { TermsNotice } from "../components/TermsNotice";
 
-// Invite-only sign-in: email + Continue sends a magic link (7-day validity)
-// to members and invitees. Unknown addresses get an error, not a link.
+// Invite-only sign-in: email + Continue sends a magic link to members and
+// invitees. Unknown addresses get an error, not a link.
 export function Login() {
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
@@ -61,6 +61,25 @@ export function Login() {
     }
   }
 
+  async function resend() {
+    const address = email.trim();
+    if (!address) return;
+    setPending(true);
+    try {
+      const { error } = await authClient.signIn.magicLink({
+        email: address,
+        callbackURL: "/dashboard",
+        newUserCallbackURL: "/onboarding",
+      });
+      if (error) throw new Error(error.message ?? "Could not resend magic link");
+      toast.success(`Sign-in link re-sent to ${address}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resend magic link");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted/40 px-4 py-8">
       <HomeLink />
@@ -70,7 +89,7 @@ export function Login() {
           <CardTitle>{sent ? "Check your inbox" : "Sign in"}</CardTitle>
           <CardDescription>
             {sent
-              ? `A sign-in link is on its way to ${email.trim()}. It stays valid for 7 days.`
+              ? `A sign-in link is on its way to ${email.trim()}.`
               : "Enter your work email and we'll send you a sign-in link."}
           </CardDescription>
         </CardHeader>
@@ -79,7 +98,20 @@ export function Login() {
             <p className="text-center text-xs/relaxed text-muted-foreground">
               Wrong address? Go back and use a different one.
             </p>
-            <Button variant="outline" className="w-full" onClick={() => setSent(false)}>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => void resend()}
+              disabled={pending}
+            >
+              {pending ? "Sending…" : "Resend link"}
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setSent(false)}
+              disabled={pending}
+            >
               Change email
             </Button>
           </CardContent>

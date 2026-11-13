@@ -68,9 +68,8 @@ export interface OneTimeCouponTerms {
 }
 
 /**
- * Validate a credit coupon for a one-time product. Coupons issued from a
- * Diagnostic or Blueprint purchase are email-bound, single-use, and target a
- * specific product slug.
+ * Validate a coupon for a one-time product. Generic superadmin coupons apply
+ * to any one-time product; credit coupons can target a specific product slug.
  */
 export async function validateOneTimeCoupon(
   store: BillingStore,
@@ -82,8 +81,14 @@ export async function validateOneTimeCoupon(
 ): Promise<OneTimeCouponTerms> {
   const coupon = await store.getCouponByCode(code);
   if (!coupon || coupon.active !== 1) throw new CouponError("Discount code is not valid", 404);
-  if (coupon.oneTimeProductSlug !== productSlug) {
+  if (coupon.oneTimeProductSlug && coupon.oneTimeProductSlug !== productSlug) {
     throw new CouponError("Discount code does not apply to this purchase", 422);
+  }
+  if (!coupon.oneTimeProductSlug && coupon.appliesToSetup === 1) {
+    throw new CouponError(
+      "This code applies to subscription setup, not one-time purchases",
+      422,
+    );
   }
   assertCouponWindow(coupon, now);
   assertCouponEmail(coupon, email);
@@ -99,9 +104,6 @@ export async function validateOneTimeCoupon(
     throw new CouponError("Discount code has no value for this purchase", 422);
   }
   const amountMinor = productAmountMinor - discountMinor;
-  if (amountMinor <= 0) {
-    throw new CouponError("This code covers the full price. Contact support to complete your order.", 422);
-  }
   return { coupon, discountMinor, amountMinor };
 }
 

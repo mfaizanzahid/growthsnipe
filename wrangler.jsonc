@@ -72,7 +72,7 @@
  			"AI_PROVIDER": "openai",
  			"ANALYTICS_SYNC_VIA_WORKFLOW": "1",
 			"APP_BASE_URL": "https://growthsnipe.com",
-			"BREVO_NEW_SIGNUP_LIST_ID": "8",
+			"BREVO_NEW_SIGNUP_LIST_ID": "9",
 			"BREVO_SENDER_EMAIL": "noreply@growthsnipe.com",
 			"BREVO_SENDER_NAME": "GrowthSnipe",
 			"BRIEFING_FROM_EMAIL": "briefings@growthsnipe.com",

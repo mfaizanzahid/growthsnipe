@@ -170,14 +170,21 @@ export function oneTimeReceiptContent(input: {
   credit?: EmailCreditCoupon | null;
 }): { subject: string; html: string } {
   const branded = brandProductName(input.productName);
+  const paymentLine =
+    input.amountMinor === 0
+      ? `<p>Your ${escapeHtml(branded)} order is complete. No payment was due.</p>`
+      : `<p>Your payment of ${money(input.amountMinor, input.currency)} for ${escapeHtml(branded)} succeeded.</p>`;
   const discountLine =
     input.discountMinor && input.discountMinor > 0
       ? `<p>Credit applied: ${money(input.discountMinor, input.currency)}${input.couponCode ? ` (code ${escapeHtml(input.couponCode)})` : ""}.</p>`
       : "";
   return {
-    subject: `Payment received - ${branded}`,
+    subject:
+      input.amountMinor === 0
+        ? `Order complete - ${branded}`
+        : `Payment received - ${branded}`,
     html:
-      `<p>Your payment of ${money(input.amountMinor, input.currency)} for ${escapeHtml(branded)} succeeded.</p>` +
+      paymentLine +
       discountLine +
       `<p>Order reference: ${escapeHtml(input.orderRef)}</p>` +
       creditBlock(input.credit) +

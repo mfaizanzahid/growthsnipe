@@ -41,7 +41,7 @@ export function MagicLink() {
           <CardTitle>{sent ? "Check your inbox" : "Magic link sign in"}</CardTitle>
           <CardDescription>
             {sent
-              ? `A sign-in link is on its way to ${email}. It stays valid for 7 days.`
+              ? `A sign-in link is on its way to ${email.trim()}.`
               : "No password needed we'll email you a sign-in link."}
           </CardDescription>
         </CardHeader>

@@ -33,7 +33,6 @@ export function OneTimeCheckout({
   includes,
   checkoutNote,
   thankYouPath,
-  showCoupon = false,
 }: {
   slug: string;
   eyebrow: string;
@@ -42,7 +41,6 @@ export function OneTimeCheckout({
   includes: string[];
   checkoutNote: string;
   thankYouPath: string;
-  showCoupon?: boolean;
 }) {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
@@ -66,6 +64,7 @@ export function OneTimeCheckout({
     expiresOn: string;
   } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [showCouponField, setShowCouponField] = useState(false);
 
   useEffect(() => {
     fetch("/api/one-time/products")
@@ -136,7 +135,7 @@ export function OneTimeCheckout({
       toast.error("Enter a valid email address");
       return;
     }
-    if (showCoupon && couponCode.trim() && !appliedCoupon) {
+    if (couponCode.trim() && !appliedCoupon) {
       toast.error("Apply your code first, or clear it");
       return;
     }
@@ -169,8 +168,22 @@ export function OneTimeCheckout({
           couponCode: appliedCoupon?.code,
         }),
       });
-      const data = (await res.json()) as { orderId?: string; tracker?: string; clientToken?: string; environment?: string; amountMinor?: number; error?: string };
-      if (!res.ok || !data.tracker || !data.clientToken || !data.orderId) throw new Error(data.error ?? "Could not start payment");
+      const data = (await res.json()) as {
+        orderId?: string;
+        tracker?: string;
+        clientToken?: string;
+        environment?: string;
+        amountMinor?: number;
+        paid?: boolean;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(data.error ?? "Could not start payment");
+      if (data.paid && data.orderId) {
+        toast.success("Order complete. Check your inbox for next steps.");
+        navigate(`${thankYouPath}?order=${data.orderId}`);
+        return;
+      }
+      if (!data.tracker || !data.clientToken || !data.orderId) throw new Error(data.error ?? "Could not start payment");
       setSession({ orderId: data.orderId, tracker: data.tracker, clientToken: data.clientToken, environment: data.environment ?? "sandbox", amountMinor: data.amountMinor ?? product.amountMinor });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not start payment");
@@ -292,29 +305,40 @@ export function OneTimeCheckout({
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="oto-phone">Phone</Label>
-                    <div className="flex gap-2">
-                      <Select value={countryCode} onValueChange={setCountryCode}>
-                        <SelectTrigger className="w-36 shrink-0" aria-label="Country code">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COUNTRIES.map((c) => (
-                            <SelectItem key={`${c.code}-${c.dial}`} value={c.code}>
-                              {c.name} +{c.dial}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Input id="oto-phone" inputMode="tel" placeholder="3001234567" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} required />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="oto-phone">Phone</Label>
+                      <div className="flex gap-2">
+                        <Select value={countryCode} onValueChange={setCountryCode}>
+                          <SelectTrigger className="w-36 shrink-0" aria-label="Country code">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {COUNTRIES.map((c) => (
+                              <SelectItem key={`${c.code}-${c.dial}`} value={c.code}>
+                                {c.name} +{c.dial}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input id="oto-phone" inputMode="tel" placeholder="3001234567" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} required />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="oto-business">Business name (optional)</Label>
+                      <Input id="oto-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} maxLength={160} />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="oto-business">Business name (optional)</Label>
-                    <Input id="oto-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} maxLength={160} />
-                  </div>
-                  {showCoupon && (
+                  <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} layout="inline" />
+                  {!showCouponField ? (
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-primary underline underline-offset-4"
+                      onClick={() => setShowCouponField(true)}
+                    >
+                      Have a credit or discount code?
+                    </button>
+                  ) : (
                     <div className="space-y-2 rounded-md border p-3">
                       <Label htmlFor="oto-coupon">Credit or discount code</Label>
                       <div className="flex gap-2">
@@ -325,7 +349,7 @@ export function OneTimeCheckout({
                             setCouponCode(e.target.value.toUpperCase());
                             setAppliedCoupon(null);
                           }}
-                          placeholder="DIAG-XXXXXX"
+                          placeholder="Enter code"
                           maxLength={64}
                           autoComplete="off"
                         />
@@ -338,12 +362,8 @@ export function OneTimeCheckout({
                           {applyingCoupon ? "Applying…" : "Apply"}
                         </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Use the code from your SNIPE Diagnostic™ report or SNIPE Blueprint™ confirmation.
-                      </p>
                     </div>
                   )}
-                  <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} />
                   <label className="flex cursor-pointer items-start gap-2 text-xs/relaxed text-muted-foreground">
                     <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(v === true)} aria-label="Agree to Terms of Service and Privacy Policy" />
                     <span>
@@ -355,7 +375,9 @@ export function OneTimeCheckout({
                   <Button type="submit" className="w-full" disabled={pending || !agreed || !billingAddressValid(billingAddress, countryCode)}>
                     {pending
                       ? "Starting payment…"
-                      : `Continue to payment, ${formatMoney(appliedCoupon?.amountMinor ?? product.amountMinor, product.currency)}`}
+                      : (appliedCoupon?.amountMinor ?? product.amountMinor) === 0
+                        ? "Complete order"
+                        : `Continue to payment, ${formatMoney(appliedCoupon?.amountMinor ?? product.amountMinor, product.currency)}`}
                   </Button>
                   <p className="text-center text-xs text-muted-foreground">{checkoutNote}</p>
                 </form>

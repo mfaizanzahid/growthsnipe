@@ -36,12 +36,15 @@ export function BillingAddressFields({
   onChange,
   idPrefix,
   countryCode = "",
+  layout = "stacked",
 }: {
   value: BillingAddress;
   onChange: (next: BillingAddress) => void;
   idPrefix: string;
   /** ISO country: US/CA get a 2-letter state code field, others free text. */
   countryCode?: string;
+  /** `inline` puts street, city, and state on one row at sm and above. */
+  layout?: "stacked" | "inline";
 }) {
   const codeOnly = requiresStateCode(countryCode);
   const setState = (raw: string) => {
@@ -49,40 +52,61 @@ export function BillingAddressFields({
     const next = codeOnly ? raw.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 2) : raw;
     onChange({ ...value, state: next });
   };
+
+  const streetField = (
+    <div className="space-y-2">
+      <Label htmlFor={`${idPrefix}-street`}>Street address</Label>
+      <Input
+        id={`${idPrefix}-street`}
+        placeholder="123 Main Street"
+        value={value.street}
+        onChange={(e) => onChange({ ...value, street: e.target.value })}
+        required
+      />
+    </div>
+  );
+  const cityField = (
+    <div className="space-y-2">
+      <Label htmlFor={`${idPrefix}-city`}>City</Label>
+      <Input
+        id={`${idPrefix}-city`}
+        placeholder="Austin"
+        value={value.city}
+        onChange={(e) => onChange({ ...value, city: e.target.value })}
+        required
+      />
+    </div>
+  );
+  const stateField = (
+    <div className="space-y-2">
+      <Label htmlFor={`${idPrefix}-state`}>State</Label>
+      <Input
+        id={`${idPrefix}-state`}
+        placeholder={codeOnly ? "TX" : "Texas"}
+        value={value.state}
+        onChange={(e) => setState(e.target.value)}
+        maxLength={codeOnly ? 2 : undefined}
+        required
+      />
+    </div>
+  );
+
+  if (layout === "inline") {
+    return (
+      <div className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr]">
+        {streetField}
+        {cityField}
+        {stateField}
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-street`}>Street address</Label>
-        <Input
-          id={`${idPrefix}-street`}
-          placeholder="123 Main Street"
-          value={value.street}
-          onChange={(e) => onChange({ ...value, street: e.target.value })}
-          required
-        />
-      </div>
+      {streetField}
       <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-city`}>City</Label>
-          <Input
-            id={`${idPrefix}-city`}
-            placeholder="Austin"
-            value={value.city}
-            onChange={(e) => onChange({ ...value, city: e.target.value })}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-state`}>State</Label>
-          <Input
-            id={`${idPrefix}-state`}
-            placeholder={codeOnly ? "TX" : "Texas"}
-            value={value.state}
-            onChange={(e) => setState(e.target.value)}
-            maxLength={codeOnly ? 2 : undefined}
-            required
-          />
-        </div>
+        {cityField}
+        {stateField}
       </div>
     </>
   );

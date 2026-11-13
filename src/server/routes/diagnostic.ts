@@ -107,7 +107,12 @@ export function createDiagnosticRoutes(deps: {
     const queued = await enqueueDiagnosticRun(env, run.id);
     if (!queued) {
       // Local/dev fallback: run inline without blocking the response.
-      c.executionCtx.waitUntil(processDiagnosticRun(env, db, run.id).catch(() => undefined));
+      const task = processDiagnosticRun(env, db, run.id).catch(() => undefined);
+      try {
+        c.executionCtx.waitUntil(task);
+      } catch {
+        void task;
+      }
     }
     return c.json({ ok: true, queued });
   });

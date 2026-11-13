@@ -558,4 +558,64 @@ describe("credit coupons", () => {
     expect(all).toContain("$199");
     expect(all).toContain("Blueprint");
   });
+
+  it("applies a generic discount code to any one-time purchase", async () => {
+    const db = testDb();
+    const store = drizzleStore(db);
+    const coupon = await seedDiagnosticCoupon(db, {
+      code: "199OFF",
+      amountOffMinor: 19900,
+      oneTimeProductSlug: null,
+      restrictedEmail: null,
+      maxRedemptions: null,
+    });
+    const gateway = fakeGateway();
+    const app = buildApp(db, gateway);
+    const outbox = captureEmails();
+
+    const preview = await req(app, "/api/one-time/coupon", {
+      slug: "diagnostic",
+      email: "owner@example.com",
+      code: coupon.code,
+    });
+    expect(preview.status).toBe(200);
+    expect(await preview.json()).toMatchObject({ discountMinor: 19900, amountMinor: 0 });
+
+    const session = await req(app, "/api/one-time/session", {
+      ...BUYER,
+      couponCode: coupon.code,
+      idempotencyKey: "free-diagnostic-01",
+    });
+    expect(session.status).toBe(200);
+    const body = (await session.json()) as {
+      orderId: string;
+      amountMinor: number;
+      paid: boolean;
+      tracker: string;
+      clientToken: string;
+    };
+    expect(body).toMatchObject({ amountMinor: 0, paid: true, tracker: "", clientToken: "" });
+    expect(gateway.calls).toEqual([]);
+    expect((await getOneTimeOrder(db, body.orderId))?.status).toBe("paid");
+    expect((await store.getCouponById(coupon.id))?.redeemedCount).toBe(1);
+    expect(outbox).toHaveLength(3);
+    expect(outbox[0]?.subject).toContain("Order complete");
+    expect(outbox[0]?.html).toContain("No payment was due");
+  });
+
+  it("still rejects setup-credit coupons on one-time purchases", async () => {
+    const db = testDb();
+    const coupon = await seedDiagnosticCoupon(db, {
+      code: "BP-ENGINE",
+      oneTimeProductSlug: null,
+      appliesToSetup: 1,
+    });
+    const app = buildApp(db, fakeGateway());
+    const res = await req(app, "/api/one-time/coupon", {
+      slug: "diagnostic",
+      email: "owner@example.com",
+      code: coupon.code,
+    });
+    expect(res.status).toBe(422);
+  });
 });

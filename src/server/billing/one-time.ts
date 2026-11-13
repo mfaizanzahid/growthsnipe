@@ -57,6 +57,8 @@ export interface OneTimeSessionResult {
   environment: string;
   amountMinor: number;
   cached: boolean;
+  /** True when the coupon covered the full price and no payment session was needed. */
+  paid: boolean;
 }
 
 /**
@@ -87,6 +89,23 @@ export async function createOneTimeSession(
           environment: env.SAFEPAY_ENV ?? "sandbox",
           amountMinor: existing.amountMinor,
           cached: true,
+          paid: true,
+        };
+      }
+      if (existing.amountMinor === 0) {
+        await completeOneTimePaidOrder(db, env, existing.id, "free", now);
+        const completed = await getOneTimeOrder(db, existing.id);
+        if (!completed || completed.status !== "paid") {
+          throw new Error("Free order could not be completed");
+        }
+        return {
+          orderId: existing.id,
+          tracker: existing.tracker ?? "",
+          clientToken: "",
+          environment: env.SAFEPAY_ENV ?? "sandbox",
+          amountMinor: 0,
+          cached: true,
+          paid: true,
         };
       }
       const [tracker, clientToken] = await Promise.all([
@@ -113,6 +132,7 @@ export async function createOneTimeSession(
         environment: env.SAFEPAY_ENV ?? "sandbox",
         amountMinor: existing.amountMinor,
         cached: true,
+        paid: false,
       };
     }
   }
@@ -161,6 +181,23 @@ export async function createOneTimeSession(
     discountMinor,
     now,
   });
+  if (amountMinor === 0) {
+    await completeOneTimePaidOrder(db, env, orderId, "free", now);
+    const completed = await getOneTimeOrder(db, orderId);
+    if (!completed || completed.status !== "paid") {
+      throw new Error("Free order could not be completed");
+    }
+    return {
+      orderId,
+      tracker: "",
+      clientToken: "",
+      environment: env.SAFEPAY_ENV ?? "sandbox",
+      amountMinor: 0,
+      cached: false,
+      paid: true,
+    };
+  }
+
   const [tracker, clientToken] = await Promise.all([
     gateway.createPaymentSession({
       user: await gateway.createCustomer({
@@ -185,6 +222,7 @@ export async function createOneTimeSession(
     environment: env.SAFEPAY_ENV ?? "sandbox",
     amountMinor,
     cached: false,
+    paid: false,
   };
 }
 

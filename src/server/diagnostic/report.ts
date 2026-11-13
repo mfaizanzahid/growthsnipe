@@ -374,6 +374,12 @@ export async function enqueueDiagnosticRun(
 ): Promise<boolean> {
   const binding = env.DIAGNOSTIC_WORKFLOW;
   if (!binding) return false;
-  await binding.create({ id: `diagnostic:${runId}`, params: { runId } });
-  return true;
+  try {
+    // Workflow instance IDs allow letters, digits, underscores, and hyphens.
+    await binding.create({ id: `diagnostic-${runId}`, params: { runId } });
+    return true;
+  } catch (err) {
+    console.error("[diagnostic] workflow enqueue failed:", (err as Error)?.message ?? err);
+    return false;
+  }
 }

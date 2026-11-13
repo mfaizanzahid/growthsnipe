@@ -81,8 +81,12 @@ function toRow(
   now: number,
 ): DiagnosticOrderInsert {
   const details = (order.details ?? {}) as Record<string, unknown>;
-  const services = basketFor(order, enriched);
-  const servicesEnriched = provider === "spectora" || enriched !== null ? 1 : 0;
+  const cancelled = (order.status ?? "").toLowerCase() === "cancelled";
+  // Cancelled orders never contribute services, team, client, or geography
+  // facts. Mark them complete so the enrichment pass does not spend a detail
+  // read on them.
+  const services = cancelled ? [] : basketFor(order, enriched);
+  const servicesEnriched = provider === "spectora" || enriched !== null || cancelled ? 1 : 0;
   return {
     id: `${runId}:${provider}:${order.id}`,
     runId,
@@ -199,16 +203,19 @@ export async function collectDiagnosticOrders(
   credentials: DiagnosticCredentialMap,
   window: DiagnosticWindow,
   now = Date.now(),
-  opts: { enrich?: boolean } = {},
+  opts: { enrich?: boolean; adapter?: BusinessProviderAdapter } = {},
 ): Promise<CollectedDiagnosticOrders> {
-  const adapter = createProviderAdapter(env, { provider, credentials });
+  const adapter = opts.adapter ?? createProviderAdapter(env, { provider, credentials });
   const fetched = provider === "spectora" ? await fetchSpectora(adapter, window) : await fetchIsn(adapter, window);
 
   let enrichedById = new Map<string, BasketItem[]>();
   if (provider === "isn" && fetched.orders.length > 0 && opts.enrich !== false) {
-    // Enrich every order (no cap): ISN fee detail lives only on the per-order
-    // read, and job penetration is only as good as the share of jobs covered.
-    const ids = fetched.orders.map((o) => o.id);
+    // Enrich every non-cancelled order (no cap): ISN fee detail lives only on
+    // the per-order read, and job penetration is only as good as the share of
+    // jobs covered. Cancelled orders add no service facts.
+    const ids = fetched.orders
+      .filter((order) => (order.status ?? "").toLowerCase() !== "cancelled")
+      .map((order) => order.id);
     const prefix = `diag:${runId}`;
     const result = await fetchEnrichBatch(adapter, prefix, ids, ENRICH_CONCURRENCY);
     enrichedById = new Map(
@@ -239,7 +246,7 @@ export async function collectAndPersist(
   credentials: DiagnosticCredentialMap,
   window: DiagnosticWindow,
   now = Date.now(),
-  opts: { enrich?: boolean } = {},
+  opts: { enrich?: boolean; adapter?: BusinessProviderAdapter } = {},
 ): Promise<{ retrieved: number; truncated: boolean }> {
   const collected = await collectDiagnosticOrders(env, runId, provider, credentials, window, now, opts);
   await clearDiagnosticOrders(db, runId);

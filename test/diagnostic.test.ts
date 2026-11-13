@@ -10,12 +10,15 @@ import {
   decodePDFRawStream,
 } from "pdf-lib";
 import { buildFacts, metricValue } from "../src/server/diagnostic/facts";
-import { diagnosticWindow } from "../src/server/diagnostic/collect";
+import { collectDiagnosticOrders, diagnosticWindow } from "../src/server/diagnostic/collect";
+import type { BusinessProviderAdapter } from "../src/server/providers/types";
 import { fallbackNarrative, validateNarrative } from "../src/server/diagnostic/synthesize";
 import { renderDiagnosticPdf } from "../src/server/diagnostic/pdf";
 import { signDiagnosticToken, verifyDiagnosticToken } from "../src/server/diagnostic/tokens";
 import type { DiagnosticOrderInsert } from "../src/server/diagnostic/store";
 import { DiagnosticNarrativeSchema } from "../src/server/diagnostic/types";
+import { enqueueDiagnosticRun } from "../src/server/diagnostic/report";
+import type { Env } from "../src/server/types";
 
 const NOW = new Date("2026-11-01T12:00:00.000Z").getTime();
 const WINDOW = {
@@ -359,5 +362,97 @@ describe("diagnostic pdf", () => {
       Buffer.from(value, "utf8").toString("hex").toUpperCase();
     expect(text).toContain(hex("DIAG-ABC123"));
     expect(text).toContain(hex("December 9, 2026"));
+  });
+});
+
+describe("diagnostic workflow enqueue", () => {
+  it("uses a valid workflow instance id", async () => {
+    const created: Array<{ id?: string; params?: unknown }> = [];
+    const env = {
+      DIAGNOSTIC_WORKFLOW: {
+        create: async (options: { id?: string; params?: unknown }) => {
+          created.push(options);
+          return {} as never;
+        },
+        get: async () => ({}) as never,
+      },
+    } as unknown as Env;
+
+    expect(await enqueueDiagnosticRun(env, "run-123")).toBe(true);
+    expect(created).toHaveLength(1);
+    expect(created[0]?.id).toBe("diagnostic-run-123");
+    expect(created[0]?.id).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+
+  it("falls back instead of throwing when the binding rejects the create", async () => {
+    const env = {
+      DIAGNOSTIC_WORKFLOW: {
+        create: async () => {
+          throw new Error("invalid id");
+        },
+        get: async () => ({}) as never,
+      },
+    } as unknown as Env;
+
+    expect(await enqueueDiagnosticRun(env, "run-456")).toBe(false);
+  });
+});
+
+describe("diagnostic collection", () => {
+  it("skips fee detail reads for cancelled orders", async () => {
+    const calls: string[] = [];
+    const adapter = {
+      searchOrders: async () => ({
+        items: [
+          {
+            id: "cancelled-1",
+            status: "cancelled",
+            scheduledAt: "2026-01-10T10:00:00.000Z",
+            total: 0,
+            currency: "USD",
+            paid: false,
+          },
+          {
+            id: "completed-1",
+            status: "completed",
+            scheduledAt: "2026-01-11T10:00:00.000Z",
+            completedAt: "2026-01-11T12:00:00.000Z",
+            total: 400,
+            currency: "USD",
+            paid: true,
+          },
+        ],
+        nextCursor: undefined,
+      }),
+      getOrder: async (id: string) => {
+        calls.push(id);
+        return {
+          id,
+          details: {
+            fees: [{ name: "Base inspection", amount: 400 }],
+          },
+        };
+      },
+    } as unknown as BusinessProviderAdapter;
+
+    const result = await collectDiagnosticOrders(
+      {} as Env,
+      "run-collect",
+      "isn",
+      {},
+      {
+        from: "2025-11-01T00:00:00.000Z",
+        to: "2026-11-01T00:00:00.000Z",
+        monthsCovered: 12,
+      },
+      NOW,
+      { adapter },
+    );
+
+    const cancelled = result.rows.find((row) => row.providerOrderId === "cancelled-1");
+    const completed = result.rows.find((row) => row.providerOrderId === "completed-1");
+    expect(cancelled).toMatchObject({ servicesEnriched: 1, servicesJson: "[]" });
+    expect(completed?.servicesEnriched).toBe(1);
+    expect(calls).toEqual(["completed-1"]);
   });
 });

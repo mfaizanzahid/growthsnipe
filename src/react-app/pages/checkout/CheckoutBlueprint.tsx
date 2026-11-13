@@ -16,7 +16,6 @@ export function CheckoutBlueprint() {
       ]}
       checkoutNote={`The 10-business-day delivery window begins after complete intake and receipt of required information. The ${OFFERS.blueprint.price.label} fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your Blueprint presentation.`}
       thankYouPath="/thank-you/blueprint"
-      showCoupon
     />
   );
 }
