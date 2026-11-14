@@ -16,17 +16,28 @@ import {
 import { drizzleStore, getOneTimeProductBySlug } from "../repositories/billing";
 import { formatCreditExpiry } from "../../lib/credit-coupon";
 
-const SessionBody = z.object({
-  slug: z.enum(ONE_TIME_SLUGS),
-  email: z.string().trim().email().max(200),
-  name: z.string().trim().max(120).optional(),
-  phone: z.string().trim().min(7).max(20),
-  country: z.string().trim().length(2),
-  businessName: z.string().trim().min(1).max(160),
-  trade: z.string().trim().min(1).max(120),
-  couponCode: z.string().trim().max(64).optional(),
-  idempotencyKey: z.string().trim().min(8).max(128).optional(),
-});
+const SessionBody = z
+  .object({
+    slug: z.enum(ONE_TIME_SLUGS),
+    email: z.string().trim().email().max(200),
+    name: z.string().trim().max(120).optional(),
+    phone: z.string().trim().min(7).max(20),
+    country: z.string().trim().length(2),
+    businessName: z.string().trim().min(1).max(160),
+    trade: z.string().trim().min(1).max(120),
+    website: z.string().trim().max(300).optional(),
+    couponCode: z.string().trim().max(64).optional(),
+    idempotencyKey: z.string().trim().min(8).max(128).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.slug === "blueprint" && !data.website?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["website"],
+        message: "Enter your website",
+      });
+    }
+  });
 
 const CouponPreviewBody = z.object({
   slug: z.enum(ONE_TIME_SLUGS),
@@ -108,7 +119,17 @@ export function createOneTimeRoutes(deps: {
   routes.post("/api/one-time/session", async (c) => {
     const env = c.env as Env;
     const parsed = SessionBody.safeParse(await c.req.json().catch(() => undefined));
-    if (!parsed.success) return c.json({ error: "Please provide your name, business name, a valid email, phone, and country" }, 422);
+    if (!parsed.success) {
+      const websiteMissing = parsed.error.issues.some((issue) => issue.path[0] === "website");
+      return c.json(
+        {
+          error: websiteMissing
+            ? "Please provide your website"
+            : "Please provide your name, business name, a valid email, phone, and country",
+        },
+        422,
+      );
+    }
     try {
       const result = await createOneTimeSession(c.get("db") as Db, env, gatewayFor(env, deps), {
         slug: parsed.data.slug,
@@ -118,6 +139,7 @@ export function createOneTimeRoutes(deps: {
         country: parsed.data.country.toUpperCase(),
         businessName: parsed.data.businessName,
         trade: parsed.data.trade,
+        website: parsed.data.website ?? null,
         couponCode: parsed.data.couponCode ?? null,
         idempotencyKey: parsed.data.idempotencyKey ?? c.req.header("Idempotency-Key") ?? null,
       });

@@ -13,6 +13,8 @@ interface AdminDiagnosticReport {
   email: string;
   businessName: string | null;
   provider: string | null;
+  purpose: string;
+  baseline: boolean;
   status: string;
   stage: string | null;
   progress: number;
@@ -92,6 +94,17 @@ export function AdminReports() {
       sortValue: (report) => (report.businessName ?? "").toLowerCase(),
       searchValue: (report) =>
         `${report.businessName ?? ""} ${report.email} ${report.orderId}`,
+    },
+    {
+      key: "purpose",
+      header: "Type",
+      sortable: true,
+      render: (report) =>
+        report.purpose === "blueprint" || report.baseline ? "Blueprint baseline" : "Diagnostic",
+      sortValue: (report) =>
+        report.purpose === "blueprint" || report.baseline ? "blueprint" : "diagnostic",
+      searchValue: (report) =>
+        report.purpose === "blueprint" || report.baseline ? "blueprint baseline" : "diagnostic",
     },
     {
       key: "status",
@@ -177,13 +190,13 @@ export function AdminReports() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
         <p className="text-sm text-muted-foreground">
-          Generated SNIPE Diagnostic reports across all buyers. Download a report or send a fresh
-          report link.
+          Generated SNIPE Diagnostic reports and Blueprint baselines across all buyers. Download a
+          report or send a fresh report link.
         </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Diagnostic reports</CardTitle>
+          <CardTitle>Diagnostic reports and baselines</CardTitle>
           <CardDescription>
             Ready reports can be downloaded or re-sent to the buyer email. Resending creates a new
             90-day report link.

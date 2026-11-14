@@ -305,6 +305,7 @@ export const oneTimeOrders = sqliteTable("one_time_orders", {
   phone: text("phone"),
   businessName: text("business_name"),
   trade: text("trade"),
+  website: text("website"),
   amountMinor: integer("amount_minor").notNull(),
   currency: text("currency").notNull().default("USD"),
   status: text("status").notNull().default("pending"),
@@ -320,6 +321,10 @@ export const oneTimeOrders = sqliteTable("one_time_orders", {
   couponRedeemedAt: integer("coupon_redeemed_at"),
   receiptSentAt: integer("receipt_sent_at"),
   intakeSentAt: integer("intake_sent_at"),
+  /** Diagnostic run used as this Blueprint order's baseline. */
+  baselineRunId: text("baseline_run_id"),
+  /** When the Blueprint baseline/connect email was sent. */
+  baselineEmailSentAt: integer("baseline_email_sent_at"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
   paidAt: integer("paid_at"),

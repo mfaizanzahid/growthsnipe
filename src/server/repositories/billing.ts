@@ -936,6 +936,7 @@ export async function createOneTimeOrder(
     phone?: string | null;
     businessName?: string | null;
     trade?: string | null;
+    website?: string | null;
     amountMinor: number;
     currency: string;
     tracker?: string | null;
@@ -954,6 +955,7 @@ export async function createOneTimeOrder(
     phone: row.phone ?? null,
     businessName: row.businessName ?? null,
     trade: row.trade ?? null,
+    website: row.website ?? null,
     amountMinor: row.amountMinor,
     currency: row.currency,
     status: "pending",
@@ -993,9 +995,47 @@ export async function findOneTimeOrderByIdempotencyKey(db: Db, key: string): Pro
 export async function updateOneTimeOrder(
   db: Db,
   id: string,
-  patch: Partial<Pick<OneTimeOrderRow, "status" | "tracker" | "chargeId" | "couponId" | "couponCode" | "discountMinor" | "couponRedeemedAt" | "receiptSentAt" | "intakeSentAt" | "paidAt" | "updatedAt">>,
+  patch: Partial<Pick<OneTimeOrderRow, "status" | "tracker" | "chargeId" | "couponId" | "couponCode" | "discountMinor" | "couponRedeemedAt" | "receiptSentAt" | "intakeSentAt" | "baselineRunId" | "baselineEmailSentAt" | "paidAt" | "updatedAt">>,
 ): Promise<void> {
   await db.update(oneTimeOrders).set(patch).where(eq(oneTimeOrders.id, id));
+}
+
+/** Paid Diagnostic orders for a buyer, newest first. */
+export async function listPaidDiagnosticOrdersForEmail(
+  db: Db,
+  email: string,
+): Promise<OneTimeOrderRow[]> {
+  const rows = await db
+    .select({ order: oneTimeOrders })
+    .from(oneTimeOrders)
+    .innerJoin(oneTimeProducts, eq(oneTimeOrders.productId, oneTimeProducts.id))
+    .where(
+      and(
+        eq(oneTimeProducts.slug, "diagnostic"),
+        eq(oneTimeOrders.status, "paid"),
+        eq(oneTimeOrders.email, email.trim().toLowerCase()),
+      ),
+    )
+    .orderBy(desc(oneTimeOrders.paidAt), desc(oneTimeOrders.createdAt))
+    .limit(5);
+  return rows.map((row) => row.order);
+}
+
+/** The Blueprint order that owns a baseline run, if any. */
+export async function findBlueprintOrderForBaselineRun(
+  db: Db,
+  runId: string,
+): Promise<OneTimeOrderRow | null> {
+  const rows = await db
+    .select()
+    .from(oneTimeOrders)
+    .where(eq(oneTimeOrders.baselineRunId, runId))
+    .limit(5);
+  for (const order of rows) {
+    const product = await getOneTimeProduct(db, order.productId);
+    if (product?.slug === "blueprint") return order;
+  }
+  return null;
 }
 
 export async function listOneTimeOrders(db: Db, limit = 100): Promise<OneTimeOrderRow[]> {

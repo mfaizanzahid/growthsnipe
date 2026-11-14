@@ -11,6 +11,7 @@ import { hmacSha512, toHex } from "../src/server/lib/crypto";
 import { memoryStore } from "./memory-store";
 import { createOneTimeRoutes } from "../src/server/routes/one-time";
 import { completeOneTimePaidOrder, confirmOneTimeOrder, failOneTimeOrder } from "../src/server/billing/one-time";
+import { finalizeDiagnosticRun } from "../src/server/diagnostic/report";
 import { handleSafepayWebhook } from "../src/server/billing/webhooks";
 import {
   drizzleStore,
@@ -58,6 +59,7 @@ function testDb(): Db {
       phone TEXT,
       business_name TEXT,
       trade TEXT,
+      website TEXT,
       amount_minor INTEGER NOT NULL,
       currency TEXT NOT NULL DEFAULT 'USD',
       status TEXT NOT NULL DEFAULT 'pending',
@@ -70,6 +72,8 @@ function testDb(): Db {
       coupon_redeemed_at INTEGER,
       receipt_sent_at INTEGER,
       intake_sent_at INTEGER,
+      baseline_run_id TEXT,
+      baseline_email_sent_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       paid_at INTEGER
@@ -110,6 +114,7 @@ function testDb(): Db {
       id TEXT PRIMARY KEY,
       one_time_order_id TEXT NOT NULL UNIQUE,
       email TEXT NOT NULL,
+      purpose TEXT NOT NULL DEFAULT 'diagnostic',
       provider TEXT,
       status TEXT NOT NULL DEFAULT 'awaiting_connection',
       stage TEXT,
@@ -223,6 +228,7 @@ const BUYER = {
   country: "US",
   businessName: "Ada Inspections",
   trade: "Home inspection",
+  website: "https://adainspections.com",
 };
 
 async function seedDiagnosticCoupon(
@@ -255,6 +261,48 @@ async function seedDiagnosticCoupon(
   return store.insertCoupon(row);
 }
 
+async function seedPaidDiagnosticRun(
+  db: Db,
+  email: string,
+  status: "ready" | "syncing" = "ready",
+): Promise<{ orderId: string; runId: string }> {
+  const now = Date.now();
+  const orderId = `diag_${Math.random().toString(36).slice(2, 10)}`;
+  const runId = `run_${Math.random().toString(36).slice(2, 10)}`;
+  await db.insert(schema.oneTimeOrders).values({
+    id: orderId,
+    productId: "otp_diagnostic",
+    email: email.toLowerCase(),
+    name: "Ada Owner",
+    businessName: "Ada Inspections",
+    trade: "Home inspection",
+    amountMinor: 19900,
+    currency: "USD",
+    status: "paid",
+    idempotencyKey: `idem_${orderId}`,
+    createdAt: now,
+    updatedAt: now,
+    paidAt: now,
+  });
+  await db.insert(schema.diagnosticRuns).values({
+    id: runId,
+    oneTimeOrderId: orderId,
+    email: email.toLowerCase(),
+    purpose: "diagnostic",
+    provider: "isn",
+    status,
+    stage: status === "ready" ? "ready" : "collecting",
+    progress: status === "ready" ? 100 : 30,
+    windowFrom: "2025-11-01T00:00:00.000Z",
+    windowTo: "2026-11-01T00:00:00.000Z",
+    reportEmailSentAt: status === "ready" ? now - 1000 : null,
+    createdAt: now,
+    updatedAt: now,
+    readyAt: status === "ready" ? now : null,
+  });
+  return { orderId, runId };
+}
+
 beforeEach(() => {
   captureEmails();
 });
@@ -278,6 +326,9 @@ describe("one-time products + session", () => {
     expect((await req(app, "/api/one-time/session", { ...BUYER, email: "bad" })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, businessName: "   " })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, trade: "   " })).status).toBe(422);
+    expect(
+      (await req(app, "/api/one-time/session", { ...BUYER, slug: "blueprint", website: "   " })).status,
+    ).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, phone: "12" })).status).toBe(422);
     const res = await req(app, "/api/one-time/session", { ...BUYER, idempotencyKey: "idem-key-01" });
     expect(res.status).toBe(200);
@@ -461,7 +512,8 @@ describe("credit coupons", () => {
     expect(outbox).toHaveLength(2);
     expect(outbox[0]?.html).toContain("Credit applied");
     expect(outbox[0]?.html).toContain(coupon.code);
-    expect(outbox[1]?.html).toContain("Engine");
+    expect(outbox[0]?.html).toContain("Engine");
+    expect(outbox[1]?.html).toContain("baseline");
 
     const engine = await getCouponBySourceOrderId(db, body.orderId);
     expect(engine).toMatchObject({
@@ -479,6 +531,160 @@ describe("credit coupons", () => {
       "engine-command",
       "engine-core",
     ]);
+  });
+
+  it("reuses an existing Diagnostic baseline for a Blueprint purchase", async () => {
+    const db = testDb();
+    const existing = await seedPaidDiagnosticRun(db, "owner@example.com", "ready");
+    const app = buildApp(db, fakeGateway("succeeded"));
+    const outbox = captureEmails();
+
+    const session = await req(app, "/api/one-time/session", {
+      ...BUYER,
+      slug: "blueprint",
+      email: "owner@example.com",
+      idempotencyKey: "bp-existing-baseline",
+    });
+    expect(session.status).toBe(200);
+    const body = (await session.json()) as { orderId: string; tracker: string };
+    const confirm = await req(app, "/api/one-time/confirm", {
+      orderId: body.orderId,
+      tracker: body.tracker,
+    });
+    expect(confirm.status).toBe(200);
+
+    expect(outbox).toHaveLength(2);
+    expect(outbox[0]?.html).toContain("Engine");
+    expect(outbox[1]?.html).toContain("already have your baseline");
+    expect(outbox[1]?.html).not.toContain("Connect your booking software");
+
+    const runs = await db.select().from(schema.diagnosticRuns);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]?.id).toBe(existing.runId);
+    const blueprint = await getOneTimeOrder(db, body.orderId);
+    expect(blueprint?.baselineRunId).toBe(existing.runId);
+    expect(blueprint?.baselineEmailSentAt).toBeTruthy();
+  });
+
+  it("reuses the coupon source Diagnostic baseline for a Blueprint purchase", async () => {
+    const db = testDb();
+    const existing = await seedPaidDiagnosticRun(db, "owner@example.com", "syncing");
+    const coupon = await seedDiagnosticCoupon(db, { sourceOrderId: existing.orderId });
+    const app = buildApp(db, fakeGateway("succeeded"));
+    const outbox = captureEmails();
+
+    const session = await req(app, "/api/one-time/session", {
+      ...BUYER,
+      slug: "blueprint",
+      email: "owner@example.com",
+      couponCode: coupon.code,
+      idempotencyKey: "bp-coupon-baseline",
+    });
+    expect(session.status).toBe(200);
+    const body = (await session.json()) as { orderId: string; tracker: string; amountMinor: number };
+    expect(body.amountMinor).toBe(80000);
+    const confirm = await req(app, "/api/one-time/confirm", {
+      orderId: body.orderId,
+      tracker: body.tracker,
+    });
+    expect(confirm.status).toBe(200);
+
+    expect(outbox).toHaveLength(2);
+    expect(outbox[1]?.html).toContain("still being prepared");
+    const runs = await db.select().from(schema.diagnosticRuns);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]?.id).toBe(existing.runId);
+    const blueprint = await getOneTimeOrder(db, body.orderId);
+    expect(blueprint?.baselineRunId).toBe(existing.runId);
+  });
+
+  it("creates a Blueprint baseline and connect email when no Diagnostic exists", async () => {
+    const db = testDb();
+    const app = buildApp(db, fakeGateway("succeeded"));
+    const outbox = captureEmails();
+
+    const session = await req(app, "/api/one-time/session", {
+      ...BUYER,
+      slug: "blueprint",
+      email: "owner@example.com",
+      idempotencyKey: "bp-new-baseline",
+    });
+    expect(session.status).toBe(200);
+    const body = (await session.json()) as { orderId: string; tracker: string };
+    const confirm = await req(app, "/api/one-time/confirm", {
+      orderId: body.orderId,
+      tracker: body.tracker,
+    });
+    expect(confirm.status).toBe(200);
+
+    expect(outbox).toHaveLength(2);
+    expect(outbox[1]?.html).toContain("flow=blueprint");
+    expect(outbox[1]?.html).toContain("To build your SNIPE Blueprint");
+
+    const runs = await db.select().from(schema.diagnosticRuns);
+    expect(runs).toHaveLength(1);
+    expect(runs[0]?.purpose).toBe("blueprint");
+    expect(runs[0]?.connectEmailSentAt).toBeTruthy();
+    const blueprint = await getOneTimeOrder(db, body.orderId);
+    expect(blueprint?.baselineRunId).toBe(runs[0]?.id);
+    expect(blueprint?.baselineEmailSentAt).toBeTruthy();
+    expect(blueprint?.website).toBe("https://adainspections.com");
+  });
+
+  it("emails the baseline-ready report when a linked Diagnostic finishes", async () => {
+    const db = testDb();
+    const existing = await seedPaidDiagnosticRun(db, "owner@example.com", "syncing");
+    const now = Date.now();
+    await db.insert(schema.oneTimeOrders).values({
+      id: "bp_finalize",
+      productId: "otp_blueprint",
+      email: "owner@example.com",
+      name: "Ada Owner",
+      businessName: "Ada Inspections",
+      trade: "Home inspection",
+      amountMinor: 99900,
+      currency: "USD",
+      status: "paid",
+      idempotencyKey: "bp_finalize_idem",
+      baselineRunId: existing.runId,
+      baselineEmailSentAt: now,
+      createdAt: now,
+      updatedAt: now,
+      paidAt: now,
+    });
+    await db.insert(schema.diagnosticOrders).values({
+      id: "do_finalize",
+      runId: existing.runId,
+      providerOrderId: "provider-order-1",
+      status: "completed",
+      scheduledAt: "2026-01-15T10:00:00.000Z",
+      completedAt: "2026-01-15T12:00:00.000Z",
+      totalMinor: 40000,
+      currency: "USD",
+      paid: 1,
+      serviceType: "Base inspection",
+      servicesJson: JSON.stringify([
+        { name: "Base inspection", kind: "base", amountMinor: null },
+      ]),
+      servicesEnriched: 1,
+      inspectorNames: JSON.stringify(["Alex"]),
+      buyerName: "Buyer One",
+      buyerEmail: "buyer@example.com",
+      city: "Austin",
+      address: "1 Main St, Austin, TX",
+      syncedAt: now,
+    });
+    const outbox = captureEmails();
+
+    await finalizeDiagnosticRun(ENV, db, existing.runId);
+
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]?.subject).toContain("baseline is ready");
+    expect(outbox[0]?.html).toContain("/api/diagnostic/report?token=");
+    expect(outbox[0]?.html).toContain("We now have your baseline");
+    const run = (await db.select().from(schema.diagnosticRuns))[0];
+    expect(run?.status).toBe("ready");
+    expect(run?.reportEmailSentAt).toBeTruthy();
   });
 
   it("rejects a credit code for the wrong email or product", async () => {

@@ -37,6 +37,7 @@ export function BillingAddressFields({
   idPrefix,
   countryCode = "",
   layout = "stacked",
+  showRequired = false,
 }: {
   value: BillingAddress;
   onChange: (next: BillingAddress) => void;
@@ -45,6 +46,8 @@ export function BillingAddressFields({
   countryCode?: string;
   /** `inline` puts street, city, and state on one row at sm and above. */
   layout?: "stacked" | "inline";
+  /** Mark street, city, and state with the required asterisk (public checkout). */
+  showRequired?: boolean;
 }) {
   const codeOnly = requiresStateCode(countryCode);
   const setState = (raw: string) => {
@@ -55,7 +58,7 @@ export function BillingAddressFields({
 
   const streetField = (
     <div className="space-y-2">
-      <Label htmlFor={`${idPrefix}-street`}>Street address</Label>
+      <Label htmlFor={`${idPrefix}-street`} required={showRequired}>Street address</Label>
       <Input
         id={`${idPrefix}-street`}
         placeholder="123 Main Street"
@@ -67,7 +70,7 @@ export function BillingAddressFields({
   );
   const cityField = (
     <div className="space-y-2">
-      <Label htmlFor={`${idPrefix}-city`}>City</Label>
+      <Label htmlFor={`${idPrefix}-city`} required={showRequired}>City</Label>
       <Input
         id={`${idPrefix}-city`}
         placeholder="Austin"
@@ -79,7 +82,7 @@ export function BillingAddressFields({
   );
   const stateField = (
     <div className="space-y-2">
-      <Label htmlFor={`${idPrefix}-state`}>State</Label>
+      <Label htmlFor={`${idPrefix}-state`} required={showRequired}>State</Label>
       <Input
         id={`${idPrefix}-state`}
         placeholder={codeOnly ? "TX" : "Texas"}

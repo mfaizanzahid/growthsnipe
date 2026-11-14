@@ -60,6 +60,7 @@ export function createDiagnosticRoutes(deps: {
         stage: run.stage,
         progress: run.progress,
         provider: run.provider,
+        purpose: run.purpose,
         ready: run.status === "ready" || run.status === "ready_email_failed",
         failed: run.status === "failed",
       },

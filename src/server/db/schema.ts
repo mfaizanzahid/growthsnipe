@@ -54,6 +54,8 @@ export const diagnosticRuns = sqliteTable('diagnostic_runs', {
   id: text('id').primaryKey(),
   oneTimeOrderId: text('one_time_order_id').notNull().unique(),
   email: text('email').notNull(),
+  /** "diagnostic" for a purchased Diagnostic; "blueprint" for a Blueprint baseline. */
+  purpose: text('purpose').notNull().default('diagnostic'),
   provider: text('provider'),
   status: text('status').notNull().default('awaiting_connection'),
   stage: text('stage'),

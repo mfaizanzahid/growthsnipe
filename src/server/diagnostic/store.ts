@@ -17,6 +17,7 @@ export type DiagnosticRunRow = typeof diagnosticRuns.$inferSelect;
 export interface NewDiagnosticRun {
   oneTimeOrderId: string;
   email: string;
+  purpose?: "diagnostic" | "blueprint";
   now?: number;
 }
 
@@ -31,6 +32,7 @@ export async function createOrGetRun(db: Db, input: NewDiagnosticRun): Promise<D
       id: crypto.randomUUID(),
       oneTimeOrderId: input.oneTimeOrderId,
       email: input.email.trim().toLowerCase(),
+      purpose: input.purpose ?? "diagnostic",
       status: "awaiting_connection",
       stage: "awaiting_connection",
       progress: 0,

@@ -25,6 +25,19 @@ const ENV = {
 function testDb(includeSyncing = false): Db {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec(`
+    CREATE TABLE one_time_products (
+      id TEXT PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      amount_minor INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at INTEGER NOT NULL
+    );
+    INSERT INTO one_time_products (id, slug, name, amount_minor, currency, active, created_at)
+    VALUES
+      ('otp_diagnostic', 'diagnostic', 'SNIPE Diagnostic', 19900, 'USD', 1, 1000),
+      ('otp_blueprint', 'blueprint', 'SNIPE Blueprint', 99900, 'USD', 1, 1000);
     CREATE TABLE one_time_orders (
       id TEXT PRIMARY KEY,
       product_id TEXT NOT NULL,
@@ -33,6 +46,7 @@ function testDb(includeSyncing = false): Db {
       phone TEXT,
       business_name TEXT,
       trade TEXT,
+      website TEXT,
       amount_minor INTEGER NOT NULL,
       currency TEXT NOT NULL DEFAULT 'USD',
       status TEXT NOT NULL DEFAULT 'pending',
@@ -45,6 +59,8 @@ function testDb(includeSyncing = false): Db {
       coupon_redeemed_at INTEGER,
       receipt_sent_at INTEGER,
       intake_sent_at INTEGER,
+      baseline_run_id TEXT,
+      baseline_email_sent_at INTEGER,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       paid_at INTEGER
@@ -53,6 +69,7 @@ function testDb(includeSyncing = false): Db {
       id TEXT PRIMARY KEY,
       one_time_order_id TEXT NOT NULL UNIQUE,
       email TEXT NOT NULL,
+      purpose TEXT NOT NULL DEFAULT 'diagnostic',
       provider TEXT,
       status TEXT NOT NULL DEFAULT 'awaiting_connection',
       stage TEXT,
@@ -188,6 +205,7 @@ describe("superadmin diagnostic reports", () => {
       orderId: ORDER_ID,
       email: "buyer@example.com",
       businessName: "Acme Inspections",
+      purpose: "diagnostic",
       status: "ready",
       progress: 100,
       reportEmailResendCount: 0,
@@ -213,6 +231,35 @@ describe("superadmin diagnostic reports", () => {
     expect(run?.reportEmailResentAt).toBeTruthy();
     expect(run?.reportEmailResendCount).toBe(1);
     expect(run?.reportEmailSentAt).toBeNull();
+  });
+
+  it("resends the baseline-ready email for a Blueprint baseline", async () => {
+    const db = testDb();
+    await db.insert(schema.oneTimeOrders).values({
+      id: "order-blueprint-1",
+      productId: "otp_blueprint",
+      email: "buyer@example.com",
+      name: "Ada Buyer",
+      amountMinor: 99900,
+      currency: "USD",
+      status: "paid",
+      idempotencyKey: "order-blueprint-idem",
+      baselineRunId: RUN_ID,
+      baselineEmailSentAt: NOW,
+      createdAt: NOW,
+      updatedAt: NOW,
+      paidAt: NOW,
+    });
+    const outbox = captureEmails();
+    const res = await call(
+      buildApp(db),
+      `/api/superadmin/diagnostic-reports/${RUN_ID}/resend`,
+      "POST",
+    );
+    expect(res.status).toBe(200);
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]?.subject).toContain("baseline is ready");
+    expect(outbox[0]?.html).toContain("We now have your baseline");
   });
 
   it("rejects a report download before the run is ready", async () => {

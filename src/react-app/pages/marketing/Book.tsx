@@ -49,10 +49,10 @@ const EMPTY = {
   notes: "",
 };
 
-function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) {
+function Field({ label, htmlFor, required, children }: { label: string; htmlFor: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor} required={required}>{label}</Label>
       {children}
     </div>
   );
@@ -139,28 +139,28 @@ export function Book() {
               </div>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
-                <Field label="Name" htmlFor="book-name">
+                <Field label="Name" htmlFor="book-name" required>
                   <Input id="book-name" value={form.name} onChange={(e) => set("name", e.target.value)} required maxLength={120} />
                 </Field>
-                <Field label="Work email" htmlFor="book-email">
+                <Field label="Work email" htmlFor="book-email" required>
                   <Input id="book-email" type="email" value={form.workEmail} onChange={(e) => set("workEmail", e.target.value)} required maxLength={200} />
                 </Field>
-                <Field label="Phone number" htmlFor="book-phone">
+                <Field label="Phone number" htmlFor="book-phone" required>
                   <Input id="book-phone" type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} required maxLength={40} />
                 </Field>
-                <Field label="Business name" htmlFor="book-business">
+                <Field label="Business name" htmlFor="book-business" required>
                   <Input id="book-business" value={form.businessName} onChange={(e) => set("businessName", e.target.value)} required maxLength={160} />
                 </Field>
-                <Field label="Website or Google Business Profile link" htmlFor="book-website">
+                <Field label="Website or Google Business Profile link" htmlFor="book-website" required>
                   <Input id="book-website" inputMode="url" placeholder="https://" value={form.website} onChange={(e) => set("website", e.target.value)} required maxLength={300} />
                 </Field>
-                <Field label="Trade / industry" htmlFor="book-trade">
+                <Field label="Trade / industry" htmlFor="book-trade" required>
                   <Input id="book-trade" placeholder="Home inspection" value={form.trade} onChange={(e) => set("trade", e.target.value)} required maxLength={120} />
                 </Field>
-                <Field label="Primary service area" htmlFor="book-area">
+                <Field label="Primary service area" htmlFor="book-area" required>
                   <Input id="book-area" placeholder="City, region" value={form.serviceArea} onChange={(e) => set("serviceArea", e.target.value)} required maxLength={160} />
                 </Field>
-                <Field label="Approximate annual revenue range" htmlFor="book-revenue">
+                <Field label="Approximate annual revenue range" htmlFor="book-revenue" required>
                   <Select value={form.revenueRange} onValueChange={(v) => set("revenueRange", v)} required>
                     <SelectTrigger id="book-revenue"><SelectValue placeholder="Select a range" /></SelectTrigger>
                     <SelectContent>
@@ -170,7 +170,7 @@ export function Book() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Team size" htmlFor="book-team">
+                <Field label="Team size" htmlFor="book-team" required>
                   <Select value={form.teamSize} onValueChange={(v) => set("teamSize", v)} required>
                     <SelectTrigger id="book-team"><SelectValue placeholder="Select team size" /></SelectTrigger>
                     <SelectContent>
@@ -180,7 +180,7 @@ export function Book() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Current booking / field-service software" htmlFor="book-software">
+                <Field label="Current booking / field-service software" htmlFor="book-software" required>
                   <Select value={form.software} onValueChange={(v) => set("software", v)} required>
                     <SelectTrigger id="book-software"><SelectValue placeholder="Select your software" /></SelectTrigger>
                     <SelectContent>
@@ -190,7 +190,7 @@ export function Book() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Main growth challenge" htmlFor="book-challenge">
+                <Field label="Main growth challenge" htmlFor="book-challenge" required>
                   <Textarea id="book-challenge" value={form.growthChallenge} onChange={(e) => set("growthChallenge", e.target.value)} required minLength={10} maxLength={2000} rows={4} />
                 </Field>
                 <Field label="Current monthly marketing spend range (optional)" htmlFor="book-spend">

@@ -51,6 +51,7 @@ export function OneTimeCheckout({
   const [phone, setPhone] = useState("");
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [businessName, setBusinessName] = useState("");
+  const [website, setWebsite] = useState("");
   const [billingAddress, setBillingAddress] = useState<BillingAddress>(EMPTY_BILLING_ADDRESS);
   const [agreed, setAgreed] = useState(false);
   const [session, setSession] = useState<{ orderId: string; tracker: string; clientToken: string; environment: string; amountMinor: number } | null>(null);
@@ -140,6 +141,10 @@ export function OneTimeCheckout({
       toast.error("Enter your business name");
       return;
     }
+    if (slug === "blueprint" && !website.trim()) {
+      toast.error("Enter your website");
+      return;
+    }
     if (!trade.trim()) {
       toast.error("Enter your trade or industry");
       return;
@@ -175,6 +180,7 @@ export function OneTimeCheckout({
           country: selected.code,
           businessName: businessName.trim(),
           trade: trade.trim(),
+          ...(slug === "blueprint" ? { website: website.trim() } : {}),
           couponCode: appliedCoupon?.code,
         }),
       });
@@ -297,11 +303,11 @@ export function OneTimeCheckout({
                 <form onSubmit={start} className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div className="space-y-2">
-                      <Label htmlFor="oto-name">Full name</Label>
+                      <Label htmlFor="oto-name" required>Full name</Label>
                       <Input id="oto-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="oto-email">Work email</Label>
+                      <Label htmlFor="oto-email" required>Work email</Label>
                       <Input
                         id="oto-email"
                         type="email"
@@ -315,7 +321,7 @@ export function OneTimeCheckout({
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="oto-trade">Trade / industry</Label>
+                      <Label htmlFor="oto-trade" required>Trade / industry</Label>
                       <Input
                         id="oto-trade"
                         placeholder="Home inspection"
@@ -326,15 +332,15 @@ export function OneTimeCheckout({
                       />
                     </div>
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className={`grid gap-4 ${slug === "blueprint" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
                     <div className="space-y-2">
-                      <Label htmlFor="oto-phone">Phone</Label>
+                      <Label htmlFor="oto-phone" required>Phone</Label>
                       <div className="flex gap-2">
                         <Select value={countryCode} onValueChange={setCountryCode}>
-                          <SelectTrigger className="w-36 shrink-0" aria-label="Country code">
-                            <SelectValue />
+                          <SelectTrigger className="w-16 shrink-0" aria-label="Country code">
+                            <SelectValue>{countryCode}</SelectValue>
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent position="popper" className="max-h-72 w-64">
                             {COUNTRIES.map((c) => (
                               <SelectItem key={`${c.code}-${c.dial}`} value={c.code}>
                                 {c.name} +{c.dial}
@@ -342,15 +348,29 @@ export function OneTimeCheckout({
                             ))}
                           </SelectContent>
                         </Select>
-                        <Input id="oto-phone" inputMode="tel" placeholder="3001234567" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} required />
+                        <Input id="oto-phone" inputMode="tel" placeholder="5551234567" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} required />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="oto-business">Business name</Label>
+                      <Label htmlFor="oto-business" required>Business name</Label>
                       <Input id="oto-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required maxLength={160} />
                     </div>
+                    {slug === "blueprint" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="oto-website" required>Website</Label>
+                        <Input
+                          id="oto-website"
+                          inputMode="url"
+                          placeholder="https://"
+                          value={website}
+                          onChange={(e) => setWebsite(e.target.value)}
+                          required
+                          maxLength={300}
+                        />
+                      </div>
+                    ) : null}
                   </div>
-                  <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} layout="inline" />
+                  <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} layout="inline" showRequired />
                   {!showCouponField ? (
                     <button
                       type="button"

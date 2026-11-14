@@ -20,7 +20,7 @@ import {
   issueBlueprintCreditCoupon,
   issueDiagnosticCreditCoupon,
 } from "./credits";
-import { startDiagnosticRun } from "../diagnostic/report";
+import { startBlueprintBaseline, startDiagnosticRun } from "../diagnostic/report";
 import {
   createOneTimeOrder,
   drizzleStore,
@@ -46,6 +46,7 @@ export interface OneTimeSessionInput {
   country: string;
   businessName?: string | null;
   trade?: string | null;
+  website?: string | null;
   couponCode?: string | null;
   idempotencyKey?: string | null;
 }
@@ -172,6 +173,7 @@ export async function createOneTimeSession(
     phone: input.phone,
     businessName: input.businessName ?? null,
     trade: input.trade ?? null,
+    website: input.website ?? null,
     amountMinor,
     currency: "USD",
     tracker: null,
@@ -332,10 +334,22 @@ export async function completeOneTimePaidOrder(
   const fresh = (await getOneTimeOrder(db, order.id)) ?? order;
 
   if (!fresh.receiptSentAt) {
-    await sendOneTimeEmails(db, env, fresh, product.name, product.slug as OneTimeSlug, creditCoupon);
-    await updateOneTimeOrder(db, order.id, { receiptSentAt: now, intakeSentAt: now, updatedAt: now });
+    const sendIntake = product.slug === "diagnostic";
+    await sendOneTimeEmails(db, env, fresh, product.name, product.slug as OneTimeSlug, creditCoupon, sendIntake);
+    await updateOneTimeOrder(db, order.id, {
+      receiptSentAt: now,
+      ...(sendIntake ? { intakeSentAt: now } : {}),
+      updatedAt: now,
+    });
   }
-  if (product.slug === "diagnostic") {
+  if (product.slug === "blueprint") {
+    try {
+      await startBlueprintBaseline(db, env, fresh, now);
+    } catch (err) {
+      // The paid order stands even if the baseline email cannot be sent now.
+      console.error("[blueprint] could not start baseline:", (err as Error)?.message ?? err);
+    }
+  } else if (product.slug === "diagnostic") {
     try {
       await startDiagnosticRun(db, env, {
         id: fresh.id,
@@ -366,6 +380,7 @@ async function sendOneTimeEmails(
   productName: string,
   slug: OneTimeSlug,
   creditCoupon: CouponRow | null,
+  sendIntake: boolean,
 ): Promise<void> {
   const support = (await getSetting(db, "support_email").catch(() => null)) ?? "";
   const credit =
@@ -382,13 +397,6 @@ async function sendOneTimeEmails(
     couponCode: order.couponCode,
     credit,
   });
-  const intake = oneTimeIntakeContent({
-    productSlug: slug === "blueprint" ? "blueprint" : "diagnostic",
-    firstName: firstNameOf(order.name),
-    credit,
-    blueprintUrl: `${base}/blueprint`,
-    bookUrl: `${base}/book`,
-  });
   const billingUrl = `${base}/`;
   const from = env.RESEND_FROM_EMAIL;
   await sendEmail(
@@ -400,15 +408,24 @@ async function sendOneTimeEmails(
     },
     from,
   );
-  await sendEmail(
-    env,
-    {
-      to: order.email,
-      subject: `[${PORTAL_NAME}] ${intake.subject}`,
-      html: layout(PORTAL_NAME, support, billingUrl, intake.subject, intake.html),
-    },
-    from,
-  );
+  if (sendIntake) {
+    const intake = oneTimeIntakeContent({
+      productSlug: "diagnostic",
+      firstName: firstNameOf(order.name),
+      credit,
+      blueprintUrl: `${base}/blueprint`,
+      bookUrl: `${base}/book`,
+    });
+    await sendEmail(
+      env,
+      {
+        to: order.email,
+        subject: `[${PORTAL_NAME}] ${intake.subject}`,
+        html: layout(PORTAL_NAME, support, billingUrl, intake.subject, intake.html),
+      },
+      from,
+    );
+  }
 }
 
 export async function listProducts(db: Db) {

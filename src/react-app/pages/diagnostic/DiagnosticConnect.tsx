@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 export function DiagnosticConnect() {
   const [params] = useSearchParams();
   const token = params.get("token") ?? "";
+  const blueprint = params.get("flow") === "blueprint";
   const [provider, setProvider] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [companyKey, setCompanyKey] = useState("");
@@ -61,12 +62,14 @@ export function DiagnosticConnect() {
   return (
     <MarketingLayout>
       <section className="mx-auto w-full max-w-2xl px-4 py-14">
-        <p className="text-sm font-semibold uppercase tracking-wide text-primary">SNIPE Diagnostic™</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+          {blueprint ? "SNIPE Blueprint™ baseline" : "SNIPE Diagnostic™"}
+        </p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Connect your booking software</h1>
         <p className="mt-4 text-muted-foreground">
-          Connect your field service and booking management software so we can review your last 12
-          months of jobs, revenue, referrals, and service mix. The credentials are encrypted, used
-          only for this Diagnostic, and removed once your report is ready.
+          {blueprint
+            ? "Connect your field service and booking management software so we can build the baseline for your SNIPE Blueprint™. The credentials are encrypted, used only for this baseline, and removed once the data is ready."
+            : "Connect your field service and booking management software so we can review your last 12 months of jobs, revenue, referrals, and service mix. The credentials are encrypted, used only for this Diagnostic, and removed once your report is ready."}
         </p>
 
         {!token ? (
@@ -82,14 +85,23 @@ export function DiagnosticConnect() {
         ) : done ? (
           <Card className="mt-8">
             <CardHeader>
-              <CardTitle>Connected. We are pulling your data.</CardTitle>
+              <CardTitle>
+                {blueprint ? "Connected. We are building your baseline." : "Connected. We are pulling your data."}
+              </CardTitle>
               <CardDescription>
-                The 12-month review has started. We will email your report when it is ready. You
-                can also watch progress and download it here.
+                {blueprint
+                  ? "We will email you when your baseline and Diagnostic report are ready. The team will use it for your SNIPE Blueprint™. You can also watch progress and download the report here."
+                  : "The 12-month review has started. We will email your report when it is ready. You can also watch progress and download it here."}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild><Link to={`/diagnostic/status?token=${encodeURIComponent(token)}`}>View progress</Link></Button>
+              <Button asChild>
+                <Link
+                  to={`/diagnostic/status?token=${encodeURIComponent(token)}${blueprint ? "&flow=blueprint" : ""}`}
+                >
+                  View progress
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         ) : (
@@ -102,7 +114,7 @@ export function DiagnosticConnect() {
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="diag-provider">Platform</Label>
+                    <Label htmlFor="diag-provider" required>Platform</Label>
                     <CredentialHelpLink provider={provider} />
                   </div>
                   <Select value={provider || undefined} onValueChange={setProvider}>
@@ -115,7 +127,7 @@ export function DiagnosticConnect() {
                 </div>
                 {provider === "spectora" && (
                   <div className="space-y-2">
-                    <Label htmlFor="diag-api-key">Spectora API key</Label>
+                    <Label htmlFor="diag-api-key" required>Spectora API key</Label>
                     <PasswordInput
                       id="diag-api-key"
                       autoComplete="off"
@@ -128,25 +140,29 @@ export function DiagnosticConnect() {
                 {provider === "isn" && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="diag-company">Company key</Label>
+                      <Label htmlFor="diag-company" required>Company key</Label>
                       <Input id="diag-company" autoComplete="off" placeholder="Your ISN company key" value={companyKey} onChange={(e) => setCompanyKey(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="diag-host">ISN host</Label>
+                      <Label htmlFor="diag-host" required>ISN host</Label>
                       <Input id="diag-host" autoComplete="off" inputMode="url" placeholder="inspectionsupport.com or your white-label domain" value={host} onChange={(e) => setHost(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="diag-access">Access key</Label>
+                      <Label htmlFor="diag-access" required>Access key</Label>
                       <PasswordInput id="diag-access" autoComplete="off" placeholder="ISN access key" value={accessKey} onChange={(e) => setAccessKey(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="diag-secret">Secret key</Label>
+                      <Label htmlFor="diag-secret" required>Secret key</Label>
                       <PasswordInput id="diag-secret" autoComplete="off" placeholder="ISN secret access key" value={secretKey} onChange={(e) => setSecretKey(e.target.value)} />
                     </div>
                   </>
                 )}
                 <Button type="submit" disabled={saving || !canSave}>
-                  {saving ? "Checking connection…" : "Connect and start my Diagnostic"}
+                  {saving
+                    ? "Checking connection…"
+                    : blueprint
+                      ? "Connect and build my baseline"
+                      : "Connect and start my Diagnostic"}
                 </Button>
               </form>
             </CardContent>

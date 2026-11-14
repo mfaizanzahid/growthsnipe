@@ -1190,3 +1190,25 @@ Diagnostic customer copy now says `30-minute review` instead of `60-minute reado
 
 Updated: `db/migrations/0048_diagnostic_report_resends.sql` (new), `src/server/db/schema.ts`, `src/server/diagnostic/report.ts`, `src/server/routes/superadmin.ts`, `src/server/routes/one-time.ts`, `src/server/routes/sidekick.ts`, `src/server/routes/oauth.ts`, `src/server/email/templates.ts`, `src/server/diagnostic/pdf.ts`, `src/server/diagnostic/synthesize.ts`, `src/react-app/App.tsx`, `src/react-app/components/shell/AppShell.tsx`, `src/react-app/pages/admin/Reports.tsx` (new), `src/react-app/components/CredentialHelp.tsx` (new), `src/react-app/components/ConnectPlatformForm.tsx`, `src/react-app/pages/diagnostic/DiagnosticConnect.tsx`, `src/react-app/pages/Connections.tsx`, `src/react-app/pages/Onboarding.tsx`, `src/react-app/pages/Dashboard.tsx`, `src/react-app/pages/McpAccess.tsx`, `src/react-app/pages/checkout/CheckoutDiagnostic.tsx`, `src/react-app/pages/checkout/OneTimeCheckout.tsx`, `src/react-app/pages/checkout/ThankYouDiagnostic.tsx`, `src/react-app/pages/marketing/Diagnostic.tsx`, `src/react-app/pages/marketing/Faq.tsx`, `src/react-app/pages/admin/Leads.tsx`, `src/react-app/components/marketing/page-meta.ts`, `docs/copy-content-website-strategy.md`, `docs/claude-setup.md`, `test/superadmin-reports.test.ts` (new), `test/one-time.test.ts`.
 
+
+## 2026-11-14 - Blueprint baseline flow (owner decisions)
+
+A Blueprint purchase now produces a baseline automatically. If the buyer already bought a Diagnostic, the Blueprint reuses that run and links it through `one_time_orders.baseline_run_id`. The resolution order is: explicit linked run, the applied Diagnostic credit coupon's `source_order_id`, then the latest paid Diagnostic order for the buyer email that has a run. If none exists, the Worker creates a `diagnostic_runs` row with `purpose = blueprint` for the Blueprint order and sends a connect link.
+
+Migration `0049_blueprint_baselines.sql` adds `diagnostic_runs.purpose`, `one_time_orders.baseline_run_id`, `one_time_orders.baseline_email_sent_at`, and an index on `baseline_run_id`. Existing runs default to `diagnostic`.
+
+Email behavior: the Blueprint receipt is unchanged. The old Blueprint intake email is replaced by one baseline email sent at purchase. New baselines and pending or failed Diagnostic baselines get a connect link with `flow=blueprint` plus the intake details. A Diagnostic baseline that is still processing gets a "baseline underway" email plus intake. A ready Diagnostic baseline gets a "baseline ready to use" email plus intake, unless its report email was never sent, in which case the buyer gets the baseline-ready report email. When a baseline finishes, the buyer gets one baseline-ready email containing the full Diagnostic report link, the baseline confirmation, and the intake details. A Diagnostic run already used by a Blueprint no longer sends the separate Diagnostic report-ready email.
+
+Superadmin Reports now shows a Type column (Diagnostic or Blueprint baseline) and resending a baseline run sends the baseline-ready email. The connect and status pages switch copy on `flow=blueprint` or the run purpose, and the Blueprint thank-you page explains that an existing Diagnostic baseline is reused or a connect link follows.
+
+Production must apply migrations `0047`, `0048`, and `0049` before deploying this code.
+
+Updated: `db/migrations/0049_blueprint_baselines.sql` (new), `db/schema.ts`, `src/server/db/schema.ts`, `src/server/diagnostic/store.ts`, `src/server/diagnostic/report.ts`, `src/server/repositories/billing.ts`, `src/server/billing/one-time.ts`, `src/server/routes/diagnostic.ts`, `src/server/routes/superadmin.ts`, `src/server/email/templates.ts`, `src/react-app/pages/admin/Reports.tsx`, `src/react-app/pages/diagnostic/DiagnosticConnect.tsx`, `src/react-app/pages/diagnostic/DiagnosticStatus.tsx`, `src/react-app/pages/checkout/ThankYouBlueprint.tsx`, `test/one-time.test.ts`, `test/superadmin-reports.test.ts`.
+
+## 2026-11-14 - Blueprint website field and compact phone country selector
+
+The Blueprint checkout now requires a website. Migration `0050_blueprint_website.sql` adds `one_time_orders.website`; the one-time session API requires a non-empty website only for `slug = blueprint`, and the order stores it for the team/intake record. The shared Diagnostic checkout has no website field.
+
+The checkout's second row now has three columns on Blueprint at `sm` and above: phone, business name, website. The phone country selector is narrower, shows only the two-letter ISO code in the trigger (`US`), and opens a wide popper list with the full country name and dial code (`United States +1`). The Diagnostic checkout keeps two columns in that row.
+
+Updated: `db/migrations/0050_blueprint_website.sql` (new), `db/schema.ts`, `src/server/repositories/billing.ts`, `src/server/billing/one-time.ts`, `src/server/routes/one-time.ts`, `src/react-app/pages/checkout/OneTimeCheckout.tsx`, `test/one-time.test.ts`, `test/superadmin-reports.test.ts`.

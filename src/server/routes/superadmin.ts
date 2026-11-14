@@ -814,6 +814,7 @@ export function createSuperadminRoutes(deps: {
         orderId: diagnosticRuns.oneTimeOrderId,
         email: diagnosticRuns.email,
         provider: diagnosticRuns.provider,
+        purpose: diagnosticRuns.purpose,
         status: diagnosticRuns.status,
         stage: diagnosticRuns.stage,
         progress: diagnosticRuns.progress,
@@ -824,6 +825,7 @@ export function createSuperadminRoutes(deps: {
         createdAt: diagnosticRuns.createdAt,
         orderBusinessName: oneTimeOrders.businessName,
         orderName: oneTimeOrders.name,
+        baseline: sql<number>`exists (select 1 from one_time_orders bo where bo.baseline_run_id = ${diagnosticRuns.id})`,
         factsBusinessName: sql<string | null>`json_extract(${diagnosticRuns.factsJson}, '$.meta.businessName')`,
       })
       .from(diagnosticRuns)
@@ -831,8 +833,9 @@ export function createSuperadminRoutes(deps: {
       .orderBy(desc(diagnosticRuns.createdAt))
       .limit(limit);
     return c.json({
-      reports: rows.map(({ orderBusinessName, orderName, factsBusinessName, ...row }) => ({
+      reports: rows.map(({ orderBusinessName, orderName, factsBusinessName, baseline, ...row }) => ({
         ...row,
+        baseline: Boolean(baseline),
         businessName: orderBusinessName ?? factsBusinessName ?? orderName ?? null,
       })),
     });

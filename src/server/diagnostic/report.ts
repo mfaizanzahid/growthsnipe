@@ -1,10 +1,21 @@
 import type { Db } from "../repositories/db";
 import type { Env } from "../types";
 import { getSetting } from "../repositories/index";
-import { drizzleStore, getOneTimeOrder } from "../repositories/billing";
+import {
+  drizzleStore,
+  findBlueprintOrderForBaselineRun,
+  getCouponById,
+  getOneTimeOrder,
+  listPaidDiagnosticOrdersForEmail,
+  updateOneTimeOrder,
+  type OneTimeOrderRow,
+} from "../repositories/billing";
 import { creditForDiagnosticCoupon, ensureDiagnosticCreditCoupon } from "../billing/credits";
 import { sendEmail } from "../lib/email";
 import {
+  blueprintBaselineConnectContent,
+  blueprintBaselineExistingContent,
+  blueprintBaselineReadyContent,
   diagnosticConnectContent,
   diagnosticReadyContent,
   escapeHtml,
@@ -20,6 +31,7 @@ import {
   createOrGetRun,
   failRun,
   getRunById,
+  getRunByOrderId,
   listDiagnosticOrders,
   logDiagnosticEvent,
   saveDiagnosticOrderServices,
@@ -94,6 +106,163 @@ export async function startDiagnosticRun(
   );
   await updateRun(db, run.id, { connectEmailSentAt: now }, now);
   await logDiagnosticEvent(db, run.id, "connect_email", "Connect link emailed", "info", now);
+  return (await getRunById(db, run.id)) ?? run;
+}
+
+interface ExistingBaseline {
+  run: DiagnosticRunRow;
+  source: "linked" | "coupon" | "email";
+}
+
+async function resolveBlueprintBaseline(
+  db: Db,
+  order: OneTimeOrderRow,
+): Promise<ExistingBaseline | null> {
+  if (order.baselineRunId) {
+    const linked = await getRunById(db, order.baselineRunId);
+    if (linked) return { run: linked, source: "linked" };
+  }
+
+  if (order.couponId) {
+    const coupon = await getCouponById(db, order.couponId);
+    if (coupon?.sourceOrderId) {
+      const diagnosticOrder = await getOneTimeOrder(db, coupon.sourceOrderId);
+      if (diagnosticOrder) {
+        const run = await getRunByOrderId(db, diagnosticOrder.id);
+        if (run) return { run, source: "coupon" };
+      }
+    }
+  }
+
+  for (const diagnosticOrder of await listPaidDiagnosticOrdersForEmail(db, order.email)) {
+    const run = await getRunByOrderId(db, diagnosticOrder.id);
+    if (run) return { run, source: "email" };
+  }
+  return null;
+}
+
+async function sendBlueprintBaselineEmail(
+  db: Db,
+  env: Env,
+  order: OneTimeOrderRow,
+  content: { subject: string; html: string },
+  actionUrl: string,
+  actionLabel?: string,
+): Promise<void> {
+  const support = await supportEmail(db);
+  await sendEmail(
+    env,
+    {
+      to: order.email,
+      subject: `[${PORTAL_NAME}] ${content.subject}`,
+      html: layout(PORTAL_NAME, support, actionUrl, content.subject, content.html, actionLabel),
+    },
+    env.RESEND_FROM_EMAIL,
+  );
+}
+
+/**
+ * Blueprint purchase baseline: reuse a Diagnostic run when one exists, otherwise
+ * create a Blueprint-purpose run and send the connect link. The baseline email
+ * replaces the old Blueprint intake email.
+ */
+export async function startBlueprintBaseline(
+  db: Db,
+  env: Env,
+  order: OneTimeOrderRow,
+  now = Date.now(),
+): Promise<DiagnosticRunRow> {
+  const existing = await resolveBlueprintBaseline(db, order);
+  let run: DiagnosticRunRow;
+  let content: { subject: string; html: string };
+  let actionUrl = `${baseUrl(env)}/blueprint`;
+  let actionLabel: string | undefined;
+  let connectSent = false;
+  let readyUnsent = false;
+
+  if (existing) {
+    run = existing.run;
+    if (order.baselineRunId !== run.id) {
+      await updateOneTimeOrder(db, order.id, { baselineRunId: run.id, updatedAt: now });
+    }
+    if (run.status === "awaiting_connection" || run.status === "failed") {
+      const token = await signDiagnosticToken(env, {
+        orderId: run.oneTimeOrderId,
+        purpose: "connect",
+        now,
+      });
+      const connectUrl = `${baseUrl(env)}/diagnostic/connect?token=${encodeURIComponent(token)}&flow=blueprint`;
+      content = blueprintBaselineConnectContent({
+        firstName: firstNameOf(order.name),
+        connectUrl,
+        existing: true,
+      });
+      actionUrl = connectUrl;
+      actionLabel = "Connect your booking software";
+      connectSent = true;
+    } else {
+      const ready = run.status === "ready" || run.status === "ready_email_failed";
+      content = blueprintBaselineExistingContent({
+        firstName: firstNameOf(order.name),
+        processing: !ready,
+      });
+      readyUnsent = ready && !run.reportEmailSentAt;
+    }
+    await logDiagnosticEvent(
+      db,
+      run.id,
+      "baseline",
+      `Linked to Blueprint order via ${existing.source}`,
+      "info",
+      now,
+    );
+  } else {
+    run = await createOrGetRun(db, {
+      oneTimeOrderId: order.id,
+      email: order.email,
+      purpose: "blueprint",
+      now,
+    });
+    await updateOneTimeOrder(db, order.id, { baselineRunId: run.id, updatedAt: now });
+    const token = await signDiagnosticToken(env, { orderId: order.id, purpose: "connect", now });
+    const connectUrl = `${baseUrl(env)}/diagnostic/connect?token=${encodeURIComponent(token)}&flow=blueprint`;
+    content = blueprintBaselineConnectContent({
+      firstName: firstNameOf(order.name),
+      connectUrl,
+      existing: false,
+    });
+    actionUrl = connectUrl;
+    actionLabel = "Connect your booking software";
+    connectSent = true;
+    await logDiagnosticEvent(
+      db,
+      run.id,
+      "baseline",
+      "Created a Blueprint baseline run",
+      "info",
+      now,
+    );
+  }
+
+  if (!order.baselineEmailSentAt) {
+    if (readyUnsent) {
+      await sendBlueprintBaselineReadyEmail(db, env, run, now);
+    } else {
+      await sendBlueprintBaselineEmail(db, env, order, content, actionUrl, actionLabel);
+    }
+    if (connectSent) {
+      await updateRun(db, run.id, { connectEmailSentAt: now }, now);
+      await logDiagnosticEvent(
+        db,
+        run.id,
+        "connect_email",
+        "Blueprint baseline connect link emailed",
+        "info",
+        now,
+      );
+    }
+    await updateOneTimeOrder(db, order.id, { baselineEmailSentAt: now, updatedAt: now });
+  }
   return (await getRunById(db, run.id)) ?? run;
 }
 
@@ -239,7 +408,11 @@ export async function finalizeDiagnosticRun(env: Env, db: Db, runId: string): Pr
     await logDiagnosticEvent(db, runId, "ready", "Report is ready", "info", now);
 
     try {
-      await sendReportReadyEmail(db, env, run, now);
+      if (await isBlueprintBaseline(db, run)) {
+        await sendBlueprintBaselineReadyEmail(db, env, run, now);
+      } else {
+        await sendReportReadyEmail(db, env, run, now);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await updateRun(db, runId, { status: "ready_email_failed", errorText: message.slice(0, 500) }, now);
@@ -331,6 +504,57 @@ async function sendReportReadyEmail(db: Db, env: Env, run: DiagnosticRunRow, now
   await updateRun(db, run.id, { reportEmailSentAt: now, errorText: null }, now);
 }
 
+/** Baseline-ready email for a Blueprint purchase, with the full Diagnostic report. */
+async function sendBlueprintBaselineReadyEmail(
+  db: Db,
+  env: Env,
+  run: DiagnosticRunRow,
+  now: number,
+  force = false,
+): Promise<void> {
+  if (!force && run.reportEmailSentAt) return;
+  const blueprintOrder = await findBlueprintOrderForBaselineRun(db, run.id);
+  const order = blueprintOrder ?? (await getOneTimeOrder(db, run.oneTimeOrderId));
+  if (!order) throw new Error("Blueprint order not found");
+
+  const token = await signDiagnosticToken(env, {
+    orderId: run.oneTimeOrderId,
+    purpose: "report",
+    now,
+  });
+  const reportUrl = `${baseUrl(env)}/api/diagnostic/report?token=${encodeURIComponent(token)}`;
+  const content = blueprintBaselineReadyContent({
+    firstName: firstNameOf(order.name),
+    reportUrl,
+  });
+  const support = await supportEmail(db);
+  await sendEmail(
+    env,
+    {
+      to: order.email,
+      subject: `[${PORTAL_NAME}] ${content.subject}`,
+      html: layout(
+        PORTAL_NAME,
+        support,
+        reportUrl,
+        content.subject,
+        content.html,
+        "Download your Diagnostic report",
+      ),
+    },
+    env.RESEND_FROM_EMAIL,
+  );
+  if (!force) {
+    await updateRun(db, run.id, { reportEmailSentAt: now, errorText: null }, now);
+  }
+}
+
+/** True when a Diagnostic run is also the baseline for a Blueprint order. */
+async function isBlueprintBaseline(db: Db, run: DiagnosticRunRow): Promise<boolean> {
+  if (run.purpose === "blueprint") return true;
+  return Boolean(await findBlueprintOrderForBaselineRun(db, run.id));
+}
+
 /** Superadmin action: send a fresh report link without changing the original sent timestamp. */
 export async function resendDiagnosticReportEmail(
   db: Db,
@@ -344,7 +568,11 @@ export async function resendDiagnosticReportEmail(
   if (run.status !== "ready" && run.status !== "ready_email_failed") {
     throw new Error("Report is not ready");
   }
-  await sendDiagnosticReportEmail(db, env, run, now);
+  if (await isBlueprintBaseline(db, run)) {
+    await sendBlueprintBaselineReadyEmail(db, env, run, now, true);
+  } else {
+    await sendDiagnosticReportEmail(db, env, run, now);
+  }
   await updateRun(
     db,
     run.id,

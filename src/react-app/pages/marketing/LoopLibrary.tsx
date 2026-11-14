@@ -107,19 +107,19 @@ export function LoopLibrary() {
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="loop-first-name">First name</Label>
+                  <Label htmlFor="loop-first-name" required>First name</Label>
                   <Input id="loop-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={120} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="loop-email">Work email</Label>
+                  <Label htmlFor="loop-email" required>Work email</Label>
                   <Input id="loop-email" type="email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} required maxLength={200} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="loop-business">Business name</Label>
+                  <Label htmlFor="loop-business" required>Business name</Label>
                   <Input id="loop-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required maxLength={160} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="loop-trade">Trade / industry</Label>
+                  <Label htmlFor="loop-trade" required>Trade / industry</Label>
                   <Select value={trade} onValueChange={setTrade} required>
                     <SelectTrigger id="loop-trade"><SelectValue placeholder="Select your trade" /></SelectTrigger>
                     <SelectContent>

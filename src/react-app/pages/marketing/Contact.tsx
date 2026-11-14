@@ -54,15 +54,15 @@ export function Contact() {
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="contact-name">Name</Label>
+                  <Label htmlFor="contact-name" required>Name</Label>
                   <Input id="contact-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contact-email">Email</Label>
+                  <Label htmlFor="contact-email" required>Email</Label>
                   <Input id="contact-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={200} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="contact-message">Message</Label>
+                  <Label htmlFor="contact-message" required>Message</Label>
                   <Textarea id="contact-message" value={message} onChange={(e) => setMessage(e.target.value)} required minLength={10} maxLength={5000} rows={5} />
                 </div>
                 <Button type="submit" className="w-full" disabled={pending}>
