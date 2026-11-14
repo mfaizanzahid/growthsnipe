@@ -119,7 +119,7 @@ export function createOAuthRoutes(deps: {
     return pageShell(
       "Connect a platform first",
       `<h1>No platform connected</h1>` +
-        `<p class="desc"><strong>${esc(clientName)}</strong> can't connect yet — this workspace has no connected platform. Connect Spectora or ISN first, then restart the connection from your AI client.</p>` +
+        `<p class="desc"><strong>${esc(clientName)}</strong> can't connect yet. This workspace has no connected platform. Connect your field service and booking management software first, then restart the connection from your AI client.</p>` +
         `<div class="row"><a class="btn btn-primary" style="text-align:center;text-decoration:none" href="${esc(connectHref)}">Connect platform</a></div>`,
     );
   }

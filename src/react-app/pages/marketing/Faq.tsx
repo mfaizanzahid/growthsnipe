@@ -31,7 +31,7 @@ const GENERAL = [
 const PRICING = [
   {
     q: "How much does the SNIPE Diagnostic™ cost?",
-    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 60-minute readout.`,
+    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 30-minute review.`,
   },
   {
     q: "How much does the SNIPE Blueprint™ cost?",
@@ -39,7 +39,7 @@ const PRICING = [
   },
   {
     q: "Does the SNIPE Diagnostic™ fee count toward SNIPE Blueprint™?",
-    a: `Yes. If you purchase SNIPE Blueprint™ within 14 days of your SNIPE Diagnostic™ readout, the full SNIPE Diagnostic™ fee is credited toward SNIPE Blueprint™. Your remaining payment is ${blueprintRemainder}.`,
+    a: `Yes. If you purchase SNIPE Blueprint™ within 14 days of your SNIPE Diagnostic™ review, the full SNIPE Diagnostic™ fee is credited toward SNIPE Blueprint™. Your remaining payment is ${blueprintRemainder}.`,
   },
   {
     q: "Does the SNIPE Blueprint™ fee count toward SNIPE Engine™?",

@@ -47,6 +47,7 @@ export function OneTimeCheckout({
   const [failed, setFailed] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [trade, setTrade] = useState("");
   const [phone, setPhone] = useState("");
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [businessName, setBusinessName] = useState("");
@@ -135,6 +136,14 @@ export function OneTimeCheckout({
       toast.error("Enter a valid email address");
       return;
     }
+    if (!businessName.trim()) {
+      toast.error("Enter your business name");
+      return;
+    }
+    if (!trade.trim()) {
+      toast.error("Enter your trade or industry");
+      return;
+    }
     if (couponCode.trim() && !appliedCoupon) {
       toast.error("Apply your code first, or clear it");
       return;
@@ -164,7 +173,8 @@ export function OneTimeCheckout({
           name: name.trim(),
           phone: `+${selected.dial}${digits}`,
           country: selected.code,
-          businessName: businessName.trim() || undefined,
+          businessName: businessName.trim(),
+          trade: trade.trim(),
           couponCode: appliedCoupon?.code,
         }),
       });
@@ -285,7 +295,7 @@ export function OneTimeCheckout({
                 </div>
               ) : (
                 <form onSubmit={start} className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 sm:grid-cols-3">
                     <div className="space-y-2">
                       <Label htmlFor="oto-name">Full name</Label>
                       <Input id="oto-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
@@ -302,6 +312,17 @@ export function OneTimeCheckout({
                         }}
                         required
                         maxLength={200}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="oto-trade">Trade / industry</Label>
+                      <Input
+                        id="oto-trade"
+                        placeholder="Home inspection"
+                        value={trade}
+                        onChange={(e) => setTrade(e.target.value)}
+                        required
+                        maxLength={120}
                       />
                     </div>
                   </div>
@@ -325,8 +346,8 @@ export function OneTimeCheckout({
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="oto-business">Business name (optional)</Label>
-                      <Input id="oto-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} maxLength={160} />
+                      <Label htmlFor="oto-business">Business name</Label>
+                      <Input id="oto-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required maxLength={160} />
                     </div>
                   </div>
                   <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} layout="inline" />

@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { PasswordInput } from "./PasswordInput";
+import { CredentialHelpLink } from "./CredentialHelp";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 /**
@@ -22,7 +23,7 @@ export function ConnectPlatformForm({
   onConnected?: (connection: SidekickConnection) => void;
   submitLabel?: string;
 }) {
-  const [provider, setProvider] = useState<string>("spectora");
+  const [provider, setProvider] = useState<string>("");
   const [apiKey, setApiKey] = useState("");
   const [companyKey, setCompanyKey] = useState("");
   const [host, setHost] = useState("");
@@ -33,7 +34,9 @@ export function ConnectPlatformForm({
   const canSave =
     provider === "spectora"
       ? Boolean(apiKey)
-      : Boolean(companyKey && host && accessKey && secretKey);
+      : provider === "isn"
+        ? Boolean(companyKey && host && accessKey && secretKey)
+        : false;
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -76,9 +79,12 @@ export function ConnectPlatformForm({
   return (
     <form onSubmit={save} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="platform-provider">Platform</Label>
-        <Select value={provider} onValueChange={setProvider}>
-          <SelectTrigger id="platform-provider"><SelectValue /></SelectTrigger>
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="platform-provider">Platform</Label>
+          <CredentialHelpLink provider={provider} />
+        </div>
+        <Select value={provider || undefined} onValueChange={setProvider}>
+          <SelectTrigger id="platform-provider"><SelectValue placeholder="Select a platform" /></SelectTrigger>
           <SelectContent>
             {PLATFORM_OPTIONS.map((p) => (
               <SelectItem key={p.key} value={p.key} disabled={p.status === "coming-soon"}>
@@ -88,12 +94,13 @@ export function ConnectPlatformForm({
           </SelectContent>
         </Select>
       </div>
-      {provider === "spectora" ? (
+      {provider === "spectora" && (
         <div className="space-y-2">
           <Label htmlFor="platform-api-key">API key</Label>
           <PasswordInput id="platform-api-key" autoComplete="off" placeholder="Spectora API key" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
         </div>
-      ) : (
+      )}
+      {provider === "isn" && (
         <>
           <div className="space-y-2">
             <Label htmlFor="platform-isn-company">Company key</Label>

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Env } from "../types";
 import { contextMiddleware, createContextMiddleware, requireSession, requireSuperadmin, sessionGuard } from "../middleware";
@@ -57,6 +58,9 @@ import { getAnalytics } from "../billing/analytics";
 import type { SessionUser } from "../middleware";
 import type { Db } from "../repositories/db";
 import { getAllSettings, setSetting } from "../repositories";
+import { diagnosticRuns, oneTimeOrders } from "../../../db/schema";
+import { getRunById } from "../diagnostic/store";
+import { parseFacts, renderRunReport, resendDiagnosticReportEmail } from "../diagnostic/report";
 import {
   LOG_LEVELS,
   LOG_SURFACES,
@@ -68,6 +72,14 @@ import {
 } from "../lib/app-logs";
 
 const SETTABLE_KEYS = ["support_email"] as const;
+
+function reportFilename(businessName: string | null): string {
+  const base = (businessName ?? "business")
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return `SNIPE-Diagnostic-${base || "business"}.pdf`;
+}
 
 const LogsQuerySchema = z.object({
   q: z.string().trim().max(200).optional(),
@@ -584,7 +596,7 @@ export function createSuperadminRoutes(deps: {
   });
 
   // Manual buyer-reminder trigger: schedules the Diagnostic or Blueprint
-  // credit-check-in sequence anchored at the readout/presentation date.
+  // credit-check-in sequence anchored at the review/presentation date.
   routes.post("/api/superadmin/buyer-reminders", guard, gate, async (c) => {
     const user = c.get("user") as SessionUser;
     const body = (await c.req.json().catch(() => undefined)) as { email?: string; kind?: string; anchorDate?: string } | undefined;
@@ -789,6 +801,93 @@ export function createSuperadminRoutes(deps: {
       const e = errResponse(err);
       return c.json({ error: e.message }, e.status as 400);
     }
+  });
+
+  // Diagnostic reports: generated PDFs and resendable report links.
+  routes.get("/api/superadmin/diagnostic-reports", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
+    const limitRaw = Number.parseInt(c.req.query("limit") ?? "200", 10);
+    const limit = Number.isFinite(limitRaw) ? Math.min(500, Math.max(1, limitRaw)) : 200;
+    const rows = await db
+      .select({
+        id: diagnosticRuns.id,
+        orderId: diagnosticRuns.oneTimeOrderId,
+        email: diagnosticRuns.email,
+        provider: diagnosticRuns.provider,
+        status: diagnosticRuns.status,
+        stage: diagnosticRuns.stage,
+        progress: diagnosticRuns.progress,
+        readyAt: diagnosticRuns.readyAt,
+        reportEmailSentAt: diagnosticRuns.reportEmailSentAt,
+        reportEmailResentAt: diagnosticRuns.reportEmailResentAt,
+        reportEmailResendCount: diagnosticRuns.reportEmailResendCount,
+        createdAt: diagnosticRuns.createdAt,
+        orderBusinessName: oneTimeOrders.businessName,
+        orderName: oneTimeOrders.name,
+        factsBusinessName: sql<string | null>`json_extract(${diagnosticRuns.factsJson}, '$.meta.businessName')`,
+      })
+      .from(diagnosticRuns)
+      .leftJoin(oneTimeOrders, eq(diagnosticRuns.oneTimeOrderId, oneTimeOrders.id))
+      .orderBy(desc(diagnosticRuns.createdAt))
+      .limit(limit);
+    return c.json({
+      reports: rows.map(({ orderBusinessName, orderName, factsBusinessName, ...row }) => ({
+        ...row,
+        businessName: orderBusinessName ?? factsBusinessName ?? orderName ?? null,
+      })),
+    });
+  });
+
+  routes.get("/api/superadmin/diagnostic-reports/:id/report", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
+    const run = await getRunById(db, c.req.param("id"));
+    if (!run) return c.json({ error: "Report not found" }, 404);
+    if (run.status !== "ready" && run.status !== "ready_email_failed") {
+      return c.json({ error: "Report is not ready" }, 409);
+    }
+    const pdf = await renderRunReport(db, run);
+    if (!pdf) return c.json({ error: "The report could not be rendered." }, 500);
+    const businessName = parseFacts(run)?.meta.businessName ?? null;
+    const headers = new Headers({
+      "content-type": "application/pdf",
+      "content-disposition": `attachment; filename="${reportFilename(businessName)}"`,
+      "cache-control": "private, no-store",
+    });
+    const body = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
+    return new Response(body, { status: 200, headers });
+  });
+
+  routes.post("/api/superadmin/diagnostic-reports/:id/resend", guard, gate, async (c) => {
+    const user = c.get("user") as SessionUser | undefined;
+    const db = c.get("db") as Db;
+    const run = await getRunById(db, c.req.param("id"));
+    if (!run) return c.json({ error: "Report not found" }, 404);
+    try {
+      await resendDiagnosticReportEmail(
+        db,
+        c.env as Env,
+        run.id,
+        user?.email ?? user?.id ?? "superadmin",
+      );
+    } catch (err) {
+      return c.json(
+        { error: err instanceof Error ? err.message : "Could not resend report" },
+        422,
+      );
+    }
+    if (c.env.DB) {
+      await writeAppLog(db, {
+        level: "info",
+        event: "diagnostic.report_resent",
+        surface: "superadmin",
+        message: `Report link resent for ${run.email}`,
+        userId: user?.id ?? null,
+        userEmail: user?.email ?? null,
+        path: c.req.path,
+        method: c.req.method,
+      });
+    }
+    return c.json({ ok: true });
   });
 
   return routes;

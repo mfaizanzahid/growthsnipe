@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import {
+  freshInviteContent,
   invitationContent,
   magicLinkContent,
   resetPasswordContent,
@@ -180,4 +181,12 @@ export function invitationEmail(
   supportEmail: string,
 ): OutgoingEmail {
   return { to, ...invitationContent(orgName, inviteLink, supportEmail) };
+}
+
+export function freshInviteEmail(
+  to: string,
+  url: string,
+  supportEmail: string,
+): OutgoingEmail {
+  return { to, ...freshInviteContent({ url, supportEmail }) };
 }

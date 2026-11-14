@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   captureEmails,
   escapeHtml,
+  freshInviteEmail,
   invitationEmail,
   magicLinkEmail,
   resetPasswordEmail,
@@ -43,6 +44,14 @@ describe("email service", () => {
     expect(inv.subject).toContain("Acme");
     expect(inv.html).toContain("https://app/accept/1");
     expect(inv.html).toContain("help@x.com");
+
+    const fresh = freshInviteEmail("a@x.com", "https://app/magic?token=fresh", "help@x.com");
+    expect(fresh.subject).toContain("SNIPE Intelligence");
+    expect(fresh.html).toContain("SNIPE Intelligence");
+    expect(fresh.html).toContain("https://app/magic?token=fresh");
+    expect(fresh.html).not.toContain("30-day");
+    expect(fresh.html).not.toContain("No card required");
+    expect(fresh.html).toContain("help@x.com");
   });
 
   it("escapes user-controlled values in HTML emails", async () => {    expect(escapeHtml(`<script>alert("x")</script>`)).toBe(

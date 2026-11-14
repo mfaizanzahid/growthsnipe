@@ -16,6 +16,7 @@ import { OrgSettings } from "./pages/OrgSettings";
 import { AdminDashboard } from "./pages/admin/Dashboard";
 import { AdminClients } from "./pages/admin/Clients";
 import { AdminInvoices } from "./pages/admin/Invoices";
+import { AdminReports } from "./pages/admin/Reports";
 import { AdminPlans } from "./pages/admin/Plans";
 import { AdminCoupons } from "./pages/admin/Coupons";
 import { AdminLeads } from "./pages/admin/Leads";
@@ -79,6 +80,7 @@ export const router = createBrowserRouter([
       { path: "/superadmin", element: <AdminDashboard /> },
       { path: "/superadmin/clients", element: <AdminClients /> },
       { path: "/superadmin/invoices", element: <AdminInvoices /> },
+      { path: "/superadmin/reports", element: <AdminReports /> },
       { path: "/superadmin/plans", element: <AdminPlans /> },
         { path: "/superadmin/coupons", element: <AdminCoupons /> },
         { path: "/superadmin/leads", element: <AdminLeads /> },

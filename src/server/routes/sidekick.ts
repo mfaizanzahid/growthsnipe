@@ -196,7 +196,7 @@ function ruleJsonForCadence(base: string, type: string, rule: ScheduleRule): str
 
 const BusinessProfileBody = z.object({
   orgId: z.string().min(1),
-  businessName: z.string().max(200).optional(),
+  businessName: z.string().trim().min(1).max(200),
   trade: z.string().max(120).optional(),
   serviceArea: z.string().max(300).optional(),
   ownerName: z.string().max(200).optional(),

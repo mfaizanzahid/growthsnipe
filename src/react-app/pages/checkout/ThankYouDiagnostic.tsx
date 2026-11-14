@@ -3,9 +3,9 @@ import { PageHero } from "../../components/marketing/MarketingBits";
 
 const STEPS = [
   "Check your email for the secure connect link.",
-  "Connect Spectora or ISN. The credentials are encrypted and removed after your report.",
+  "Connect your field service and booking management software. The credentials are encrypted and removed after your report.",
   "We pull your last 12 months of jobs, revenue, referrals, and service mix.",
-  "We email your report and coordinate your 60-minute readout.",
+  "We email your report and coordinate your 30-minute review.",
 ];
 
 export function ThankYouDiagnostic() {

@@ -120,6 +120,8 @@ function testDb(): Db {
       narrative_json TEXT,
       connect_email_sent_at INTEGER,
       report_email_sent_at INTEGER,
+      report_email_resent_at INTEGER,
+      report_email_resend_count INTEGER NOT NULL DEFAULT 0,
       error_text TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
@@ -220,6 +222,7 @@ const BUYER = {
   phone: "+15551234567",
   country: "US",
   businessName: "Ada Inspections",
+  trade: "Home inspection",
 };
 
 async function seedDiagnosticCoupon(
@@ -273,6 +276,8 @@ describe("one-time products + session", () => {
     const app = buildApp(testDb(), fakeGateway());
     expect((await req(app, "/api/one-time/session", { ...BUYER, slug: "nope" })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, email: "bad" })).status).toBe(422);
+    expect((await req(app, "/api/one-time/session", { ...BUYER, businessName: "   " })).status).toBe(422);
+    expect((await req(app, "/api/one-time/session", { ...BUYER, trade: "   " })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, phone: "12" })).status).toBe(422);
     const res = await req(app, "/api/one-time/session", { ...BUYER, idempotencyKey: "idem-key-01" });
     expect(res.status).toBe(200);

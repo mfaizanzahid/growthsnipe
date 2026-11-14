@@ -22,8 +22,8 @@ const SessionBody = z.object({
   name: z.string().trim().max(120).optional(),
   phone: z.string().trim().min(7).max(20),
   country: z.string().trim().length(2),
-  businessName: z.string().trim().max(160).optional(),
-  trade: z.string().trim().max(120).optional(),
+  businessName: z.string().trim().min(1).max(160),
+  trade: z.string().trim().min(1).max(120),
   couponCode: z.string().trim().max(64).optional(),
   idempotencyKey: z.string().trim().min(8).max(128).optional(),
 });
@@ -108,7 +108,7 @@ export function createOneTimeRoutes(deps: {
   routes.post("/api/one-time/session", async (c) => {
     const env = c.env as Env;
     const parsed = SessionBody.safeParse(await c.req.json().catch(() => undefined));
-    if (!parsed.success) return c.json({ error: "Please provide your name, a valid email, phone, and country" }, 422);
+    if (!parsed.success) return c.json({ error: "Please provide your name, business name, a valid email, phone, and country" }, 422);
     try {
       const result = await createOneTimeSession(c.get("db") as Db, env, gatewayFor(env, deps), {
         slug: parsed.data.slug,
@@ -116,8 +116,8 @@ export function createOneTimeRoutes(deps: {
         name: parsed.data.name ?? null,
         phone: parsed.data.phone,
         country: parsed.data.country.toUpperCase(),
-        businessName: parsed.data.businessName ?? null,
-        trade: parsed.data.trade ?? null,
+        businessName: parsed.data.businessName,
+        trade: parsed.data.trade,
         couponCode: parsed.data.couponCode ?? null,
         idempotencyKey: parsed.data.idempotencyKey ?? c.req.header("Idempotency-Key") ?? null,
       });

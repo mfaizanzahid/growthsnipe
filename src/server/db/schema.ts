@@ -64,6 +64,8 @@ export const diagnosticRuns = sqliteTable('diagnostic_runs', {
   narrativeJson: text('narrative_json'),
   connectEmailSentAt: integer('connect_email_sent_at'),
   reportEmailSentAt: integer('report_email_sent_at'),
+  reportEmailResentAt: integer('report_email_resent_at'),
+  reportEmailResendCount: integer('report_email_resend_count').notNull().default(0),
   errorText: text('error_text'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
@@ -72,6 +74,7 @@ export const diagnosticRuns = sqliteTable('diagnostic_runs', {
   orderIdx: uniqueIndex('diagnostic_runs_order_idx').on(t.oneTimeOrderId),
   emailIdx: index('diagnostic_runs_email_idx').on(t.email),
   statusIdx: index('diagnostic_runs_status_idx').on(t.status),
+  createdIdx: index('diagnostic_runs_created_idx').on(t.createdAt),
 }));
 
 export const diagnosticCredentials = sqliteTable('diagnostic_credentials', {

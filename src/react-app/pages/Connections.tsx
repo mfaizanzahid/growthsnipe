@@ -111,7 +111,8 @@ export function Connections() {
           <DialogHeader>
             <DialogTitle>Connect a platform</DialogTitle>
             <DialogDescription>
-              One platform per workspace. Spectora uses an API key. ISN uses your company key, web address, and access keys (in ISN, go to Settings, My Access Keys).
+              One platform per workspace. Select your platform, then use the credential help link
+              if you need help finding the values.
             </DialogDescription>
           </DialogHeader>
           {connections.length > 0 ? (

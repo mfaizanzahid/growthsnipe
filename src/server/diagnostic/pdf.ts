@@ -1814,7 +1814,7 @@ export async function renderDiagnosticPdf(
     }
   } else {
     report.callout(
-      `You have already paid ${diagnosticPrice} for this SNIPE Diagnostic™. Purchase the SNIPE Blueprint™ within ${creditDays} days of your readout and the full ${diagnosticPrice} is credited.`,
+      `You have already paid ${diagnosticPrice} for this SNIPE Diagnostic™. Purchase the SNIPE Blueprint™ within ${creditDays} days of your review and the full ${diagnosticPrice} is credited.`,
     );
   }
 
@@ -1886,7 +1886,7 @@ export async function renderDiagnosticPdf(
   report.text(
     credit
       ? `Opens the Blueprint page. Use your ${credit.amountLabel} credit code at checkout${creditExpiry ? ` by ${creditExpiry}` : ""}.`
-      : `Opens the Blueprint page. The ${diagnosticPrice} credit applies within ${creditDays} days of your readout.`,
+      : `Opens the Blueprint page. The ${diagnosticPrice} credit applies within ${creditDays} days of your review.`,
     { size: 8, color: MUTED },
   );
   report.text(

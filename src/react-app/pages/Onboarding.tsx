@@ -457,7 +457,7 @@ export function Onboarding() {
           <CardHeader>
             <CardTitle>Connect your platform</CardTitle>
             <CardDescription>
-              Link Spectora or ISN so your AI can read your live business data. Credentials are encrypted and never shown again.
+              Connect your field service and booking management software so your AI can read your live business data. Credentials are encrypted and never shown again.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

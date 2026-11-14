@@ -9,7 +9,7 @@ Claude connects to the Sidekick MCP over OAuth 2.1 — no tokens to copy.
 ### Prerequisites
 
 1. Sign in to the SaaS dashboard and create a workspace.
-2. Connect Spectora under Connections (V1 serves the Spectora connection).
+2. Connect your field service and booking management software under Connections.
 3. Deploy the app to a public URL, or expose local dev with a tunnel (see below).
 
 ### Connect Claude

@@ -48,7 +48,7 @@ function userPrompt(facts: DiagnosticFacts): string {
     "6. Identify 1 to 4 key constraints and up to 4 strengths. Cite a metricRef for each.",
     "7. Write 3 to 5 quick wins for the next 14 days. Each must state what to do, when to do it, and how to do it.",
     "8. Write a 30-day plan with exactly three windows: Days 1-7, Days 8-21, Days 22-30. Each action must state what to do, when to do it, how to do it, the owner role, and the success metric.",
-    "9. In nextStep, recommend one of these exact values (no trademark): DIY, SNIPE Loops, SNIPE Blueprint, SNIPE Engine Core, SNIPE Engine Command, and explain why using the facts. Set creditNote to: 'The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout.'",
+    "9. In nextStep, recommend one of these exact values (no trademark): DIY, SNIPE Loops, SNIPE Blueprint, SNIPE Engine Core, SNIPE Engine Command, and explain why using the facts. Set creditNote to: 'The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your review.'",
     "10. In methodology, list sources (the provider and the 12-month window), the assumptions you used, and a short no-guarantee disclaimer.",
     "",
     "Return JSON with this exact shape:",
@@ -426,7 +426,7 @@ export function fallbackNarrative(facts: DiagnosticFacts): DiagnosticNarrative {
     nextStep: {
       recommendation: "SNIPE Blueprint",
       rationale: "A Blueprint turns the findings into a 12-month plan with targets, channel mix, workflows, and priorities.",
-      creditNote: "The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout.",
+      creditNote: "The SNIPE Diagnostic™ fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your review.",
     },
     methodology: {
       sources: [`${facts.meta.provider} order data, ${facts.meta.periodLabel}`],

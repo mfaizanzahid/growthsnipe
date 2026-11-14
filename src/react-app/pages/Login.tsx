@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { EnvelopeIcon } from "@heroicons/react/24/outline";
@@ -21,7 +21,21 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [resendAfter, setResendAfter] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(0);
   const { data: session, isPending: sessionPending } = useSession();
+
+  useEffect(() => {
+    if (!resendAfter) return;
+    const update = () => {
+      const left = Math.max(0, Math.ceil((resendAfter - Date.now()) / 1000));
+      setSecondsLeft(left);
+      if (left === 0) setResendAfter(0);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [resendAfter]);
 
   // Already signed in: don't show the form, go to the app.
   if (!sessionPending && session?.user) return <Navigate to={next} replace />;
@@ -53,6 +67,7 @@ export function Login() {
       });
       if (error) throw new Error(error.message ?? "Could not send magic link");
       setSent(true);
+      setResendAfter(Date.now() + 30_000);
       toast.success(`Sign-in link sent to ${address}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Sign in failed");
@@ -72,6 +87,7 @@ export function Login() {
         newUserCallbackURL: "/onboarding",
       });
       if (error) throw new Error(error.message ?? "Could not resend magic link");
+      setResendAfter(Date.now() + 30_000);
       toast.success(`Sign-in link re-sent to ${address}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not resend magic link");
@@ -102,14 +118,22 @@ export function Login() {
               variant="outline"
               className="w-full"
               onClick={() => void resend()}
-              disabled={pending}
+              disabled={pending || secondsLeft > 0}
             >
-              {pending ? "Sending…" : "Resend link"}
+              {secondsLeft > 0
+                ? `Resend link in ${secondsLeft}s`
+                : pending
+                  ? "Sending…"
+                  : "Resend link"}
             </Button>
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => setSent(false)}
+              onClick={() => {
+                setSent(false);
+                setResendAfter(0);
+                setSecondsLeft(0);
+              }}
               disabled={pending}
             >
               Change email

@@ -14,10 +14,18 @@ import {
   verificationEmail,
   magicLinkEmail,
   invitationEmail,
+  freshInviteEmail,
 } from "./lib/email";
 import { isSuperadminSeedEmail, parseSuperadminEmails } from "./lib/access";
 import { getSetting, getUserById, isSuperadmin, seedSuperadmins } from "./repositories";
-import { consumeFreshInvite, drizzleStore, firstOrgInviteVerdict, getUser, setDefaultOrg } from "./repositories/billing";
+import {
+  consumeFreshInvite,
+  drizzleStore,
+  firstOrgInviteVerdict,
+  getValidFreshInvite,
+  getUser,
+  setDefaultOrg,
+} from "./repositories/billing";
 import { activeMemberCount, canCreateOrg, orgAccess } from "./billing/access";
 
 /**
@@ -141,6 +149,20 @@ export function createAuth(env: Env, db: Db) {
         // Superadmin invites stay usable for 7 days (Better Auth default is 5 minutes).
         expiresIn: 604800,
         sendMagicLink: async ({ email, url }) => {
+          // A pending fresh-user invite gets a proper invitation email instead
+          // of the generic sign-in link. Both use the same 7-day magic link.
+          const invite = await getValidFreshInvite(db, email).catch(() => null);
+          if (invite) {
+            const support =
+              (await getSetting(db, "support_email").catch(() => null)) ||
+              "support@growthsnipe.com";
+            await sendEmail(
+              env.RESEND_API_KEY,
+              freshInviteEmail(email, url, support),
+              env.RESEND_FROM_EMAIL,
+            );
+            return;
+          }
           // Auth emails send via Resend (Brevo is billing-only + signup list).
           await sendEmail(
             env.RESEND_API_KEY,

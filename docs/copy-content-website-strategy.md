@@ -111,7 +111,7 @@ On mobile, keep the booking CTA visible and make the trade selector easy to find
 Home / industry page / SNIPE Engine™ page → Free Growth Fit Call → qualification → Diagnostic, Blueprint or SNIPE Engine™ recommendation.
 
 ### Path B — Wants to inspect the numbers
-Home / resource / industry page → SNIPE Diagnostic™ ($199) → 60-minute readout → Blueprint offer, with the $199 credited when the Blueprint is purchased within 14 days.
+Home / resource / industry page → SNIPE Diagnostic™ ($199) → 30-minute review → Blueprint offer, with the $199 credited when the Blueprint is purchased within 14 days.
 
 ### Path C — Wants the plan
 Home / SNIPE System / industry page → SNIPE Blueprint™ ($999) → 90-minute presentation → Engine offer, with the $999 credited toward the Engine setup fee if signed within 30 days of the presentation.
@@ -462,7 +462,7 @@ Microcopy: You will receive an intake checklist after checkout. Work begins when
 # 6. SNIPE Diagnostic™ — `/diagnostic`
 
 **SEO title:** SNIPE Diagnostic™ | Find the Leaks in Your Home-Service Business  
-**Meta description:** Get a 12-month performance review, quantified Leak Map and 60-minute readout to identify where your home-service growth process is losing opportunities.
+**Meta description:** Get a 12-month performance review, quantified Leak Map and 30-minute review to identify where your home-service growth process is losing opportunities.
 
 ## Hero
 
@@ -479,7 +479,7 @@ You will receive a clear view of what the numbers say, what may be holding the b
 - Review of up to 12 months of supplied business data.
 - A business-specific Leak Map with quantified opportunities where the data supports it.
 - A response-time test of your current enquiry experience.
-- A 60-minute findings and recommendations call.
+- A 30-minute findings and recommendations call.
 - 100% credited toward a SNIPE Blueprint™ purchased within 14 days.
 
 CTA: `Get My SNIPE Diagnostic™`
@@ -509,7 +509,7 @@ Whether the owner can see the measures needed to make informed decisions about m
 - **Diagnostic Snapshot:** A summary of the business baseline and data coverage.
 - **Leak Map:** A structured view of identified friction points and estimated financial exposure where enough evidence exists.
 - **Priority Findings:** The issues worth addressing first, ranked by likely impact and practical effort.
-- **60-Minute Readout:** A live walkthrough, discussion and recommended next step.
+- **30-Minute Review:** A live walkthrough, discussion and recommended next step.
 
 Where source data is missing or incomplete, we will identify the gap rather than invent a number. Any estimates will be labeled and the assumptions shown.
 
@@ -519,13 +519,13 @@ Where source data is missing or incomplete, we will identify the gap rather than
 2. Receive the data checklist and secure submission instructions.
 3. Share the agreed business exports and contact details.
 4. We review the available information and conduct the response-time test.
-5. Join the 60-minute readout and decide whether to execute independently or build a full SNIPE Blueprint™.
+5. Join the 30-minute review and decide whether to execute independently or build a full SNIPE Blueprint™.
 
 ## The $199 credit
 
 # Do not pay twice to keep moving forward.
 
-Purchase a SNIPE Blueprint™ within 14 days of your Diagnostic readout and the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining Blueprint payment is $800.
+Purchase a SNIPE Blueprint™ within 14 days of your Diagnostic review and the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining Blueprint payment is $800.
 
 CTA: `Start My SNIPE Diagnostic™ — $199`
 
@@ -535,7 +535,7 @@ CTA: `Start My SNIPE Diagnostic™ — $199`
 
 **Will you tell me exactly how much revenue I am losing?** We quantify only what the available data can support. Where an estimate requires assumptions, those assumptions will be visible.
 
-**Does the Diagnostic include implementation?** No. It is a paid analysis and readout. Implementation is available through the Blueprint and SNIPE Engine™.
+**Does the Diagnostic include implementation?** No. It is a paid analysis and review. Implementation is available through the Blueprint and SNIPE Engine™.
 
 ---
 
@@ -1534,13 +1534,13 @@ The service model is designed for US home-service businesses. Service availabili
 ## Offers and pricing
 
 ### How much does the SNIPE Diagnostic™ cost?
-The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 60-minute readout.
+The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 30-minute review.
 
 ### How much does the SNIPE Blueprint™ cost?
 The SNIPE Blueprint™ is $999 one-time. It includes a personalized 25–35-page plan, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.
 
 ### Does the Diagnostic fee count toward the Blueprint?
-Yes. If you purchase the Blueprint within 14 days of your Diagnostic readout, the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining payment is $800.
+Yes. If you purchase the Blueprint within 14 days of your Diagnostic review, the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining payment is $800.
 
 ### Does the Blueprint fee count toward SNIPE Engine™?
 Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full $999 Blueprint fee is credited toward your setup. We confirm the remaining amount in writing before you sign.
@@ -1598,10 +1598,10 @@ The best fit is an established operator with a real service history, customer de
 ## Diagnostic checkout — `/checkout/diagnostic`
 
 **Headline:** Find the leaks in your growth process.  
-**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, response-time test and 60-minute readout.  
+**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, response-time test and 30-minute review.  
 **Order summary:** SNIPE Diagnostic™ — $199.  
 **Button:** `Purchase My Diagnostic`  
-**Checkout note:** The review begins after payment and receipt of the required information. The $199 fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your Diagnostic readout. No business outcome is guaranteed.
+**Checkout note:** The review begins after payment and receipt of the required information. The $199 fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your Diagnostic review. No business outcome is guaranteed.
 
 ## Blueprint checkout — `/checkout/blueprint`
 
@@ -1620,7 +1620,7 @@ Thank you for purchasing the SNIPE Diagnostic™. The next step is to provide th
 1. Check your email for the data checklist and secure submission instructions.
 2. Gather the available reports and exports.
 3. Submit the information using the secure method provided.
-4. We will confirm receipt and coordinate your 60-minute readout.
+4. We will confirm receipt and coordinate your 30-minute review.
 
 **Important:** If a data point is unavailable, tell us. We would rather identify a gap than fill it with a guess.
 
@@ -1729,9 +1729,9 @@ We will help determine whether your best next step is a Diagnostic, Blueprint, E
 
 - Immediately: Receipt, data checklist, secure upload instructions.
 - On data completion: Confirmation and expected review milestones.
-- After readout: Summary of findings, Blueprint invitation and 14-day credit deadline.
-- Day 7 after readout: Reminder of the Blueprint credit and suggested next action.
-- Day 12 after readout: Final reminder before the credit window expires.
+- After review: Summary of findings, Blueprint invitation and 14-day credit deadline.
+- Day 7 after review: Reminder of the Blueprint credit and suggested next action.
+- Day 12 after review: Final reminder before the credit window expires.
 
 ## Blueprint buyer follow-up
 

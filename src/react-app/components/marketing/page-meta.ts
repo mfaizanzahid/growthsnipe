@@ -16,7 +16,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   "/diagnostic": {
     title: "SNIPE Diagnostic™ | Find the Leaks in Your Home-Service Business",
     description:
-      "Get a 12-month performance review, quantified Leak Map and 60-minute readout to identify where your home-service growth process is losing opportunities.",
+      "Get a 12-month performance review, quantified Leak Map and 30-minute review call to identify where your home-service growth process is losing opportunities.",
   },
   "/loop-library": {
     title: "SNIPE Loops™ | Home-Service Follow-Up & Automation Recipes",
@@ -124,7 +124,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   "/checkout/diagnostic": {
     title: "Get Your SNIPE Diagnostic™ | GrowthSnipe",
     description:
-      "Purchase the SNIPE Diagnostic™: a 12-month performance review with a quantified Leak Map and 60-minute readout.",
+      "Purchase the SNIPE Diagnostic™: a 12-month performance review with a quantified Leak Map and 30-minute review call.",
   },
   "/checkout/blueprint": {
     title: "Get Your SNIPE Blueprint™ | GrowthSnipe",
@@ -133,7 +133,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   },
   "/thank-you/diagnostic": {
     title: "Your Diagnostic Is Underway | GrowthSnipe",
-    description: "Thank you for purchasing the SNIPE Diagnostic™. Next steps for your data checklist and readout.",
+    description: "Thank you for purchasing the SNIPE Diagnostic™. Next steps for your data checklist and review.",
   },
   "/thank-you/blueprint": {
     title: "Let's Build Your Growth Plan | GrowthSnipe",

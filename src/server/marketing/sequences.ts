@@ -3,7 +3,7 @@
  *
  * Day offsets are UTC-day based, matching the billing trial-reminder
  * convention. `anchorMs` is the capture time (welcome) or the manual anchor
- * date (buyer reminders, e.g. readout / presentation day).
+ * date (buyer reminders, e.g. review / presentation day).
  */
 
 export interface SequenceStep {

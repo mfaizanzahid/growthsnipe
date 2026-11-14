@@ -218,7 +218,7 @@ export function McpAccess() {
             <CardTitle>Connect a platform first</CardTitle>
             <CardDescription>
               AI access needs a connected platform before your AI can read your business data.
-              Connect Spectora or ISN first, then come back here to connect your AI.
+              Connect your field service and booking management software first, then come back here to connect your AI.
             </CardDescription>
           </CardHeader>
           <CardContent>

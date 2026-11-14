@@ -67,8 +67,8 @@ export function DiagnosticStatus() {
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">SNIPE Diagnostic™</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Your 12-month review</h1>
         <p className="mt-4 text-muted-foreground">
-          We are reviewing your jobs, revenue, referrals, and service mix. Keep this page open or return with the same
-          link to download your report.
+          We are reviewing your jobs, revenue, referrals, and service mix. We will email your
+          report when it is ready. Keep this page open or return with the same link to download it.
         </p>
 
         <Card className="mt-8">
@@ -94,7 +94,12 @@ export function DiagnosticStatus() {
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
             {run?.ready ? (
-              <Button asChild><a href={reportUrl}>Download my report</a></Button>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Check your inbox for the emailed report, or download it here.
+                </p>
+                <Button asChild><a href={reportUrl}>Download my report</a></Button>
+              </div>
             ) : run?.failed ? (
               <div className="space-y-2">
                 <p className="text-sm text-muted-foreground">

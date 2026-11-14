@@ -673,7 +673,7 @@ export function Dashboard() {
           <ExclamationTriangleIcon className="size-4" />
           <AlertTitle>No provider connected</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
-            Connect Spectora or ISN to load your jobs.
+            Connect your field service and booking management software to load your jobs.
             <Button variant="outline" size="sm" asChild><Link to="/connections">Connect <ArrowRightIcon className="size-4" /></Link></Button>
           </AlertDescription>
         </Alert>
@@ -1086,7 +1086,7 @@ export function Dashboard() {
             </div>
           ) : (
             <Card>
-              <CardHeader><CardTitle>No synced jobs yet</CardTitle><CardDescription>{connections.length > 0 ? "We are loading your jobs. Use Sync now to load more." : "Connect Spectora or ISN to start."}</CardDescription></CardHeader>
+              <CardHeader><CardTitle>No synced jobs yet</CardTitle><CardDescription>{connections.length > 0 ? "We are loading your jobs. Use Sync now to load more." : "Connect your field service and booking management software to start."}</CardDescription></CardHeader>
               <CardContent>
                 <Button variant="outline" size="sm" onClick={() => void manualRefresh()} disabled={syncDisabled}>
                   <ArrowPathIcon className={`size-4 ${refreshing ? "animate-spin" : ""}`} /> Sync now

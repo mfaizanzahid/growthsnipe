@@ -106,8 +106,45 @@ export function invitationContent(
 ): { subject: string; html: string } {
   const safeOrg = escapeHtml(orgName);
   return {
-    subject: `You're invited to join ${safeOrg}`,
-    html: `<p>You've been invited to join <strong>${safeOrg}</strong>.</p><p><a href="${inviteLink}">Accept invitation</a></p><p>Need help? Contact ${escapeHtml(supportEmail)}.</p>`,
+    subject: `You're invited to join ${safeOrg} on GrowthSnipe`,
+    html: layout(
+      "GrowthSnipe",
+      escapeHtml(supportEmail),
+      inviteLink,
+      `Join ${safeOrg} on GrowthSnipe`,
+      `<p>You've been invited to join <strong>${safeOrg}</strong> on GrowthSnipe.</p>` +
+        `<p>GrowthSnipe finds the revenue leak in your home-service business, fixes it, and shows you the booked jobs.</p>` +
+        `<p>Accept the invitation to sign in and join the workspace.</p>` +
+        `<p>If the button does not work, copy this link: ${escapeHtml(inviteLink)}</p>` +
+        `<p>If you weren't expecting this invitation, you can ignore this email.</p>`,
+      "Accept invitation",
+    ),
+  };
+}
+
+/**
+ * Fresh-user invite: the recipient has no workspace yet. The link is the
+ * 7-day magic link, so accepting it signs them in and starts onboarding.
+ */
+export function freshInviteContent(input: {
+  url: string;
+  supportEmail: string;
+}): { subject: string; html: string } {
+  return {
+    subject: "You're invited to SNIPE Intelligence™ by GrowthSnipe",
+    html: layout(
+      "GrowthSnipe",
+      escapeHtml(input.supportEmail),
+      input.url,
+      "You're invited to SNIPE Intelligence™ by GrowthSnipe",
+      `<p>You've been invited to SNIPE Intelligence™ by GrowthSnipe.</p>` +
+        `<p>GrowthSnipe finds the revenue leak in your home-service business, fixes it, and shows you the booked jobs.</p>` +
+        `<p>Use the secure link below to create your workspace and sign in.</p>` +
+        `<p>If the button does not work, copy this link: ${escapeHtml(input.url)}</p>` +
+        `<p>This link is valid for 7 days.</p>` +
+        `<p>If you weren't expecting this invitation, you can ignore this email.</p>`,
+      "Accept invitation and sign in",
+    ),
   };
 }
 
@@ -225,7 +262,7 @@ export function oneTimeIntakeContent(input: {
       `<p>Hi ${name},</p>` +
       `<p>Thank you for purchasing the SNIPE Diagnostic™. The next step is to connect your booking software so we can review your last 12 months of jobs, revenue, referrals, and service mix.</p>` +
       `<p>Watch for a separate email with your secure connect link. The connection is encrypted, used only for this review, and removed once your report is ready.</p>` +
-      `<p>Once connected, we will email your report and coordinate your 60-minute readout.</p>` +
+      `<p>Once connected, we will email your report and coordinate your 30-minute review.</p>` +
       credit +
       cta,
   };
@@ -241,7 +278,7 @@ export function diagnosticConnectContent(input: {
     subject: "Connect your software to start your SNIPE Diagnostic™",
     html:
       `<p>Hi ${name},</p>` +
-      `<p>Connect Spectora or ISN to start your 12-month review. The credentials are encrypted and used only for this Diagnostic. They are removed when your report is ready.</p>` +
+      `<p>Connect your field service and booking management software to start your 12-month review. The credentials are encrypted and used only for this Diagnostic. They are removed when your report is ready.</p>` +
       `<p><a href="${input.connectUrl}">Connect your booking software</a></p>` +
       `<p>If the button does not work, copy this link into your browser: ${input.connectUrl}</p>`,
   };
@@ -266,7 +303,7 @@ export function diagnosticReadyContent(input: {
       `<p>Your 12-month review is ready. It includes your baseline, SNIPE Framework scores, referral performance, leak map, priority findings, and a 30-day plan.</p>` +
       `<p><a href="${input.reportUrl}">Download your Diagnostic report</a></p>` +
       creditBlock(input.credit) +
-      `<p>Want to walk through it together? <a href="${input.bookUrl}">Book your 60-minute readout</a>.</p>` +
+      `<p>Want to walk through it together? <a href="${input.bookUrl}">Book your 30-minute review</a>.</p>` +
       blueprintCta,
   };
 }
@@ -502,7 +539,7 @@ export function buyerReminderContent(input: {
       subject: `Reminder: your Blueprint credit expires in ${daysLeft}`,
       html:
         `<p>Hi ${name},</p>` +
-        `<p>Your Diagnostic fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your readout. That window closes on ${escapeHtml(input.deadlineDate)}.</p>` +
+        `<p>Your Diagnostic fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your review. That window closes on ${escapeHtml(input.deadlineDate)}.</p>` +
         `<p><a href="${input.actionLink}">Get the Blueprint before the credit expires</a></p>` +
         `<p>GrowthSnipe</p>` +
         marketingFooter(input.unsubscribeUrl),

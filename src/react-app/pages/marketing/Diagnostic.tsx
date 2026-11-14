@@ -37,7 +37,7 @@ const RECEIVE = [
   "Diagnostic Snapshot: a summary of the business baseline and data coverage.",
   "Leak Map: a structured view of identified friction points and estimated financial exposure where enough evidence exists.",
   "Priority Findings: the issues worth addressing first, ranked by likely impact and practical effort.",
-  "60-Minute Readout: a live walkthrough, discussion and recommended next step.",
+  "30-Minute Review: a live walkthrough, discussion and recommended next step.",
 ];
 
 const STEPS = [
@@ -45,7 +45,7 @@ const STEPS = [
   "Receive the data checklist and secure submission instructions.",
   "Share the agreed business exports and contact details.",
   "We review the available information and conduct the response-time test.",
-  "Join the 60-minute readout and decide whether to execute independently or build a full SNIPE Blueprint™.",
+  "Join the 30-minute review and decide whether to execute independently or build a full SNIPE Blueprint™.",
 ];
 
 const FAQS = [
@@ -59,7 +59,7 @@ const FAQS = [
   },
   {
     q: "Does the Diagnostic include implementation?",
-    a: "No. It is a paid analysis and readout. Implementation is available through the Blueprint and SNIPE Engine™.",
+    a: "No. It is a paid analysis and review. Implementation is available through the Blueprint and SNIPE Engine™.",
   },
 ];
 
@@ -84,7 +84,7 @@ export function Diagnostic() {
                 "Review of up to 12 months of supplied business data.",
                 "A business-specific Leak Map with quantified opportunities where the data supports it.",
                 "A response-time test of your current enquiry experience.",
-                "A 60-minute findings and recommendations call.",
+                "A 30-minute findings and recommendations review.",
                 "100% credited toward a SNIPE Blueprint™ purchased within 14 days.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
@@ -178,7 +178,7 @@ export function Diagnostic() {
 
       <CtaBand
         title="Find the leaks before you spend more."
-        body="A 12-month review, a quantified Leak Map and a 60-minute readout with a clear recommended next step."
+        body="A 12-month performance review, a quantified Leak Map and a 30-minute review call with a clear recommended next step."
       />
     </MarketingLayout>
   );

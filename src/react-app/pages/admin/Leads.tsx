@@ -158,7 +158,7 @@ export function AdminLeads() {
       <Card>
         <CardHeader>
           <CardTitle>Buyer reminders</CardTitle>
-          <CardDescription>Schedule Diagnostic or Blueprint credit reminders anchored at the readout or presentation date.</CardDescription>
+          <CardDescription>Schedule Diagnostic or Blueprint credit reminders anchored at the review or presentation date.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={doBuyerTrigger} className="flex flex-col gap-3 sm:flex-row sm:items-end">

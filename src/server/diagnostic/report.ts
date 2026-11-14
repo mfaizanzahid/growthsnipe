@@ -279,8 +279,12 @@ export async function processDiagnosticRun(env: Env, db: Db, runId: string): Pro
   }
 }
 
-async function sendReportReadyEmail(db: Db, env: Env, run: DiagnosticRunRow, now: number): Promise<void> {
-  if (run.reportEmailSentAt) return;
+async function sendDiagnosticReportEmail(
+  db: Db,
+  env: Env,
+  run: DiagnosticRunRow,
+  now: number,
+): Promise<void> {
   const token = await signDiagnosticToken(env, { orderId: run.oneTimeOrderId, purpose: "report", now });
   const reportUrl = `${baseUrl(env)}/api/diagnostic/report?token=${encodeURIComponent(token)}`;
   const bookUrl = `${baseUrl(env)}/book`;
@@ -319,7 +323,39 @@ async function sendReportReadyEmail(db: Db, env: Env, run: DiagnosticRunRow, now
     },
     env.RESEND_FROM_EMAIL,
   );
+}
+
+async function sendReportReadyEmail(db: Db, env: Env, run: DiagnosticRunRow, now: number): Promise<void> {
+  if (run.reportEmailSentAt) return;
+  await sendDiagnosticReportEmail(db, env, run, now);
   await updateRun(db, run.id, { reportEmailSentAt: now, errorText: null }, now);
+}
+
+/** Superadmin action: send a fresh report link without changing the original sent timestamp. */
+export async function resendDiagnosticReportEmail(
+  db: Db,
+  env: Env,
+  runId: string,
+  actor: string,
+  now = Date.now(),
+): Promise<void> {
+  const run = await getRunById(db, runId);
+  if (!run) throw new Error("Report not found");
+  if (run.status !== "ready" && run.status !== "ready_email_failed") {
+    throw new Error("Report is not ready");
+  }
+  await sendDiagnosticReportEmail(db, env, run, now);
+  await updateRun(
+    db,
+    run.id,
+    {
+      reportEmailResentAt: now,
+      reportEmailResendCount: (run.reportEmailResendCount ?? 0) + 1,
+      errorText: null,
+    },
+    now,
+  );
+  await logDiagnosticEvent(db, run.id, "report_email", `Report link resent by ${actor}`);
 }
 
 export function parseFacts(run: DiagnosticRunRow): DiagnosticFacts | null {
