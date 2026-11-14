@@ -229,6 +229,42 @@ export function oneTimeReceiptContent(input: {
   };
 }
 
+/**
+ * One-time purchase invoice email (Diagnostic / Blueprint) with a signed PDF
+ * download link. Replaces the old receipt email.
+ */
+export function oneTimeInvoiceContent(input: {
+  productName: string;
+  invoiceNumber: string;
+  amountMinor: number;
+  currency: string;
+  discountMinor?: number;
+  couponCode?: string | null;
+  invoiceUrl: string;
+  credit?: EmailCreditCoupon | null;
+}): { subject: string; html: string } {
+  const branded = brandProductName(input.productName);
+  const paymentLine =
+    input.amountMinor === 0
+      ? `<p>Your ${escapeHtml(branded)} order is complete. No payment was due.</p>`
+      : `<p>Your payment of ${money(input.amountMinor, input.currency)} for ${escapeHtml(branded)} succeeded.</p>`;
+  const discountLine =
+    input.discountMinor && input.discountMinor > 0
+      ? `<p>Credit applied: ${money(input.discountMinor, input.currency)}${input.couponCode ? ` (code ${escapeHtml(input.couponCode)})` : ""}.</p>`
+      : "";
+  return {
+    subject: `Invoice ${input.invoiceNumber} - ${branded}`,
+    html:
+      paymentLine +
+      `<p>Invoice: <strong>${escapeHtml(input.invoiceNumber)}</strong></p>` +
+      discountLine +
+      `<p><a href="${input.invoiceUrl}">Download your invoice (PDF)</a></p>` +
+      `<p>If the button does not work, copy this link into your browser: ${input.invoiceUrl}</p>` +
+      creditBlock(input.credit) +
+      `<p>Your next email has the next steps.</p>`,
+  };
+}
+
 /** Intake details shared by Blueprint purchase and baseline emails. */
 function blueprintIntakeHtml(): string {
   return (

@@ -10,6 +10,9 @@ import {
   drizzleStore,
   emailHasWorkspace,
   getFreshInviteById,
+  getOneTimeInvoiceByOrderId,
+  getOneTimeOrder,
+  getOneTimeProduct,
   getValidFreshInvite,
   listFreshInvites,
   listOneTimeOrders,
@@ -61,6 +64,11 @@ import { getAllSettings, setSetting } from "../repositories";
 import { diagnosticRuns, oneTimeOrders } from "../../../db/schema";
 import { getRunById } from "../diagnostic/store";
 import { parseFacts, renderRunReport, resendDiagnosticReportEmail } from "../diagnostic/report";
+import {
+  ensureOneTimeInvoice,
+  renderOneTimeInvoicePdf,
+  sendOneTimeInvoiceEmail,
+} from "../billing/one-time-invoices";
 import {
   LOG_LEVELS,
   LOG_SURFACES,
@@ -627,11 +635,86 @@ export function createSuperadminRoutes(deps: {
     return c.json({ ok: true }, 201);
   });
 
-  // One-time orders newest-first (guest checkout has no org).
+  // One-time orders newest-first (guest checkout has no org). Paid orders are
+  // backfilled with an invoice when the list is loaded; historical buyers are
+  // not emailed automatically.
   routes.get("/api/superadmin/one-time-orders", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
     const limitRaw = Number(c.req.query("limit") ?? 100);
     const limit = Number.isFinite(limitRaw) ? Math.min(500, Math.max(1, Math.floor(limitRaw))) : 100;
-    return c.json({ orders: await listOneTimeOrders(c.get("db") as Db, limit) });
+    const orders = await listOneTimeOrders(db, limit);
+    const enriched = [];
+    for (const order of orders) {
+      const product = await getOneTimeProduct(db, order.productId);
+      let invoice = await getOneTimeInvoiceByOrderId(db, order.id);
+      if (!invoice && order.status === "paid" && product) {
+        try {
+          invoice = await ensureOneTimeInvoice(db, order, product);
+        } catch (err) {
+          console.error("[superadmin] invoice backfill failed:", (err as Error)?.message ?? err);
+        }
+      }
+      enriched.push({
+        ...order,
+        productName: product?.name ?? null,
+        invoice,
+      });
+    }
+    return c.json({ orders: enriched });
+  });
+
+  routes.get("/api/superadmin/one-time-orders/:id/invoice", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
+    const order = await getOneTimeOrder(db, c.req.param("id"));
+    if (!order) return c.json({ error: "Order not found" }, 404);
+    const invoice = await getOneTimeInvoiceByOrderId(db, order.id);
+    if (!invoice) return c.json({ error: "Invoice not found" }, 404);
+    const pdf = await renderOneTimeInvoicePdf(db, invoice, order);
+    const body = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
+    return new Response(body, {
+      status: 200,
+      headers: {
+        "content-type": "application/pdf",
+        "content-disposition": `attachment; filename="${invoice.number}.pdf"`,
+        "cache-control": "private, no-store",
+      },
+    });
+  });
+
+  routes.post("/api/superadmin/one-time-orders/:id/resend-invoice", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
+    const order = await getOneTimeOrder(db, c.req.param("id"));
+    if (!order) return c.json({ error: "Order not found" }, 404);
+    if (order.status !== "paid") return c.json({ error: "Order is not paid" }, 422);
+    const product = await getOneTimeProduct(db, order.productId);
+    if (!product) return c.json({ error: "Product not found" }, 422);
+    let invoice = await getOneTimeInvoiceByOrderId(db, order.id);
+    try {
+      invoice = invoice ?? (await ensureOneTimeInvoice(db, order, product));
+      await sendOneTimeInvoiceEmail(
+        db,
+        c.env as Env,
+        order,
+        invoice,
+        product,
+        null,
+        true,
+      );
+    } catch (err) {
+      return c.json(
+        { error: err instanceof Error ? err.message : "Could not send invoice" },
+        422,
+      );
+    }
+    const user = c.get("user") as SessionUser | undefined;
+    await writeAppLog(db, {
+      level: "info",
+      event: "one_time.invoice_resent",
+      surface: "superadmin",
+      message: `Invoice ${invoice.number} re-sent for one-time order ${order.id}`,
+      userEmail: user?.email ?? null,
+    });
+    return c.json({ ok: true, invoice });
   });
 
   // Usage charges (create invoice + charge now).

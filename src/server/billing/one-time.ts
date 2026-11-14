@@ -21,6 +21,7 @@ import {
   issueDiagnosticCreditCoupon,
 } from "./credits";
 import { startBlueprintBaseline, startDiagnosticRun } from "../diagnostic/report";
+import { ensureOneTimeInvoice, sendOneTimeInvoiceEmail } from "./one-time-invoices";
 import {
   createOneTimeOrder,
   drizzleStore,
@@ -32,11 +33,24 @@ import {
   listOneTimeProducts,
   updateOneTimeOrder,
   type CouponRow,
+  type OneTimeInvoiceRow,
   type OneTimeOrderRow,
+  type OneTimeProductRow,
 } from "../repositories/billing";
 
 export const ONE_TIME_SLUGS = ["diagnostic", "blueprint"] as const;
 export type OneTimeSlug = (typeof ONE_TIME_SLUGS)[number];
+
+/** Safepay requires a non-blank first and last name; split the single form field. */
+function customerName(fullName: string | null | undefined): {
+  firstName?: string;
+  lastName?: string;
+} {
+  const parts = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return {};
+  if (parts.length === 1) return { firstName: parts[0], lastName: parts[0] };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
 
 export interface OneTimeSessionInput {
   slug: string;
@@ -112,7 +126,7 @@ export async function createOneTimeSession(
       const [tracker, clientToken] = await Promise.all([
         gateway.createPaymentSession({
           user: await gateway.createCustomer({
-            firstName: input.name?.trim() || undefined,
+            ...customerName(input.name),
             email,
             phoneNumber: input.phone,
             country: input.country,
@@ -203,7 +217,7 @@ export async function createOneTimeSession(
   const [tracker, clientToken] = await Promise.all([
     gateway.createPaymentSession({
       user: await gateway.createCustomer({
-        firstName: input.name?.trim() || undefined,
+        ...customerName(input.name),
         email,
         phoneNumber: input.phone,
         country: input.country,
@@ -333,14 +347,26 @@ export async function completeOneTimePaidOrder(
   });
   const fresh = (await getOneTimeOrder(db, order.id)) ?? order;
 
+  let invoice: OneTimeInvoiceRow | null = null;
+  try {
+    invoice = await ensureOneTimeInvoice(db, fresh, product, now);
+  } catch (err) {
+    console.error("[one-time] could not create invoice:", (err as Error)?.message ?? err);
+  }
+
   if (!fresh.receiptSentAt) {
     const sendIntake = product.slug === "diagnostic";
-    await sendOneTimeEmails(db, env, fresh, product.name, product.slug as OneTimeSlug, creditCoupon, sendIntake);
-    await updateOneTimeOrder(db, order.id, {
-      receiptSentAt: now,
-      ...(sendIntake ? { intakeSentAt: now } : {}),
-      updatedAt: now,
-    });
+    try {
+      await sendOneTimeEmails(db, env, fresh, product, invoice, creditCoupon, sendIntake, now);
+      await updateOneTimeOrder(db, order.id, {
+        receiptSentAt: now,
+        ...(sendIntake ? { intakeSentAt: now } : {}),
+        updatedAt: now,
+      });
+    } catch (err) {
+      // The paid order stands even if the invoice/intake email cannot be sent now.
+      console.error("[one-time] could not send purchase email:", (err as Error)?.message ?? err);
+    }
   }
   if (product.slug === "blueprint") {
     try {
@@ -377,37 +403,44 @@ async function sendOneTimeEmails(
   db: Db,
   env: Env,
   order: OneTimeOrderRow,
-  productName: string,
-  slug: OneTimeSlug,
+  product: OneTimeProductRow,
+  invoice: OneTimeInvoiceRow | null,
   creditCoupon: CouponRow | null,
   sendIntake: boolean,
+  now: number,
 ): Promise<void> {
   const support = (await getSetting(db, "support_email").catch(() => null)) ?? "";
   const credit =
-    slug === "blueprint"
+    product.slug === "blueprint"
       ? creditForBlueprintCoupon(creditCoupon)
       : creditForDiagnosticCoupon(creditCoupon);
   const base = env.APP_BASE_URL ?? "";
-  const receipt = oneTimeReceiptContent({
-    productName,
-    amountMinor: order.amountMinor,
-    currency: order.currency,
-    orderRef: order.id.slice(0, 8).toUpperCase(),
-    discountMinor: order.discountMinor,
-    couponCode: order.couponCode,
-    credit,
-  });
   const billingUrl = `${base}/`;
   const from = env.RESEND_FROM_EMAIL;
-  await sendEmail(
-    env,
-    {
-      to: order.email,
-      subject: `[${PORTAL_NAME}] ${receipt.subject}`,
-      html: layout(PORTAL_NAME, support, billingUrl, receipt.subject, receipt.html + `<p style="font-size:12px;color:#666">${money(order.amountMinor, order.currency)} · ${escapeHtml(productName)}</p>`),
-    },
-    from,
-  );
+
+  if (invoice) {
+    await sendOneTimeInvoiceEmail(db, env, order, invoice, product, credit, false, now);
+  } else {
+    const receipt = oneTimeReceiptContent({
+      productName: product.name,
+      amountMinor: order.amountMinor,
+      currency: order.currency,
+      orderRef: order.id.slice(0, 8).toUpperCase(),
+      discountMinor: order.discountMinor,
+      couponCode: order.couponCode,
+      credit,
+    });
+    await sendEmail(
+      env,
+      {
+        to: order.email,
+        subject: `[${PORTAL_NAME}] ${receipt.subject}`,
+        html: layout(PORTAL_NAME, support, billingUrl, receipt.subject, receipt.html + `<p style="font-size:12px;color:#666">${money(order.amountMinor, order.currency)} · ${escapeHtml(product.name)}</p>`),
+      },
+      from,
+    );
+  }
+
   if (sendIntake) {
     const intake = oneTimeIntakeContent({
       productSlug: "diagnostic",

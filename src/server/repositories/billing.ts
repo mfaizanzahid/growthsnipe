@@ -8,6 +8,7 @@ import {
   invitations,
   invoices,
   members,
+  oneTimeInvoices,
   oneTimeOrders,
   oneTimeProducts,
   organizations,
@@ -33,6 +34,7 @@ export type SubscriptionRow = typeof orgSubscriptions.$inferSelect;
 export type PaymentMethodRow = typeof paymentMethods.$inferSelect;
 export type OneTimeProductRow = typeof oneTimeProducts.$inferSelect;
 export type OneTimeOrderRow = typeof oneTimeOrders.$inferSelect;
+export type OneTimeInvoiceRow = typeof oneTimeInvoices.$inferSelect;
 export type InvoiceRow = typeof invoices.$inferSelect;
 export type TransactionRow = typeof transactions.$inferSelect;
 
@@ -1040,6 +1042,114 @@ export async function findBlueprintOrderForBaselineRun(
 
 export async function listOneTimeOrders(db: Db, limit = 100): Promise<OneTimeOrderRow[]> {
   return db.select().from(oneTimeOrders).orderBy(desc(oneTimeOrders.createdAt)).limit(limit);
+}
+
+export interface OneTimeInvoiceLine {
+  description: string;
+  amountMinor: number;
+}
+
+export async function getOneTimeInvoiceByOrderId(
+  db: Db,
+  orderId: string,
+): Promise<OneTimeInvoiceRow | null> {
+  const rows = await db
+    .select()
+    .from(oneTimeInvoices)
+    .where(eq(oneTimeInvoices.oneTimeOrderId, orderId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getOneTimeInvoiceById(
+  db: Db,
+  id: string,
+): Promise<OneTimeInvoiceRow | null> {
+  const rows = await db.select().from(oneTimeInvoices).where(eq(oneTimeInvoices.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Create the guest invoice for a paid order exactly once. */
+export async function createOneTimeInvoice(
+  db: Db,
+  input: {
+    id: string;
+    orderId: string;
+    amountMinor: number;
+    currency: string;
+    description: string;
+    customerEmail: string;
+    customerName: string | null;
+    businessName: string | null;
+    items: OneTimeInvoiceLine[];
+    tracker: string | null;
+    chargeId: string | null;
+    paidAt: number;
+    now: number;
+  },
+): Promise<OneTimeInvoiceRow> {
+  const existing = await getOneTimeInvoiceByOrderId(db, input.orderId);
+  if (existing) return existing;
+  const number = await nextInvoiceNumber(db, Math.floor(input.now / 1000));
+  await db
+    .insert(oneTimeInvoices)
+    .values({
+      id: input.id,
+      oneTimeOrderId: input.orderId,
+      number,
+      status: "paid",
+      amountMinor: input.amountMinor,
+      currency: input.currency,
+      description: input.description,
+      customerEmail: input.customerEmail,
+      customerName: input.customerName,
+      businessName: input.businessName,
+      itemsJson: JSON.stringify(input.items),
+      tracker: input.tracker,
+      chargeId: input.chargeId,
+      paidAt: input.paidAt,
+      emailSentAt: null,
+      emailResendCount: 0,
+      createdAt: input.now,
+      updatedAt: input.now,
+    })
+    .onConflictDoNothing();
+  const created = await getOneTimeInvoiceByOrderId(db, input.orderId);
+  if (!created) throw new Error("One-time invoice insert failed");
+  return created;
+}
+
+export async function updateOneTimeInvoice(
+  db: Db,
+  id: string,
+  patch: Partial<Pick<OneTimeInvoiceRow, "emailSentAt" | "emailResendCount" | "updatedAt">>,
+): Promise<void> {
+  await db.update(oneTimeInvoices).set(patch).where(eq(oneTimeInvoices.id, id));
+}
+
+/** Guest invoices newest-first, with the order and product for the admin page. */
+export async function listOneTimeInvoicesWithOrders(
+  db: Db,
+  limit = 200,
+): Promise<
+  Array<OneTimeInvoiceRow & { order: OneTimeOrderRow | null; productName: string | null }>
+> {
+  const rows = await db
+    .select({
+      invoice: oneTimeInvoices,
+      order: oneTimeOrders,
+      productName: oneTimeProducts.name,
+    })
+    .from(oneTimeInvoices)
+    .leftJoin(oneTimeOrders, eq(oneTimeInvoices.oneTimeOrderId, oneTimeOrders.id))
+    .leftJoin(oneTimeProducts, eq(oneTimeOrders.productId, oneTimeProducts.id))
+    .orderBy(desc(oneTimeInvoices.createdAt))
+    .limit(limit);
+  return rows.map((row) => ({
+    ...row.invoice,
+    order: row.order,
+    productName: row.productName,
+  }));
 }
 
 export async function getUser(

@@ -330,6 +330,28 @@ export const oneTimeOrders = sqliteTable("one_time_orders", {
   paidAt: integer("paid_at"),
 });
 
+/** Guest one-time invoices: separate from org-scoped `invoices`. */
+export const oneTimeInvoices = sqliteTable("one_time_invoices", {
+  id: text("id").primaryKey(),
+  oneTimeOrderId: text("one_time_order_id").notNull().unique(),
+  number: text("number").notNull().unique(),
+  status: text("status").notNull().default("paid"),
+  amountMinor: integer("amount_minor").notNull(),
+  currency: text("currency").notNull().default("USD"),
+  description: text("description"),
+  customerEmail: text("customer_email").notNull(),
+  customerName: text("customer_name"),
+  businessName: text("business_name"),
+  itemsJson: text("items_json").notNull(),
+  tracker: text("tracker"),
+  chargeId: text("charge_id"),
+  paidAt: integer("paid_at"),
+  emailSentAt: integer("email_sent_at"),
+  emailResendCount: integer("email_resend_count").notNull().default(0),
+  createdAt: integer("created_at").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
 /* Loop Library capture + marketing automation (pre-auth, never org-scoped) */
 export const loopLibraryLeads = sqliteTable("loop_library_leads", {
   id: text("id").primaryKey(),

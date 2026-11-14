@@ -17,6 +17,7 @@ import {
   drizzleStore,
   findOneTimeOrderByTracker,
   getCouponBySourceOrderId,
+  getOneTimeInvoiceByOrderId,
   getOneTimeOrder,
   type CouponRow,
 } from "../src/server/repositories/billing";
@@ -176,6 +177,34 @@ function testDb(): Db {
       message TEXT NOT NULL,
       created_at INTEGER NOT NULL
     );
+    CREATE TABLE invoice_sequences (
+      year INTEGER PRIMARY KEY,
+      last_number INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE one_time_invoices (
+      id TEXT PRIMARY KEY,
+      one_time_order_id TEXT NOT NULL UNIQUE,
+      number TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'paid',
+      amount_minor INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      description TEXT,
+      customer_email TEXT NOT NULL,
+      customer_name TEXT,
+      business_name TEXT,
+      items_json TEXT NOT NULL,
+      tracker TEXT,
+      charge_id TEXT,
+      paid_at INTEGER,
+      email_sent_at INTEGER,
+      email_resend_count INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE TABLE app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
   const db = drizzle(
     async (sql: string, params: unknown[]) => {
@@ -188,11 +217,21 @@ function testDb(): Db {
   return db as unknown as Db;
 }
 
-function fakeGateway(status: "succeeded" | "failed" | "pending" = "succeeded"): Gateway & { calls: string[] } {
+function fakeGateway(
+  status: "succeeded" | "failed" | "pending" = "succeeded",
+): Gateway & {
+  calls: string[];
+  customers: Array<Parameters<Gateway["createCustomer"]>[0]>;
+} {
   const calls: string[] = [];
+  const customers: Array<Parameters<Gateway["createCustomer"]>[0]> = [];
   return {
     calls,
-    createCustomer: async () => "cus_test",
+    customers,
+    createCustomer: async (input) => {
+      customers.push(input);
+      return "cus_test";
+    },
     createPaymentSession: async () => {
       calls.push("session");
       return `track_${calls.length}`;
@@ -321,9 +360,11 @@ describe("one-time products + session", () => {
   });
 
   it("validates input and computes the amount server-side", async () => {
-    const app = buildApp(testDb(), fakeGateway());
+    const gateway = fakeGateway();
+    const app = buildApp(testDb(), gateway);
     expect((await req(app, "/api/one-time/session", { ...BUYER, slug: "nope" })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, email: "bad" })).status).toBe(422);
+    expect((await req(app, "/api/one-time/session", { ...BUYER, name: "   " })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, businessName: "   " })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, trade: "   " })).status).toBe(422);
     expect(
@@ -335,6 +376,10 @@ describe("one-time products + session", () => {
     const body = (await res.json()) as { orderId: string; tracker: string; amountMinor: number };
     expect(body.amountMinor).toBe(19900);
     expect(body.tracker).toBe("track_1");
+    expect(gateway.customers[0]).toMatchObject({
+      firstName: "Ada",
+      lastName: "Owner",
+    });
   });
 
   it("reuses the order for a repeated idempotency key", async () => {
@@ -364,6 +409,29 @@ describe("one-time confirm", () => {
     expect(outbox[0]?.subject).toContain("SNIPE Diagnostic");
     expect(outbox[1]?.subject).toContain("is underway");
     expect(outbox[2]?.subject.toLowerCase()).toContain("connect your software");
+
+    const invoice = await getOneTimeInvoiceByOrderId(db, session.orderId);
+    expect(invoice).toMatchObject({
+      status: "paid",
+      amountMinor: 19900,
+      customerEmail: "owner@example.com",
+    });
+    expect(invoice?.number).toMatch(/^INV-\d{4}-\d{4}$/);
+    expect(invoice?.emailSentAt).toBeTruthy();
+    const invoiceUrl = outbox[0]?.html.match(
+      /https:\/\/growthsnipe\.test\/api\/one-time\/invoices\/[^"<]+/,
+    )?.[0];
+    expect(invoiceUrl).toBeTruthy();
+    const parsedUrl = new URL(invoiceUrl!);
+    const pdf = await app.request(`${parsedUrl.pathname}${parsedUrl.search}`, { method: "GET" }, ENV);
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers.get("content-type")).toBe("application/pdf");
+    const badPdf = await app.request(
+      `/api/one-time/invoices/${session.orderId}/pdf?token=bad`,
+      { method: "GET" },
+      ENV,
+    );
+    expect(badPdf.status).toBe(401);
 
     const again = await req(app, "/api/one-time/confirm", { orderId: session.orderId, tracker: session.tracker });
     expect(again.status).toBe(200);
@@ -809,8 +877,12 @@ describe("credit coupons", () => {
     expect(gateway.calls).toEqual([]);
     expect((await getOneTimeOrder(db, body.orderId))?.status).toBe("paid");
     expect((await store.getCouponById(coupon.id))?.redeemedCount).toBe(1);
+    expect(await getOneTimeInvoiceByOrderId(db, body.orderId)).toMatchObject({
+      status: "paid",
+      amountMinor: 0,
+    });
     expect(outbox).toHaveLength(3);
-    expect(outbox[0]?.subject).toContain("Order complete");
+    expect(outbox[0]?.subject).toContain("Invoice");
     expect(outbox[0]?.html).toContain("No payment was due");
   });
 

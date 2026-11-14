@@ -13,14 +13,21 @@ import {
   listProducts,
   ONE_TIME_SLUGS,
 } from "../billing/one-time";
-import { drizzleStore, getOneTimeProductBySlug } from "../repositories/billing";
+import { renderOneTimeInvoicePdf } from "../billing/one-time-invoices";
+import { verifyOneTimeInvoiceToken } from "../billing/one-time-invoice-token";
+import {
+  drizzleStore,
+  getOneTimeInvoiceById,
+  getOneTimeOrder,
+  getOneTimeProductBySlug,
+} from "../repositories/billing";
 import { formatCreditExpiry } from "../../lib/credit-coupon";
 
 const SessionBody = z
   .object({
     slug: z.enum(ONE_TIME_SLUGS),
     email: z.string().trim().email().max(200),
-    name: z.string().trim().max(120).optional(),
+    name: z.string().trim().min(1).max(120),
     phone: z.string().trim().min(7).max(20),
     country: z.string().trim().length(2),
     businessName: z.string().trim().min(1).max(160),
@@ -87,6 +94,30 @@ export function createOneTimeRoutes(deps: {
     });
   });
 
+  routes.get("/api/one-time/invoices/:orderId/pdf", async (c) => {
+    const env = c.env as Env;
+    const token = c.req.query("token") ?? "";
+    const verified = await verifyOneTimeInvoiceToken(env, token);
+    if (!verified || verified.orderId !== c.req.param("orderId")) {
+      return c.json({ error: "This invoice link is invalid or has expired." }, 401);
+    }
+    const db = c.get("db") as Db;
+    const invoice = await getOneTimeInvoiceById(db, verified.invoiceId);
+    if (!invoice || invoice.oneTimeOrderId !== verified.orderId) {
+      return c.json({ error: "Invoice not found." }, 404);
+    }
+    const order = await getOneTimeOrder(db, invoice.oneTimeOrderId);
+    if (!order) return c.json({ error: "Invoice not found." }, 404);
+    const pdf = await renderOneTimeInvoicePdf(db, invoice, order);
+    const headers = new Headers({
+      "content-type": "application/pdf",
+      "content-disposition": `attachment; filename="${invoice.number}.pdf"`,
+      "cache-control": "private, no-store",
+    });
+    const body = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
+    return new Response(body, { status: 200, headers });
+  });
+
   routes.post("/api/one-time/coupon", async (c) => {
     const parsed = CouponPreviewBody.safeParse(await c.req.json().catch(() => undefined));
     if (!parsed.success) return c.json({ error: "Provide a valid email and code" }, 422);
@@ -134,7 +165,7 @@ export function createOneTimeRoutes(deps: {
       const result = await createOneTimeSession(c.get("db") as Db, env, gatewayFor(env, deps), {
         slug: parsed.data.slug,
         email: parsed.data.email,
-        name: parsed.data.name ?? null,
+        name: parsed.data.name,
         phone: parsed.data.phone,
         country: parsed.data.country.toUpperCase(),
         businessName: parsed.data.businessName,
@@ -145,6 +176,7 @@ export function createOneTimeRoutes(deps: {
       });
       return c.json(result);
     } catch (err) {
+      console.error("[one-time] session failed:", err instanceof Error ? err.message : err);
       const e = toErrorResponse(err);
       return c.json({ error: e.message }, e.status);
     }

@@ -124,6 +124,34 @@ function testDb(includeSyncing = false): Db {
       plan_id TEXT NOT NULL,
       UNIQUE(coupon_id, plan_id)
     );
+    CREATE TABLE invoice_sequences (
+      year INTEGER PRIMARY KEY,
+      last_number INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE one_time_invoices (
+      id TEXT PRIMARY KEY,
+      one_time_order_id TEXT NOT NULL UNIQUE,
+      number TEXT NOT NULL UNIQUE,
+      status TEXT NOT NULL DEFAULT 'paid',
+      amount_minor INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      description TEXT,
+      customer_email TEXT NOT NULL,
+      customer_name TEXT,
+      business_name TEXT,
+      items_json TEXT NOT NULL,
+      tracker TEXT,
+      charge_id TEXT,
+      paid_at INTEGER,
+      email_sent_at INTEGER,
+      email_resend_count INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE TABLE app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
 
     INSERT INTO one_time_orders (
       id, product_id, email, name, business_name, trade, amount_minor, currency,

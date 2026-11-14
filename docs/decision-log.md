@@ -1212,3 +1212,15 @@ The Blueprint checkout now requires a website. Migration `0050_blueprint_website
 The checkout's second row now has three columns on Blueprint at `sm` and above: phone, business name, website. The phone country selector is narrower, shows only the two-letter ISO code in the trigger (`US`), and opens a wide popper list with the full country name and dial code (`United States +1`). The Diagnostic checkout keeps two columns in that row.
 
 Updated: `db/migrations/0050_blueprint_website.sql` (new), `db/schema.ts`, `src/server/repositories/billing.ts`, `src/server/billing/one-time.ts`, `src/server/routes/one-time.ts`, `src/react-app/pages/checkout/OneTimeCheckout.tsx`, `test/one-time.test.ts`, `test/superadmin-reports.test.ts`.
+
+## 2026-11-14 - Guest invoices for one-time purchases (owner decision)
+
+One-time Diagnostic and Blueprint purchases now create a real guest invoice. The previous rule that one-time orders never create invoice rows was reversed because buyers and superadmin expect a payable record. Guest invoices live in a separate `one_time_invoices` table rather than making `invoices.org_id` nullable, so tenant-scoped invoice queries and routes keep their org guarantee.
+
+Migration `0051_one_time_invoices.sql` adds the table. Paid orders get an invoice exactly once through `ensureOneTimeInvoice`, using the shared `invoice_sequences` number series. The invoice line items show the product price and a negative coupon line when a discount was applied. The invoice is marked paid and stores the buyer email, business name, tracker, and charge id.
+
+The purchase email is now an invoice email with the invoice number and a signed PDF download link at `GET /api/one-time/invoices/:orderId/pdf?token=...`. The token is HMAC-signed, bound to the order and invoice, verified in constant time, and expires after one year. The old receipt email remains only as a fallback when invoice creation fails. If invoice creation or sending fails, the paid order and baseline flow continue.
+
+Superadmin has a new One-time orders page at `/superadmin/one-time-orders` with invoice number, email status, PDF download, and resend. Loading the page backfills invoices for paid orders that are missing one, but does not email historical buyers automatically; the resend action is explicit. Existing paid orders are therefore recoverable without a bulk email blast.
+
+Updated: `db/migrations/0051_one_time_invoices.sql` (new), `db/schema.ts`, `src/server/repositories/billing.ts`, `src/server/billing/one-time.ts`, `src/server/billing/one-time-invoices.ts` (new), `src/server/billing/one-time-invoice-token.ts` (new), `src/server/email/templates.ts`, `src/server/routes/one-time.ts`, `src/server/routes/superadmin.ts`, `src/react-app/App.tsx`, `src/react-app/components/shell/AppShell.tsx`, `src/react-app/pages/admin/OneTimeOrders.tsx` (new), `test/one-time.test.ts`, `test/superadmin-one-time.test.ts` (new).
