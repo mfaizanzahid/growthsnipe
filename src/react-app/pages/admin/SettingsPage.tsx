@@ -9,18 +9,30 @@ import { AdminDenied, AdminLoading, useAdminGuard } from "./guard";
 
 export function AdminSettings() {
   const allowed = useAdminGuard();
-  const [settings, setSettings] = useState({ support_email: "" });
+  const [settings, setSettings] = useState({ support_email: "", diagnostic_review_call_url: "" });
   const [loading, setLoading] = useState(true);
 
   async function load() {
     try {
       const s = await api("/api/superadmin/settings");
       const raw = (s as { settings?: Record<string, string> }).settings ?? {};
-      setSettings({ support_email: raw.support_email ?? "" });
+      setSettings({
+        support_email: raw.support_email ?? "",
+        diagnostic_review_call_url: raw.diagnostic_review_call_url ?? "",
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load settings");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function save() {
+    try {
+      await api("/api/superadmin/settings", { method: "PATCH", body: JSON.stringify(settings) });
+      toast.success("Settings saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed");
     }
   }
 
@@ -35,7 +47,7 @@ export function AdminSettings() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Support email shown in every email.</p>
+        <p className="text-sm text-muted-foreground">Support email and the Diagnostic review call redirect.</p>
       </div>
       <Card className="max-w-md">
         <CardHeader>
@@ -47,18 +59,28 @@ export function AdminSettings() {
             <Label>Support email</Label>
             <Input value={settings.support_email} onChange={(e) => setSettings({ ...settings, support_email: e.target.value })} />
           </div>
-          <Button
-            onClick={async () => {
-              try {
-                await api("/api/superadmin/settings", { method: "PATCH", body: JSON.stringify(settings) });
-                toast.success("Settings saved");
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : "Failed");
-              }
-            }}
-          >
-            Save settings
-          </Button>
+          <Button onClick={save}>Save settings</Button>
+        </CardContent>
+      </Card>
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Diagnostic settings</CardTitle>
+          <CardDescription>Controls where the public review call link sends buyers.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="space-y-2">
+            <Label>30-minute review call URL</Label>
+            <Input
+              type="url"
+              value={settings.diagnostic_review_call_url}
+              placeholder="https://calendly.com/your-team/diagnostic-review"
+              onChange={(e) => setSettings({ ...settings, diagnostic_review_call_url: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Used in the "Diagnostic is ready" email. Leave blank to fall back to /book.
+            </p>
+          </div>
+          <Button onClick={save}>Save settings</Button>
         </CardContent>
       </Card>
     </div>

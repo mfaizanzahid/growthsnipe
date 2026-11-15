@@ -1250,3 +1250,13 @@ SNIPE Diagnostic marketing copy no longer claims analysis of enquiries, leads, c
 The Diagnostic page, checkout, FAQ, How It Works, report testimonial, and website strategy doc now describe those actual outputs. The broader offers keep their own copy; Blueprint, Engine, CRM, Intelligence, SNIPE Loops, case studies, and general brand language can still mention lead handling because those are different offers.
 
 Updated: `src/react-app/pages/marketing/Diagnostic.tsx`, `src/react-app/pages/checkout/CheckoutDiagnostic.tsx`, `src/react-app/pages/marketing/Faq.tsx`, `src/react-app/pages/marketing/HowItWorks.tsx`, `src/server/diagnostic/pdf.ts`, `docs/copy-content-website-strategy.md`, `test/diagnostic-copy.test.ts` (new).
+
+## 2026-11-15 - Stable Diagnostic review call redirect
+
+The "Your SNIPE Diagnostic™ is ready" email now includes a bonus 30-minute review call with the team. The email links to the stable public path `/diagnostic-review-call`, which the Worker redirects to the superadmin-managed `diagnostic_review_call_url` setting. Changing the setting updates future clicks immediately, including links in emails that were already sent.
+
+The setting accepts an absolute `http(s)` URL or a root-relative path. Unsafe schemes and protocol-relative URLs are rejected. If the setting is blank or invalid, the route falls back to `/book`. The route is listed in `wrangler.jsonc` under `assets.run_worker_first` because static assets would otherwise serve the SPA before the Worker.
+
+No database migration is needed: the setting is stored in the existing `app_settings` key-value table.
+
+Updated: `src/server/email/templates.ts`, `src/server/diagnostic/report.ts`, `src/server/routes/diagnostic.ts`, `src/server/routes/superadmin.ts`, `src/server/lib/safe-redirect.ts` (new), `src/react-app/pages/admin/SettingsPage.tsx`, `wrangler.jsonc`, `test/email.test.ts`, `test/settings-routes.test.ts`, `test/diagnostic-review-call.test.ts` (new).

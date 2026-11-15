@@ -10,6 +10,7 @@ import {
   superadminBcc,
   verificationEmail,
 } from "../src/server/lib/email";
+import { diagnosticReadyContent } from "../src/server/email/templates";
 
 describe("email service", () => {
   it("captures instead of delivering when capture is enabled", async () => {
@@ -84,6 +85,18 @@ describe("email service", () => {
     const r = resetPasswordEmail("a@x.com", "https://app/reset?token=t");
     expect(r.to).toBe("a@x.com");
     expect(r.html).toContain("https://app/reset?token=t");
+  });
+
+  it("includes the bonus review call in the Diagnostic-ready email", () => {
+    const content = diagnosticReadyContent({
+      firstName: "Ada",
+      reportUrl: "https://app/api/diagnostic/report?token=report",
+      reviewCallUrl: "https://app/diagnostic-review-call",
+    });
+    expect(content.html).toContain("<strong>Bonus:</strong>");
+    expect(content.html).toContain("30-minute review call with our team");
+    expect(content.html).toContain("https://app/diagnostic-review-call");
+    expect(content.html).toContain("Book your bonus 30-minute review call");
   });
 
   it("bcc's superadmin emails except the primary recipient", () => {

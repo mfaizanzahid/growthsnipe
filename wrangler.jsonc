@@ -14,7 +14,8 @@
       "/webhooks/*",
       "/mcp",
       "/oauth/*",
-      "/.well-known/*"
+      "/.well-known/*",
+      "/diagnostic-review-call"
     ]
   },
   "d1_databases": [

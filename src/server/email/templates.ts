@@ -323,7 +323,7 @@ export function diagnosticConnectContent(input: {
 export function diagnosticReadyContent(input: {
   firstName: string;
   reportUrl: string;
-  bookUrl: string;
+  reviewCallUrl: string;
   blueprintUrl?: string;
   credit?: EmailCreditCoupon | null;
 }): { subject: string; html: string } {
@@ -338,7 +338,8 @@ export function diagnosticReadyContent(input: {
       `<p>Your 12-month review is ready. It includes your baseline, SNIPE Framework scores, referral performance, leak map, priority findings, and a 30-day plan.</p>` +
       `<p><a href="${input.reportUrl}">Download your Diagnostic report</a></p>` +
       creditBlock(input.credit) +
-      `<p>Want to walk through it together? <a href="${input.bookUrl}">Book your 30-minute review</a>.</p>` +
+      `<p><strong>Bonus:</strong> Your purchase includes a 30-minute review call with our team. Choose a time that works for you.</p>` +
+      `<p><a href="${input.reviewCallUrl}">Book your bonus 30-minute review call</a></p>` +
       blueprintCta,
   };
 }

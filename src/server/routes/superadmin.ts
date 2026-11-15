@@ -78,8 +78,9 @@ import {
   type LogLevel,
   type LogSurface,
 } from "../lib/app-logs";
+import { isSafeRedirectTarget } from "../lib/safe-redirect";
 
-const SETTABLE_KEYS = ["support_email"] as const;
+const SETTABLE_KEYS = ["support_email", "diagnostic_review_call_url"] as const;
 
 function reportFilename(businessName: string | null): string {
   const base = (businessName ?? "business")
@@ -118,8 +119,16 @@ function parseBound(value: string | undefined, endOfDay: boolean): number | null
 const SettingsSchema = z
   .object({
     support_email: z.string().trim().email().max(160).optional(),
+    diagnostic_review_call_url: z
+      .string()
+      .trim()
+      .max(2000)
+      .refine((value) => value === "" || isSafeRedirectTarget(value), {
+        message: "Use an http(s) URL or a root-relative path",
+      })
+      .optional(),
   })
-  .refine((v) => v.support_email !== undefined, {
+  .refine((v) => v.support_email !== undefined || v.diagnostic_review_call_url !== undefined, {
     message: "Nothing to update",
   });
 

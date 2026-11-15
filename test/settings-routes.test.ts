@@ -38,24 +38,40 @@ describe("superadmin settings routes", () => {
     expect((await user.request("/api/superadmin/settings")).status).toBe(403);
   });
 
-  it("superadmin reads and updates settings (support email only; name is hardcoded)", async () => {
-    const stored = { portal_name: "Old", support_email: "a@x.com" };
+  it("superadmin reads and updates settings (support email and review call URL; name is hardcoded)", async () => {
+    const stored = {
+      portal_name: "Old",
+      support_email: "a@x.com",
+      diagnostic_review_call_url: "https://calendly.com/team/review",
+    };
     const app = settingsApp(BOSS, true, stored);
 
     const get = await app.request("/api/superadmin/settings");
     expect(get.status).toBe(200);
     expect(await get.json()).toEqual({
-      settings: { support_email: "a@x.com" },
+      settings: {
+        support_email: "a@x.com",
+        diagnostic_review_call_url: "https://calendly.com/team/review",
+      },
     });
 
     const patch = await app.request("/api/superadmin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ support_email: "b@x.com" }),
+      body: JSON.stringify({ support_email: "b@x.com", diagnostic_review_call_url: "/book" }),
     });
     expect(patch.status).toBe(200);
     expect(stored.support_email).toBe("b@x.com");
+    expect(stored.diagnostic_review_call_url).toBe("/book");
     expect(stored.portal_name).toBe("Old");
+
+    const clear = await app.request("/api/superadmin/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ diagnostic_review_call_url: "" }),
+    });
+    expect(clear.status).toBe(200);
+    expect(stored.diagnostic_review_call_url).toBe("");
 
     const rename = await app.request("/api/superadmin/settings", {
       method: "PATCH",
@@ -67,12 +83,20 @@ describe("superadmin settings routes", () => {
 
   it("422 on invalid settings payload", async () => {
     const app = settingsApp(BOSS, true, {});
-    const res = await app.request("/api/superadmin/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ support_email: "not-an-email" }),
-    });
-    expect(res.status).toBe(422);
+    for (const body of [
+      { support_email: "not-an-email" },
+      { diagnostic_review_call_url: "javascript:alert(1)" },
+      { diagnostic_review_call_url: "//evil.example.com" },
+      { diagnostic_review_call_url: "ftp://example.com/file" },
+      { diagnostic_review_call_url: "/\r\nSet-Cookie: x" },
+    ]) {
+      const res = await app.request("/api/superadmin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      expect(res.status).toBe(422);
+    }
   });
 });
 

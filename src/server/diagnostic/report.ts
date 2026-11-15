@@ -460,7 +460,7 @@ async function sendDiagnosticReportEmail(
 ): Promise<void> {
   const token = await signDiagnosticToken(env, { orderId: run.oneTimeOrderId, purpose: "report", now });
   const reportUrl = `${baseUrl(env)}/api/diagnostic/report?token=${encodeURIComponent(token)}`;
-  const bookUrl = `${baseUrl(env)}/book`;
+  const reviewCallUrl = `${baseUrl(env)}/diagnostic-review-call`;
   const blueprintUrl = `${baseUrl(env)}/blueprint`;
   const order = await getOneTimeOrder(db, run.oneTimeOrderId);
   let credit = null;
@@ -476,7 +476,7 @@ async function sendDiagnosticReportEmail(
   const content = diagnosticReadyContent({
     firstName: firstNameOf(order?.name ?? null),
     reportUrl,
-    bookUrl,
+    reviewCallUrl,
     blueprintUrl,
     credit,
   });

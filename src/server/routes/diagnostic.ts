@@ -18,6 +18,8 @@ import {
   renderRunReport,
 } from "../diagnostic/report";
 import type { DiagnosticProvider } from "../diagnostic/types";
+import { getSetting } from "../repositories";
+import { isSafeRedirectTarget } from "../lib/safe-redirect";
 
 const ConnectBody = z.object({
   token: z.string().min(1).max(2000),
@@ -44,6 +46,14 @@ export function createDiagnosticRoutes(deps: {
 } = {}) {
   const routes = new Hono<{ Bindings: Env; Variables: { db: Db } }>();
   routes.use("*", deps.ctx ? createContextMiddleware(deps.ctx) : contextMiddleware);
+
+  // Stable public link used in the report-ready email. The superadmin can
+  // change the destination without resending old emails.
+  routes.get("/diagnostic-review-call", async (c) => {
+    const target = (await getSetting(c.get("db") as Db, "diagnostic_review_call_url"))?.trim() ?? "";
+    c.header("Cache-Control", "no-store");
+    return c.redirect(isSafeRedirectTarget(target) ? target : "/book", 302);
+  });
 
   // Status for the connect/status page. Accepts either link purpose.
   routes.get("/api/diagnostic/run", async (c) => {
