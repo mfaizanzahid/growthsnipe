@@ -11,7 +11,7 @@ const STEPS = [
   },
   {
     title: "Diagnose the leaks",
-    body: "The SNIPE Diagnostic™ reviews the available performance data and customer journey. We identify friction in acquisition, response, booking, ticket size, repeat revenue and referral activity.",
+    body: "The SNIPE Diagnostic™ reviews the available booking data. We identify friction in job volume, revenue, service mix, cancellations, repeat revenue and referral activity.",
   },
   {
     title: "Build the Blueprint",

@@ -1242,3 +1242,11 @@ Updated: `db/migrations/0052_split_payer_names.sql` (new), `db/schema.ts`, `src/
 When a Diagnostic run is created for a Blueprint baseline, or an existing Diagnostic run is linked to a Blueprint order, the generated PDF omits the "Recommended next step" conversion page, the Blueprint credit ribbon, the "What happens next" cards, testimonials, and Blueprint/Book CTAs. `renderRunReport` resolves the baseline flag from `diagnostic_runs.purpose` and the Blueprint order link, and `renderDiagnosticPdf` skips that whole section. Methodology, appendix, and scoring rules remain.
 
 Updated: `src/server/diagnostic/pdf.ts`, `src/server/diagnostic/report.ts`, `test/diagnostic.test.ts`.
+
+## 2026-11-15 - Diagnostic copy uses booking data only
+
+SNIPE Diagnostic marketing copy no longer claims analysis of enquiries, leads, call handling, response times, missed calls, or booking conversion. The Diagnostic reads booking-software data only: completed jobs, booked revenue, average ticket, service and add-on mix, cancellations, referral partner performance, repeat customers, team production, and geography. Instant Capture remains explicitly not assessed because no phone, lead, or CRM data is connected.
+
+The Diagnostic page, checkout, FAQ, How It Works, report testimonial, and website strategy doc now describe those actual outputs. The broader offers keep their own copy; Blueprint, Engine, CRM, Intelligence, SNIPE Loops, case studies, and general brand language can still mention lead handling because those are different offers.
+
+Updated: `src/react-app/pages/marketing/Diagnostic.tsx`, `src/react-app/pages/checkout/CheckoutDiagnostic.tsx`, `src/react-app/pages/marketing/Faq.tsx`, `src/react-app/pages/marketing/HowItWorks.tsx`, `src/server/diagnostic/pdf.ts`, `docs/copy-content-website-strategy.md`, `test/diagnostic-copy.test.ts` (new).

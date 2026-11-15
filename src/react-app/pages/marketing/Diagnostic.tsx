@@ -8,28 +8,28 @@ import { OFFERS, OFFER_CREDITS } from "../../../lib/offers";
 
 const INVESTIGATES = [
   {
-    title: "Demand and lead sources",
-    body: "Where enquiries originate, how source quality differs and whether the business can distinguish lead volume from valuable opportunities.",
+    title: "Revenue and job volume",
+    body: "Completed jobs, booked revenue and average ticket over the last 12 months, and how the monthly trend changed.",
   },
   {
-    title: "Response and capture",
-    body: "How calls, forms and messages are handled, what happens after hours, and where response delays or missed handoffs may occur.",
-  },
-  {
-    title: "Booking and conversion",
-    body: "How many enquiries become scheduled work, where prospects drop out and what follow-up is currently in place.",
+    title: "Cancellations and schedule health",
+    body: "Cancelled and open jobs, where booked work does not complete, and what the schedule says about lost capacity.",
   },
   {
     title: "Average ticket and service mix",
-    body: "Whether packaging, add-ons and customer education create opportunities to improve the value of completed jobs.",
+    body: "How base services, add-ons and packages contribute to average job value, and where the mix may be leaving revenue behind.",
   },
   {
-    title: "Repeat and referral revenue",
-    body: "How previous customers, referral partners and lifecycle follow-up contribute, or fail to contribute, to the pipeline.",
+    title: "Referral partner performance",
+    body: "Which buying agents, agencies and referral sources produce work, how concentrated the relationships are, and where activity has gone quiet.",
   },
   {
-    title: "Visibility and control",
-    body: "Whether the owner can see the measures needed to make informed decisions about marketing, sales and capacity.",
+    title: "Repeat customer behaviour",
+    body: "How much work comes from repeat customers, and whether the records show a repeat or lifecycle gap.",
+  },
+  {
+    title: "Team and geographic patterns",
+    body: "How jobs are distributed across inspectors, teams, cities and service areas, and where production or coverage patterns deserve attention.",
   },
 ];
 
@@ -44,7 +44,7 @@ const STEPS = [
   "Purchase the Diagnostic.",
   "Receive the data checklist and secure submission instructions.",
   "Share the agreed business exports and contact details.",
-  "We review the available information and conduct the response-time test.",
+  "We review the booking data and build the 12-month baseline, Leak Map and framework scores.",
   "Join the 30-minute review and decide whether to execute independently or build a full SNIPE Blueprint™.",
 ];
 
@@ -69,7 +69,7 @@ export function Diagnostic() {
       <PageHero
         eyebrow="Find the leaks before you spend more"
         title="Where is your business losing the growth it has already paid to create?"
-        lede="The SNIPE Diagnostic™ reviews your last 12 months of business performance and maps the friction between enquiries, conversations, bookings, job value and repeat opportunities. You will receive a clear view of what the numbers say, what may be holding the business back and where to investigate first."
+        lede="The SNIPE Diagnostic™ reviews your last 12 months of jobs, revenue, service mix, cancellations, referral partners and repeat customers. You will receive a clear view of what the numbers say, what may be holding the business back and where to investigate first."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <Card className="mx-auto max-w-2xl text-center">
@@ -83,7 +83,7 @@ export function Diagnostic() {
               {[
                 "Review of up to 12 months of supplied business data.",
                 "A business-specific Leak Map with quantified opportunities where the data supports it.",
-                "A response-time test of your current enquiry experience.",
+                "A service-mix, cancellation and referral review.",
                 "A 30-minute findings and recommendations review.",
                 "100% credited toward a SNIPE Blueprint™ purchased within 14 days.",
               ].map((item) => (
@@ -104,7 +104,7 @@ export function Diagnostic() {
         <div className="mx-auto w-full max-w-6xl px-4 py-16">
           <SectionHeading
             eyebrow="What we investigate"
-            title="Six places where growth leaks out"
+            title="Six areas the booking data can reveal"
           />
           <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {INVESTIGATES.map((item) => (

@@ -470,7 +470,7 @@ Microcopy: You will receive an intake checklist after checkout. Work begins when
 
 # Where is your business losing the growth it has already paid to create?
 
-The SNIPE Diagnostic™ reviews your last 12 months of business performance and maps the friction between enquiries, conversations, bookings, job value and repeat opportunities.
+The SNIPE Diagnostic™ reviews your last 12 months of jobs, revenue, service mix, cancellations, referral partners and repeat customers.
 
 You will receive a clear view of what the numbers say, what may be holding the business back and where to investigate first.
 
@@ -478,7 +478,7 @@ You will receive a clear view of what the numbers say, what may be holding the b
 
 - Review of up to 12 months of supplied business data.
 - A business-specific Leak Map with quantified opportunities where the data supports it.
-- A response-time test of your current enquiry experience.
+- A service-mix, cancellation and referral review.
 - A 30-minute findings and recommendations call.
 - 100% credited toward a SNIPE Blueprint™ purchased within 14 days.
 
@@ -486,23 +486,23 @@ CTA: `Get My SNIPE Diagnostic™`
 
 ## What we investigate
 
-### Demand and lead sources
-Where enquiries originate, how source quality differs and whether the business can distinguish lead volume from valuable opportunities.
+### Revenue and job volume
+Completed jobs, booked revenue and average ticket over the last 12 months, and how the monthly trend changed.
 
-### Response and capture
-How calls, forms and messages are handled; what happens after hours; and where response delays or missed handoffs may occur.
+### Cancellations and schedule health
+Cancelled and open jobs, where booked work does not complete, and what the schedule says about lost capacity.
 
-### Booking and conversion
-How many enquiries become scheduled work, where prospects drop out and what follow-up is currently in place.
+### Referral partner performance
+Which buying agents, agencies and referral sources produce work, how concentrated the relationships are, and where activity has gone quiet.
 
 ### Average ticket and service mix
 Whether packaging, add-ons and customer education create opportunities to improve the value of completed jobs.
 
-### Repeat and referral revenue
-How previous customers, referral partners and lifecycle follow-up contribute—or fail to contribute—to the pipeline.
+### Repeat customer behaviour
+How much work comes from repeat customers, and whether the records show a repeat or lifecycle gap.
 
-### Visibility and control
-Whether the owner can see the measures needed to make informed decisions about marketing, sales and capacity.
+### Team and geographic patterns
+How jobs are distributed across inspectors, teams, cities and service areas, and where production or coverage patterns deserve attention.
 
 ## What you receive
 
@@ -518,7 +518,7 @@ Where source data is missing or incomplete, we will identify the gap rather than
 1. Purchase the Diagnostic for $199.
 2. Receive the data checklist and secure submission instructions.
 3. Share the agreed business exports and contact details.
-4. We review the available information and conduct the response-time test.
+4. We review the booking data and build the 12-month baseline, Leak Map and framework scores.
 5. Join the 30-minute review and decide whether to execute independently or build a full SNIPE Blueprint™.
 
 ## The $199 credit
@@ -1124,7 +1124,7 @@ We learn how your company gets work, what you sell, how customers book, how jobs
 
 ## Step 2 — Diagnose the leaks
 
-The SNIPE Diagnostic™ reviews the available performance data and customer journey. We identify friction in acquisition, response, booking, ticket size, repeat revenue and referral activity.
+The SNIPE Diagnostic™ reviews the available booking data. We identify friction in job volume, revenue, service mix, cancellations, repeat revenue and referral activity.
 
 ## Step 3 — Build the Blueprint
 
@@ -1534,7 +1534,7 @@ The service model is designed for US home-service businesses. Service availabili
 ## Offers and pricing
 
 ### How much does the SNIPE Diagnostic™ cost?
-The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 30-minute review.
+The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review.
 
 ### How much does the SNIPE Blueprint™ cost?
 The SNIPE Blueprint™ is $999 one-time. It includes a personalized 25–35-page plan, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.
@@ -1583,7 +1583,7 @@ No. We commit to the agreed scope of work and operating process, not a guarantee
 It is a 20-minute qualification conversation. We learn about the business, your goals and the biggest growth obstacle, then recommend a suitable next step. It is not a full consulting session or a substitute for the paid Diagnostic.
 
 ### What information do I need for a Diagnostic or Blueprint?
-The exact list depends on your trade and software. It may include 12 months of job and customer records, lead sources, revenue, ticket values, marketing spend, call details, estimate status and capacity information. We provide the checklist after purchase.
+For a Diagnostic, you connect your booking software. We review up to 12 months of jobs, revenue, service and add-on mix, cancellations, referral sources and customer records. A Blueprint may also request business context, marketing spend and capacity information. We provide the checklist after purchase.
 
 ### How quickly can we start?
 The timing depends on fit, payment, data availability, access and team capacity. The Blueprint delivery window begins after complete intake and required data are received. Engine's 21-day launch runway begins after onboarding prerequisites are met.
@@ -1598,7 +1598,7 @@ The best fit is an established operator with a real service history, customer de
 ## Diagnostic checkout — `/checkout/diagnostic`
 
 **Headline:** Find the leaks in your growth process.  
-**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, response-time test and 30-minute review.  
+**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, service-mix and referral review, and 30-minute review.  
 **Order summary:** SNIPE Diagnostic™ — $199.  
 **Button:** `Purchase My Diagnostic`  
 **Checkout note:** The review begins after payment and receipt of the required information. The $199 fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your Diagnostic review. No business outcome is guaranteed.

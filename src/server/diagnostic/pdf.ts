@@ -1845,7 +1845,7 @@ export async function renderDiagnosticPdf(
   report.subheading("What owners say", 120);
   const testimonials = [
     {
-      quote: "They found $4,800 a month in missed calls before we signed anything. That number made the decision easy.",
+      quote: "They found $4,800 a month in add-on revenue we were leaving on the table. That number made the decision easy.",
       name: "Marcus Hale",
       detail: "Owner, Hale Home Inspections",
     },

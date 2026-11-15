@@ -31,7 +31,7 @@ const GENERAL = [
 const PRICING = [
   {
     q: "How much does the SNIPE Diagnostic™ cost?",
-    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a response-time test and a 30-minute review.`,
+    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review.`,
   },
   {
     q: "How much does the SNIPE Blueprint™ cost?",
@@ -97,7 +97,7 @@ const GETTING_STARTED = [
   },
   {
     q: "What information do I need for a Diagnostic or Blueprint?",
-    a: "The exact list depends on your trade and software. It may include 12 months of job and customer records, lead sources, revenue, ticket values, marketing spend, call details, estimate status and capacity information. We provide the checklist after purchase.",
+    a: "For a Diagnostic, you connect your booking software. We review up to 12 months of jobs, revenue, service and add-on mix, cancellations, referral sources and customer records. A Blueprint may also request business context, marketing spend and capacity information. We provide the checklist after purchase.",
   },
   {
     q: "How quickly can we start?",
