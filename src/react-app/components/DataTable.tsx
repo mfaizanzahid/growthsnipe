@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowDownIcon,
   ArrowsUpDownIcon,
@@ -47,6 +47,8 @@ interface Props<T> {
   pageResetKey?: string | number;
   /** Called when the visible page changes so the caller can clear selection. */
   onPageChange?: () => void;
+  /** Render rows as cards below md. Default true. */
+  mobileCards?: boolean;
   empty?: string;
   selectable?: boolean;
   selected?: string[];
@@ -81,6 +83,7 @@ export function DataTable<T>({
   hideSelectionBar = false,
   pageResetKey,
   onPageChange,
+  mobileCards = true,
   empty = "No rows.",
   selectable = false,
   selected = [],
@@ -185,65 +188,126 @@ export function DataTable<T>({
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {selectable && (
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={allPageSelected || (somePageSelected ? "indeterminate" : false)}
-                      onCheckedChange={toggleAll}
-                      aria-label="Select page"
-                    />
-                  </TableHead>
-                )}
-                {columns.map((c) => (
-                  <TableHead key={c.key}>
-                    {c.sortable && c.sortValue ? (
-                      <button
-                        className="inline-flex items-center gap-1 hover:text-foreground"
-                        onClick={() => toggleSort(c.key)}
-                      >
-                        {c.header}
-                        {sortKey !== c.key ? (
-                          <ArrowsUpDownIcon className="size-3.5 opacity-50" />
-                        ) : sortDir === 1 ? (
-                          <ArrowUpIcon className="size-3.5" />
-                        ) : (
-                          <ArrowDownIcon className="size-3.5" />
+        <>
+          <div className={cn("overflow-x-auto rounded-md border", mobileCards && "hidden md:block")}>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {selectable && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allPageSelected || (somePageSelected ? "indeterminate" : false)}
+                        onCheckedChange={toggleAll}
+                        aria-label="Select page"
+                      />
+                    </TableHead>
+                  )}
+                  {columns.map((c) => (
+                    <TableHead key={c.key}>
+                      {c.sortable && c.sortValue ? (
+                        <button
+                          className="inline-flex items-center gap-1 hover:text-foreground"
+                          onClick={() => toggleSort(c.key)}
+                        >
+                          {c.header}
+                          {sortKey !== c.key ? (
+                            <ArrowsUpDownIcon className="size-3.5 opacity-50" />
+                          ) : sortDir === 1 ? (
+                            <ArrowUpIcon className="size-3.5" />
+                          ) : (
+                            <ArrowDownIcon className="size-3.5" />
+                          )}
+                        </button>
+                      ) : (
+                        c.header
+                      )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pageRows.map((row) => {
+                  const id = rowId(row);
+                  return (
+                    <TableRow key={id} className={cn(selectedSet.has(id) && "bg-muted/50")}>
+                      {selectable && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedSet.has(id)}
+                            onCheckedChange={() => toggleOne(id)}
+                            aria-label="Select row"
+                          />
+                        </TableCell>
+                      )}
+                      {columns.map((c) => (
+                        <TableCell key={c.key}>{c.render(row)}</TableCell>
+                      ))}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          {mobileCards && (
+            <div className="space-y-2 md:hidden">
+              {selectable && (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                  <Checkbox
+                    checked={allPageSelected || (somePageSelected ? "indeterminate" : false)}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select page"
+                  />
+                  <span className="text-xs text-muted-foreground">Select page</span>
+                </div>
+              )}
+              <ul className="space-y-2">
+                {pageRows.map((row) => {
+                  const id = rowId(row);
+                  const primary = columns[0];
+                  const actions = columns.find((c) => c.key === "actions");
+                  const details = columns.slice(1).filter((c) => c.key !== "actions");
+                  return (
+                    <li
+                      key={id}
+                      className={cn(
+                        "rounded-md border p-3 text-sm",
+                        selectedSet.has(id) && "bg-muted/50",
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        {selectable && (
+                          <Checkbox
+                            checked={selectedSet.has(id)}
+                            onCheckedChange={() => toggleOne(id)}
+                            aria-label="Select row"
+                            className="mt-0.5"
+                          />
                         )}
-                      </button>
-                    ) : (
-                      c.header
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pageRows.map((row) => {
-                const id = rowId(row);
-                return (
-                  <TableRow key={id} className={cn(selectedSet.has(id) && "bg-muted/50")}>
-                    {selectable && (
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedSet.has(id)}
-                          onCheckedChange={() => toggleOne(id)}
-                          aria-label="Select row"
-                        />
-                      </TableCell>
-                    )}
-                    {columns.map((c) => (
-                      <TableCell key={c.key}>{c.render(row)}</TableCell>
-                    ))}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                        <div className="min-w-0 flex-1">{primary?.render(row)}</div>
+                      </div>
+                      {details.length > 0 && (
+                        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
+                          {details.map((c) => (
+                            <Fragment key={c.key}>
+                              <dt className="text-xs text-muted-foreground">{c.header}</dt>
+                              <dd className="min-w-0 break-words text-right">{c.render(row)}</dd>
+                            </Fragment>
+                          ))}
+                        </dl>
+                      )}
+                      {actions && (
+                        <div className="mt-2 flex flex-wrap justify-end gap-1 border-t pt-2">
+                          {actions.render(row)}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+        </>
       )}
 
       {filtered.length > 0 && (

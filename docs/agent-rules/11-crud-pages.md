@@ -45,6 +45,15 @@ Use this layout for every dashboard or superadmin page that manages a collection
 - Dates use `whitespace-nowrap`.
 - Put edit and quick actions in the last column.
 
+## Mobile layout
+
+- Below `md` (768px), render collection rows as cards instead of a horizontally scrolling table.
+- Each card shows the primary identifier first, then the remaining fields as label/value pairs, and the row actions at the bottom.
+- Keep selection checkboxes and bulk actions usable in card view. Show a compact "Select page" control above the cards.
+- The first column is the card title. The actions column must use `key: "actions"` so the card moves it to the footer.
+- Use the shared `DataTable` mobile cards (`mobileCards`, default on). Do not build page-specific mobile tables.
+- Preserve search, filter, pagination, and bulk actions on mobile.
+
 ## Related rules
 
 - Table layout details: `docs/ui-table-conventions.md`.

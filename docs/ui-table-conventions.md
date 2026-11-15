@@ -141,7 +141,7 @@ Do not reason about the CSS - measure it.
   record is selected**.
 - The **page indicator is `text-xs`**.
 - The header row is **sticky**.
-- **Horizontal scrolling on small screens is fine** - squeezing columns is not.
+- **Below `md`, CRUD tables render as cards**, not a horizontally scrolling table. Horizontal scrolling is only a fallback for exceptionally wide tables above that breakpoint.
 
 ## 8. CRUD page format
 
@@ -155,6 +155,7 @@ Collection pages follow `docs/agent-rules/11-crud-pages.md`:
 - Pagination shows First / Previous / Next / Last with a `text-xs` page indicator.
 - When rows are selected, show `[N selected]` and bulk action buttons on the same row as the title, left-aligned after the title. Use `DataTable` selection with `hideSelectionBar` and render the bulk actions in the card header.
 - Clear selection when the page, search, or filter changes.
+- Below `md`, rows render as cards: primary identifier first, label/value pairs, actions at the bottom, and selection/bulk actions preserved. The shared `DataTable` handles this with `mobileCards` (default on).
 - Create and edit forms live in modals opened from the top-right button and row actions.
 - Quick mutations stay as row actions. Referenced records are deactivated, not hard-deleted.
 - The Coupons page (`pages/admin/Coupons.tsx`) is the reference implementation.

@@ -97,6 +97,7 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 - Search and a status/category filter sit in the table card header on the same row as the table title, aligned right. Ask the owner which field(s) should be filter dropdowns for a new collection.
 - Collection tables show 50 rows per page with First / Previous / Next / Last pagination and a `text-xs` page indicator.
 - When rows are selected, show `[N selected]` and bulk action buttons on the same row as the title, left-aligned after the title. Clear selection on page, search, or filter changes.
+- Below `md` (768px), collection rows render as cards: primary identifier first, label/value pairs, actions at the bottom, with selection and bulk actions preserved. Use the shared `DataTable` mobile cards (`mobileCards`, default on).
 - Create and edit forms live in modals opened from the top-right button and row actions. Quick mutations stay as row actions; referenced records are deactivated, not hard-deleted.
 - Follow `docs/agent-rules/11-crud-pages.md` for every new dashboard or superadmin collection page.
 
