@@ -15,7 +15,7 @@ const STEPS = [
   },
   {
     title: "Build the Blueprint",
-    body: "The SNIPE Blueprint™ turns the findings into a 12-month growth plan: targets, economics, channel mix, workflows, revenue opportunities, capacity considerations and execution priorities.",
+    body: "The SNIPE Blueprint™ turns the findings into a 12-month growth plan: baseline and targets, packaging and pricing, channel mix, lifecycle follow-ups, local visibility, recurring revenue, capacity and execution priorities.",
   },
   {
     title: "Install the system",

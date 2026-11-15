@@ -7,15 +7,25 @@ import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { OFFERS, OFFER_CREDITS } from "../../../lib/offers";
 
 const INCLUDED = [
-  "The Target Stack: your revenue goal translated into job volume, average ticket, working days, capacity and required pipeline.",
-  "The Leak Map: a quantified view of where opportunities may be lost across missed calls, slow response, unbooked enquiries, low ticket size, missed add-ons, dormant partners and repeat-customer gaps.",
-  "The Ticket Ladder: a service and package structure designed to make options clearer and improve average job value.",
-  "The Channel Math Model: a prioritized channel plan with lead, conversion, acquisition cost and budget assumptions. Every estimate is labeled as an assumption where historical data is unavailable.",
-  "Revenue Loop Designs: a lifecycle plan for pre-service, post-service, reviews, reactivation, maintenance, repeat work and referral opportunities, adapted to your trade.",
-  "The Partner Flywheel: a plan for identifying, developing and reactivating valuable referral relationships.",
-  "The Capacity Trigger Ladder: hiring and operating triggers based on workload, utilization and the volume the business can responsibly fulfill.",
-  "The 12-Month Roadmap: a sequenced execution plan with priorities, timing, responsibilities and dependencies.",
-  "The Guardrail Dashboard: the metrics to review, target ranges, warning thresholds and corrective actions.",
+  "The Baseline and Target Stack: your current volume, average ticket, revenue, margins and capacity mapped against the revenue target. You see how many jobs and what average ticket the goal requires, and where the gap is.",
+  "The Packaging and Ticket Architecture: a good-better-best package structure, an add-on menu, and retail versus bundled pricing with the blended-ticket math behind it. You raise average job value with clearer choices instead of a base-price increase.",
+  "The Recurring Revenue Models: membership and B2B retainer structures with pricing, deliverables and unit economics. You add predictable recurring revenue and smooth out slow months.",
+  "The Lifecycle Funnel Map: named follow-up sequences for booking, pre-service add-ons, report or job delivery and reviews, post-job cross-sell, warranty and renewal timing, reactivation and partner intake. You stop losing revenue after the first job.",
+  "The Channel Math and Paid Ads Model: market cost-per-click and cost-per-lead benchmarks, conversion and acquisition cost by channel, and a reverse-engineered budget with return on ad spend and profit reconciliation. You know what a booked job can afford to cost before you spend.",
+  "The Local Authority Plan: your Google Business Profile setup, category and service-area structure, review-velocity targets, geo landing-page priorities and schema markup. You get found in local search and AI answers, not just paid results.",
+  "The Partner Flywheel: a staged outreach and reactivation plan for the referral partners who send the best work, with the assets and cadence for each stage. You turn a few relationships into a repeatable referral stream.",
+  "The Capacity and Hiring Plan: hiring triggers, compensation models and division of labor based on the volume the business can responsibly fulfill. You add capacity without breaking turnaround or margin.",
+  "The 12-Month Roadmap: a phased execution plan with priorities, timing, owners, dependencies and a month-by-month financial progression. You know what to do first, and what it should produce.",
+  "The Guardrail Dashboard: the metrics to review, target ranges, warning thresholds, corrective actions and compliance guardrails. You catch drift early and keep decisions inside the rules of your trade.",
+];
+
+const BENEFITS = [
+  "One plan instead of a stack of disconnected tactics.",
+  "A clear number for what growth actually requires.",
+  "Confidence in what a booked job can afford to cost.",
+  "More value per job without a base-price increase.",
+  "Recurring revenue that smooths the slow months.",
+  "A hiring and capacity plan that protects service quality.",
 ];
 
 const STEPS = [
@@ -47,7 +57,15 @@ const AGAINST = [
 const FAQS = [
   {
     q: "Is this just a marketing report?",
-    a: "No. It is an actionable growth plan connecting revenue targets, channels, customer journey, ticket size, capacity and operating priorities.",
+    a: "No. It is a full growth plan covering your baseline and target, packaging and pricing, lifecycle follow-ups, channel math, local visibility, recurring revenue, capacity and a 12-month roadmap.",
+  },
+  {
+    q: "Does it cover pricing and recurring revenue?",
+    a: "Yes. The plan includes a good-better-best package structure, an add-on menu with bundled pricing, and membership or retainer models where they fit the business.",
+  },
+  {
+    q: "Does it include local search?",
+    a: "Yes. It includes a Google Business Profile and review plan, geo landing-page priorities and schema guidance for local search and AI answers.",
   },
   {
     q: "Do you implement the plan?",
@@ -69,7 +87,7 @@ export function Blueprint() {
       <PageHero
         eyebrow="The strategy before the spend"
         title="Stop buying marketing tactics. Get the growth plan they should be following."
-        lede="The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your business. It shows what the next stage of growth requires, where revenue is leaking, which channels deserve investment and what needs to happen across marketing, sales and operations."
+        lede="The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your business. It covers your baseline and target, packaging and pricing, marketing channels, local visibility, recurring revenue, referral partners, capacity and a phased roadmap, so you can stop choosing tactics in isolation."
       />
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <Card className="mx-auto max-w-2xl text-center">
@@ -82,6 +100,7 @@ export function Blueprint() {
             <ul className="space-y-2 text-left text-sm">
               {[
                 "Personalized 25 to 35-page growth plan.",
+                "Covers pricing, packaging, channels, local visibility, recurring revenue, capacity and a 12-month roadmap.",
                 "Delivered within 10 business days after complete intake and data receipt.",
                 "A 30-minute discovery call with our team.",
                 "90-minute presentation and walkthrough.",
@@ -130,33 +149,48 @@ export function Blueprint() {
 
       <section className="border-t bg-muted/40">
         <div className="mx-auto w-full max-w-6xl px-4 py-16">
-          <SectionHeading eyebrow="Process" title="How it works" />
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {STEPS.map((s, i) => (
-              <Card key={s.title}>
-                <CardHeader>
-                  <span className="text-sm font-semibold text-primary">Step {i + 1}</span>
-                  <CardTitle className="text-base">{s.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">{s.body}</CardContent>
-              </Card>
+          <SectionHeading
+            eyebrow="What you walk away with"
+            title="A plan you can act on, not a report you file away."
+          />
+          <div className="mx-auto mt-8 grid max-w-3xl gap-3 sm:grid-cols-2">
+            {BENEFITS.map((item) => (
+              <div key={item} className="flex items-start gap-2 rounded-lg border bg-background p-4">
+                <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                <p className="text-sm text-muted-foreground">{item}</p>
+              </div>
             ))}
           </div>
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already purchased?{" "}
-            <a
-              className="font-semibold text-primary underline underline-offset-4"
-              href="/blueprint-discovery-call"
-            >
-              Book your 30-minute discovery call
-            </a>
-            .
-          </p>
         </div>
       </section>
 
       <section className="mx-auto w-full max-w-6xl px-4 py-16">
-        <div className="grid gap-6 md:grid-cols-2">
+        <SectionHeading eyebrow="Process" title="How it works" />
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          {STEPS.map((s, i) => (
+            <Card key={s.title}>
+              <CardHeader>
+                <span className="text-sm font-semibold text-primary">Step {i + 1}</span>
+                <CardTitle className="text-base">{s.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">{s.body}</CardContent>
+            </Card>
+          ))}
+        </div>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Already purchased?{" "}
+          <a
+            className="font-semibold text-primary underline underline-offset-4"
+            href="/blueprint-discovery-call"
+          >
+            Book your 30-minute discovery call
+          </a>
+          .
+        </p>
+      </section>
+
+      <section className="border-t bg-muted/40">
+        <div className="mx-auto grid w-full max-w-6xl gap-6 px-4 py-16 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Who it is for</CardTitle>
@@ -190,30 +224,30 @@ export function Blueprint() {
         </div>
       </section>
 
-      <section className="border-t bg-muted/40">
-        <div className="mx-auto w-full max-w-3xl px-4 py-16 text-center">
-          <SectionHeading
-            eyebrow="Price and next-step credit"
-            title="One plan. A clear path to implementation."
-          />
-          <p className="mt-4 text-2xl font-bold">
-            {OFFERS.blueprint.name}: {OFFERS.blueprint.price.label} one-time.
+      <section className="mx-auto w-full max-w-3xl px-4 py-16 text-center">
+        <SectionHeading
+          eyebrow="Price and next-step credit"
+          title="One plan. A clear path to implementation."
+        />
+        <p className="mt-4 text-2xl font-bold">
+          {OFFERS.blueprint.name}: {OFFERS.blueprint.price.label} one-time.
+        </p>
+        <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">{OFFER_CREDITS.blueprintToEngine.text}</p>
+        <div className="mt-6">
+          <Button size="lg" asChild>
+            <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint™, {OFFERS.blueprint.price.label}</Link>
+          </Button>
+          <p className="mt-3 text-xs text-muted-foreground">
+            You will receive an intake checklist after checkout. Work begins when the required information is received.
           </p>
-          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">{OFFER_CREDITS.blueprintToEngine.text}</p>
-          <div className="mt-6">
-            <Button size="lg" asChild>
-              <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint™, {OFFERS.blueprint.price.label}</Link>
-            </Button>
-            <p className="mt-3 text-xs text-muted-foreground">
-              You will receive an intake checklist after checkout. Work begins when the required information is received.
-            </p>
-          </div>
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 py-16">
-        <SectionHeading eyebrow="FAQ" title="Blueprint questions, answered" />
-        <Faq items={FAQS} />
+      <section className="border-t bg-muted/40">
+        <div className="mx-auto w-full max-w-6xl px-4 py-16">
+          <SectionHeading eyebrow="FAQ" title="Blueprint questions, answered" />
+          <Faq items={FAQS} />
+        </div>
       </section>
 
       <CtaBand

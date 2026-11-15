@@ -325,7 +325,7 @@ export function Landing() {
               <CardDescription>{OFFERS.blueprint.price.label} one-time</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
-              <p className="flex-1">A personalized 12-month growth plan built around your numbers, market, services, capacity and goals.</p>
+              <p className="flex-1">A personalized 12-month growth plan built around your numbers, packaging, channels, local visibility, recurring revenue, capacity and goals.</p>
               <Button className="mt-4" asChild><Link to="/blueprint">Build My SNIPE Blueprint™</Link></Button>
             </CardContent>
           </Card>

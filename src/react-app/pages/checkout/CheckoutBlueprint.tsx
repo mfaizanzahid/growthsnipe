@@ -7,7 +7,7 @@ export function CheckoutBlueprint() {
       slug="blueprint"
       eyebrow="Checkout"
       title="Put your next 12 months of growth on paper, and into a plan."
-      lede={`Your SNIPE Blueprint™ is ${OFFERS.blueprint.price.label} one-time and includes a personalized 25 to 35-page plan, a 30-minute discovery call, a 90-minute presentation and 30 days of follow-up questions.`}
+      lede={`Your SNIPE Blueprint™ is ${OFFERS.blueprint.price.label} one-time and includes a personalized 25 to 35-page plan covering your baseline, packaging, channels, local visibility, recurring revenue, capacity and a 12-month roadmap, plus a 30-minute discovery call, a 90-minute presentation and 30 days of follow-up questions.`}
       includes={[
         "Personalized 25 to 35-page growth plan.",
         "Delivered within 10 business days after complete intake and data receipt.",

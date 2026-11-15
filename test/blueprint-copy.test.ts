@@ -28,3 +28,39 @@ describe("Blueprint discovery call copy", () => {
     expect(strategy).toContain("/blueprint-discovery-call");
   });
 });
+
+describe("Blueprint deliverable copy", () => {
+  const components = [
+    "Baseline and Target Stack",
+    "Packaging and Ticket Architecture",
+    "Recurring Revenue Models",
+    "Lifecycle Funnel Map",
+    "Channel Math and Paid Ads Model",
+    "Local Authority Plan",
+    "Partner Flywheel",
+    "Capacity and Hiring Plan",
+    "12-Month Roadmap",
+    "Guardrail Dashboard",
+  ];
+
+  it("lists the delivered components on the Blueprint page", () => {
+    const page = read("src/react-app/pages/marketing/Blueprint.tsx");
+    for (const name of components) expect(page).toContain(name);
+  });
+
+  it("keeps the website strategy doc in sync", () => {
+    const strategy = read("docs/copy-content-website-strategy.md");
+    for (const name of components) expect(strategy).toContain(name);
+  });
+
+  it("avoids em dashes in the Blueprint marketing surfaces", () => {
+    const surfaces = [
+      "src/react-app/pages/marketing/Blueprint.tsx",
+      "src/react-app/pages/marketing/Landing.tsx",
+      "src/react-app/pages/marketing/Faq.tsx",
+      "src/react-app/pages/marketing/HowItWorks.tsx",
+      "src/react-app/pages/checkout/CheckoutBlueprint.tsx",
+    ];
+    for (const path of surfaces) expect(read(path)).not.toContain("\u2014");
+  });
+});

@@ -35,7 +35,11 @@ const PRICING = [
   },
   {
     q: "How much does the SNIPE Blueprint™ cost?",
-    a: `The SNIPE Blueprint™ is ${OFFERS.blueprint.price.label} one-time. It includes a personalized 25 to 35-page plan, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.`,
+    a: `The SNIPE Blueprint™ is ${OFFERS.blueprint.price.label} one-time. It includes a personalized 25 to 35-page plan covering your baseline and target, packaging and pricing, channels, local visibility, recurring revenue, capacity and a 12-month roadmap, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.`,
+  },
+  {
+    q: "What does the SNIPE Blueprint™ include?",
+    a: "A baseline and target stack, a packaging and ticket architecture, recurring revenue models, a lifecycle funnel map, a channel math and paid ads model, a local authority plan, a partner flywheel, a capacity and hiring plan, a 12-month roadmap and a guardrail dashboard. Each section is built around your business data and stated assumptions.",
   },
   {
     q: "Does the SNIPE Diagnostic™ fee count toward SNIPE Blueprint™?",

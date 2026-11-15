@@ -363,11 +363,12 @@ Microcopy: No pressure to buy. If the fit is not right, we will tell you.
 
 # Stop buying marketing tactics. Get the growth plan they should be following.
 
-The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your business. It shows what the next stage of growth requires, where revenue is leaking, which channels deserve investment and what needs to happen across marketing, sales and operations.
+The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your business. It covers your baseline and target, packaging and pricing, marketing channels, local visibility, recurring revenue, referral partners, capacity and a phased roadmap, so you can stop choosing tactics in isolation.
 
 **$999 one-time**
 
 - Personalized 25–35-page growth plan.
+- Covers pricing, packaging, channels, local visibility, recurring revenue, capacity and a 12-month roadmap.
 - Delivered within 10 business days after complete intake and data receipt.
 - A 30-minute discovery call with our team.
 - 90-minute presentation and walkthrough.
@@ -386,32 +387,44 @@ The Blueprint connects those questions into one plan—so you can stop choosing 
 
 ## What your Blueprint includes
 
-### 1. The Target Stack
-Your revenue goal translated into job volume, average ticket, working days, capacity and required pipeline.
+### 1. The Baseline and Target Stack
+Your current volume, average ticket, revenue, margins and capacity mapped against the revenue target. You see how many jobs and what average ticket the goal requires, and where the gap is.
 
-### 2. The Leak Map
-A quantified view of where opportunities may be lost: missed calls, slow response, unbooked enquiries, low ticket size, missed add-ons, dormant partners and repeat-customer gaps.
+### 2. The Packaging and Ticket Architecture
+A good-better-best package structure, an add-on menu, and retail versus bundled pricing with the blended-ticket math behind it. You raise average job value with clearer choices instead of a base-price increase.
 
-### 3. The Ticket Ladder
-A service and package structure designed to make options clearer, support appropriate add-ons and improve average job value without relying only on a base-price increase.
+### 3. The Recurring Revenue Models
+Membership and B2B retainer structures with pricing, deliverables and unit economics. You add predictable recurring revenue and smooth out slow months.
 
-### 4. The Channel Math Model
-A prioritized channel plan with assumptions for leads, conversion, customer acquisition cost and budget. Every estimate is identified as an assumption where historical data is unavailable.
+### 4. The Lifecycle Funnel Map
+Named follow-up sequences for booking, pre-service add-ons, report or job delivery and reviews, post-job cross-sell, warranty and renewal timing, reactivation and partner intake. You stop losing revenue after the first job.
 
-### 5. Revenue Loop Designs
-A lifecycle plan for pre-service, post-service, reviews, reactivation, maintenance, repeat work and referral opportunities—adapted to your trade.
+### 5. The Channel Math and Paid Ads Model
+Market cost-per-click and cost-per-lead benchmarks, conversion and acquisition cost by channel, and a reverse-engineered budget with return on ad spend and profit reconciliation. You know what a booked job can afford to cost before you spend.
 
-### 6. The Partner Flywheel
-A plan for identifying, developing and reactivating valuable referral relationships.
+### 6. The Local Authority Plan
+Your Google Business Profile setup, category and service-area structure, review-velocity targets, geo landing-page priorities and schema markup. You get found in local search and AI answers, not just paid results.
 
-### 7. The Capacity Trigger Ladder
-Hiring and operating triggers based on workload, utilization and the volume the business can responsibly fulfill.
+### 7. The Partner Flywheel
+A staged outreach and reactivation plan for the referral partners who send the best work, with the assets and cadence for each stage. You turn a few relationships into a repeatable referral stream.
 
-### 8. The 12-Month Roadmap
-A sequenced execution plan with priorities, timing, responsibilities and dependencies.
+### 8. The Capacity and Hiring Plan
+Hiring triggers, compensation models and division of labor based on the volume the business can responsibly fulfill. You add capacity without breaking turnaround or margin.
 
-### 9. The Guardrail Dashboard
-The metrics to review, target ranges, warning thresholds and corrective actions.
+### 9. The 12-Month Roadmap
+A phased execution plan with priorities, timing, owners, dependencies and a month-by-month financial progression. You know what to do first, and what it should produce.
+
+### 10. The Guardrail Dashboard
+The metrics to review, target ranges, warning thresholds, corrective actions and compliance guardrails. You catch drift early and keep decisions inside the rules of your trade.
+
+## What you walk away with
+
+- One plan instead of a stack of disconnected tactics.
+- A clear number for what growth actually requires.
+- Confidence in what a booked job can afford to cost.
+- More value per job without a base-price increase.
+- Recurring revenue that smooths the slow months.
+- A hiring and capacity plan that protects service quality.
 
 ## How it works
 
@@ -452,7 +465,11 @@ Microcopy: You will receive an intake checklist after checkout. Work begins when
 
 ## FAQ preview
 
-**Is this just a marketing report?** No. It is an actionable growth plan connecting revenue targets, channels, customer journey, ticket size, capacity and operating priorities.
+**Is this just a marketing report?** No. It is a full growth plan covering your baseline and target, packaging and pricing, lifecycle follow-ups, channel math, local visibility, recurring revenue, capacity and a 12-month roadmap.
+
+**Does it cover pricing and recurring revenue?** Yes. The plan includes a good-better-best package structure, an add-on menu with bundled pricing, and membership or retainer models where they fit the business.
+
+**Does it include local search?** Yes. It includes a Google Business Profile and review plan, geo landing-page priorities and schema guidance for local search and AI answers.
 
 **Do you implement the plan?** You can use it with your own team or move into SNIPE Engine™ for implementation and ongoing operation.
 
