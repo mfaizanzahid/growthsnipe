@@ -361,6 +361,7 @@ export const loopLibraryLeads = sqliteTable("loop_library_leads", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   firstName: text("first_name").notNull(),
+  lastName: text("last_name"),
   businessName: text("business_name").notNull(),
   trade: text("trade").notNull(),
   software: text("software"),

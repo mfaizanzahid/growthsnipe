@@ -9,7 +9,8 @@ import { parseSuperadminEmails } from "../lib/access";
 import { escapeHtml, sendEmail } from "../lib/email";
 
 const ContactBody = z.object({
-  name: z.string().trim().min(1).max(120),
+  firstName: z.string().trim().min(1).max(60),
+  lastName: z.string().trim().min(1).max(60),
   email: z.string().trim().email().max(200),
   message: z.string().trim().min(10).max(5000),
 });
@@ -33,7 +34,8 @@ export function createContactRoutes(deps: {
         [...parseSuperadminEmails(env.SUPERADMIN_EMAILS)][0] ??
         "");
     if (!supportEmail) return c.json({ error: "Contact is unavailable right now — please try again later." }, 503);
-    const { name, email, message } = parsed.data;
+    const { firstName, lastName, email, message } = parsed.data;
+    const name = `${firstName} ${lastName}`;
     try {
       await sendEmail(
         env,

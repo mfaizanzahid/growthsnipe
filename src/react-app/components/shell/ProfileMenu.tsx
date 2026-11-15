@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRightOnRectangleIcon } from "@heroicons/react/24/outline";
 import { authClient } from "../../lib/auth-client";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
+import { Spinner } from "../ui/spinner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,13 +29,19 @@ function initials(email: string, name: string): string {
 
 export function ProfileMenu({ email, userName, role, superadmin }: Props) {
   const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
 
   async function signOut() {
-    await authClient.signOut();
-    // Full reload after sign-out. A SPA navigation unmounts the app shell and
-    // removes our embed container, but a third-party widget (Zoho, chat, etc.)
-    // can leave its own DOM behind. Reloading /login guarantees a clean page.
-    window.location.replace("/login");
+    setSigningOut(true);
+    try {
+      await authClient.signOut();
+      // Full reload after sign-out. A SPA navigation unmounts the app shell and
+      // removes our embed container, but a third-party widget (Zoho, chat, etc.)
+      // can leave its own DOM behind. Reloading /login guarantees a clean page.
+      window.location.replace("/login");
+    } finally {
+      setSigningOut(false);
+    }
   }
 
   return (
@@ -65,8 +73,15 @@ export function ProfileMenu({ email, userName, role, superadmin }: Props) {
           <DropdownMenuItem onSelect={() => navigate("/superadmin")}>Superadmin</DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => void signOut()}>
-          <ArrowRightOnRectangleIcon className="size-4" /> Sign out
+        <DropdownMenuItem
+          disabled={signingOut}
+          onSelect={(e) => {
+            e.preventDefault();
+            if (!signingOut) void signOut();
+          }}
+        >
+          {signingOut ? <Spinner label="Signing out" /> : <ArrowRightOnRectangleIcon className="size-4" />}
+          {signingOut ? "Signing out…" : "Sign out"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

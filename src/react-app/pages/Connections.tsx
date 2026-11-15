@@ -23,6 +23,7 @@ export function Connections() {
   const [connections, setConnections] = useState<SidekickConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   async function load(id: string) {
     setLoading(true);
@@ -43,13 +44,16 @@ export function Connections() {
   }, [orgId]);
 
   async function remove(id: string) {
-    if (!orgId || !confirm("Disconnect this provider? Scheduled briefings will stop working.")) return;
+    if (!orgId || removingId || !confirm("Disconnect this provider? Scheduled briefings will stop working.")) return;
+    setRemovingId(id);
     try {
       await api(`/api/sidekick/connections/${id}?orgId=${orgId}`, { method: "DELETE" });
       toast.success("Disconnected");
       await load(orgId);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not disconnect");
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -96,7 +100,14 @@ export function Connections() {
                       Updated {new Date(c.updatedAt).toLocaleString()}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => void remove(c.id)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void remove(c.id)}
+                    loading={removingId === c.id}
+                    loadingText="Disconnecting…"
+                    disabled={removingId !== null}
+                  >
                     Disconnect
                   </Button>
                 </li>

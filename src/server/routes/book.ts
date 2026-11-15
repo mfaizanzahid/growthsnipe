@@ -30,7 +30,8 @@ const websiteRefine = (v: string) =>
   /^(https?:\/\/)?[\w-]+(\.[\w-]+)+/.test(v) || "Enter a valid website or profile link.";
 
 const BookBody = z.object({
-  name: z.string().trim().min(1).max(120),
+  firstName: z.string().trim().min(1).max(60),
+  lastName: z.string().trim().min(1).max(60),
   workEmail: z.string().trim().email().max(200),
   phone: z.string().trim().min(7).max(40),
   businessName: z.string().trim().min(1).max(160),
@@ -70,7 +71,7 @@ export function createBookRoutes(deps: {
     if (!supportEmail) return c.json({ error: "Booking is unavailable right now — please try again later." }, 503);
     const b = parsed.data;
     const rows: Array<[string, string]> = [
-      ["Name", b.name],
+      ["Name", `${b.firstName} ${b.lastName}`],
       ["Work email", b.workEmail],
       ["Phone", b.phone],
       ["Business", b.businessName],

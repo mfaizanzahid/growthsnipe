@@ -28,5 +28,7 @@ Rules:
 - Use shadcn components from the project registry; check with @shadcn MCP examples before hand-rolling UI.
 - Data tables follow docs/ui-table-conventions.md: filters in the table card header beside the title, filter group right-aligned, "[N selected]" next to the total, bulk-delete button shown directly and only while rows are selected, sticky header, `text-xs` page indicator, and horizontal scrolling (not squeezed columns) on small screens.
 - All payment actions need loading/disabled states (no double-submit) and reconcile against the server (idempotency-Key header on mutations).
+- Every async control needs visible feedback. Follow `docs/agent-rules/10-ui-feedback.md`: `Button loading` plus `loadingText`, `RowAction loading`, keyed pending ids for row actions, and `aria-busy`. Never leave a clicked control enabled while the request runs.
+- Collection screens follow `docs/agent-rules/11-crud-pages.md`: page title and "Add new ..." button on the top right, one card with a `DataTable`, search in the card header on the title row aligned right, 50 rows per page with First/Previous/Next/Last pagination, and create/edit forms in modals, never inline.
 - Add a regression test that fails if plan names/prices appear hard-coded in client copy (`test/no-hardcoded-plans.test.ts` covers this; offer pages must import `src/lib/offers.ts`).
 - Keep bundle lean; verify with build after UI changes.

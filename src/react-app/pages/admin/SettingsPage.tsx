@@ -15,6 +15,7 @@ export function AdminSettings() {
     blueprint_discovery_call_url: "",
   });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   async function load() {
     try {
@@ -33,11 +34,15 @@ export function AdminSettings() {
   }
 
   async function save() {
+    if (saving) return;
+    setSaving(true);
     try {
       await api("/api/superadmin/settings", { method: "PATCH", body: JSON.stringify(settings) });
       toast.success("Settings saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -64,7 +69,7 @@ export function AdminSettings() {
             <Label>Support email</Label>
             <Input value={settings.support_email} onChange={(e) => setSettings({ ...settings, support_email: e.target.value })} />
           </div>
-          <Button onClick={save}>Save settings</Button>
+          <Button onClick={save} loading={saving} loadingText="Saving…" disabled={saving}>Save settings</Button>
         </CardContent>
       </Card>
       <Card className="max-w-md">
@@ -97,7 +102,7 @@ export function AdminSettings() {
               Used in the "Diagnostic baseline is ready" email. Leave blank to fall back to /book.
             </p>
           </div>
-          <Button onClick={save}>Save settings</Button>
+          <Button onClick={save} loading={saving} loadingText="Saving…" disabled={saving}>Save settings</Button>
         </CardContent>
       </Card>
     </div>

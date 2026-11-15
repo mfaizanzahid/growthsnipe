@@ -17,7 +17,7 @@ export async function getLoopLead(db: Db, id: string): Promise<LoopLeadRow | nul
 
 export async function upsertLoopLead(
   db: Db,
-  input: { id?: string; email: string; firstName: string; businessName: string; trade: string; software?: string | null; monthlyVolume?: string | null; now: number },
+  input: { id?: string; email: string; firstName: string; lastName?: string | null; businessName: string; trade: string; software?: string | null; monthlyVolume?: string | null; now: number },
 ): Promise<LoopLeadRow> {
   const email = input.email.trim().toLowerCase();
   const existing = await findLoopLeadByEmail(db, email);
@@ -26,6 +26,7 @@ export async function upsertLoopLead(
       .update(loopLibraryLeads)
       .set({
         firstName: input.firstName,
+        lastName: input.lastName ?? null,
         businessName: input.businessName,
         trade: input.trade,
         software: input.software ?? null,
@@ -44,6 +45,7 @@ export async function upsertLoopLead(
     id,
     email,
     firstName: input.firstName,
+    lastName: input.lastName ?? null,
     businessName: input.businessName,
     trade: input.trade,
     software: input.software ?? null,

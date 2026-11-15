@@ -118,7 +118,7 @@ describe("email service", () => {
     expect(superadminBcc({} as never, "user@test.com")).toEqual([]);
   });
 
-  it("sends billing notifications without a bcc (superadmin copy disabled)", async () => {
+  it("adds the superadmin bcc to non-auth billing notifications", async () => {
     const { memoryStore } = await import("./memory-store");
     const { sendChargeReceipt } = await import("../src/server/billing/mail");
     const outbox = captureEmails();
@@ -130,6 +130,26 @@ describe("email service", () => {
       { invoiceNumber: "INV-2026-0001", amountMinor: 19900, currency: "USD", planName: "Launch" },
     );
     expect(outbox).toHaveLength(1);
+    expect(outbox[0]?.bcc).toEqual(["boss@test.com"]);
+  });
+
+  it("does not add a superadmin bcc to auth emails", async () => {
+    const outbox = captureEmails();
+    await sendEmail(
+      "re_test_key",
+      { to: "user@example.com", subject: "Verify", html: "<p>Verify</p>" },
+    );
+    expect(outbox).toHaveLength(1);
     expect(outbox[0]?.bcc).toBeUndefined();
+  });
+
+  it("preserves and deduplicates an existing bcc", async () => {
+    const outbox = captureEmails();
+    await sendEmail(
+      { RESEND_API_KEY: "x", SUPERADMIN_EMAILS: "boss@test.com,ops@test.com" } as never,
+      { to: "user@example.com", subject: "Hi", html: "<p>Hi</p>", bcc: ["BOSS@test.com"] },
+    );
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]?.bcc).toEqual(["BOSS@test.com", "ops@test.com"]);
   });
 });

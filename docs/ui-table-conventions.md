@@ -142,3 +142,17 @@ Do not reason about the CSS - measure it.
 - The **page indicator is `text-xs`**.
 - The header row is **sticky**.
 - **Horizontal scrolling on small screens is fine** - squeezing columns is not.
+
+## 8. CRUD page format
+
+Collection pages follow `docs/agent-rules/11-crud-pages.md`:
+
+- Page header with the title and description on the left and the primary "Add new ..." button on the top right.
+- One card containing the `DataTable`. No separate create card and no inline forms.
+- Search sits in the table card header on the same row as the title, aligned right (`CardAction` or `ml-auto`). Use `DataTable` controlled search so no second search bar renders above the table.
+- Collection tables show 50 rows per page by default.
+- Pagination shows First / Previous / Next / Last with a `text-xs` page indicator.
+- Create and edit forms live in modals opened from the top-right button and row actions.
+- Quick mutations stay as row actions. Referenced records are deactivated, not hard-deleted.
+- The Coupons page (`pages/admin/Coupons.tsx`) is the reference implementation.
+

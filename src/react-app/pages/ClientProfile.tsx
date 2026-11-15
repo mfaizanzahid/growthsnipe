@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
+import { Spinner } from "../components/ui/spinner";
 import { api } from "../components/billing/shared";
 import {
   ChangePlanDialog,
@@ -63,6 +64,7 @@ export function ClientProfile() {
   const [plans, setPlans] = useState<PlanOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [memberBusy, setMemberBusy] = useState<string | null>(null);
 
   const [preview, setPreview] = useState<{ invoice: PreviewInvoice; items: PreviewLine[] } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -250,7 +252,8 @@ export function ClientProfile() {
   }
 
   async function doRole(memberId: string, role: string) {
-    setBusy(true);
+    if (memberBusy) return;
+    setMemberBusy(`${memberId}:role`);
     try {
       await api(`/api/superadmin/clients/${orgId}/members/${memberId}/role`, {
         method: "PATCH",
@@ -261,13 +264,14 @@ export function ClientProfile() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Role update failed");
     } finally {
-      setBusy(false);
+      setMemberBusy(null);
     }
   }
 
   async function doRemove(memberId: string, email: string) {
+    if (memberBusy) return;
     if (!window.confirm(`Remove ${email} from this workspace?`)) return;
-    setBusy(true);
+    setMemberBusy(`${memberId}:remove`);
     try {
       await api(`/api/superadmin/clients/${orgId}/members/${memberId}`, { method: "DELETE" });
       toast.success("Member removed");
@@ -275,12 +279,13 @@ export function ClientProfile() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Remove failed");
     } finally {
-      setBusy(false);
+      setMemberBusy(null);
     }
   }
 
   async function doToggleStatus(memberId: string, status: "active" | "suspended") {
-    setBusy(true);
+    if (memberBusy) return;
+    setMemberBusy(`${memberId}:status`);
     try {
       await api(`/api/superadmin/clients/${orgId}/members/${memberId}`, {
         method: "PATCH",
@@ -291,7 +296,7 @@ export function ClientProfile() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Status change failed");
     } finally {
-      setBusy(false);
+      setMemberBusy(null);
     }
   }
 
@@ -456,7 +461,7 @@ export function ClientProfile() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Select value={m.role} onValueChange={(v) => void doRole(m.id, v)}>
+                <Select value={m.role} disabled={memberBusy !== null} onValueChange={(v) => void doRole(m.id, v)}>
                   <SelectTrigger className="w-28">
                     <SelectValue />
                   </SelectTrigger>
@@ -466,16 +471,38 @@ export function ClientProfile() {
                     <SelectItem value="viewer">viewer</SelectItem>
                   </SelectContent>
                 </Select>
+                {memberBusy === `${m.id}:role` && <Spinner label="Updating role" />}
                 {m.status === "active" ? (
-                  <Button variant="ghost" size="sm" onClick={() => void doToggleStatus(m.id, "suspended")}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void doToggleStatus(m.id, "suspended")}
+                    loading={memberBusy === `${m.id}:status`}
+                    loadingText="Suspending…"
+                    disabled={memberBusy !== null}
+                  >
                     Suspend
                   </Button>
                 ) : (
-                  <Button variant="ghost" size="sm" onClick={() => void doToggleStatus(m.id, "active")}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void doToggleStatus(m.id, "active")}
+                    loading={memberBusy === `${m.id}:status`}
+                    loadingText="Reactivating…"
+                    disabled={memberBusy !== null}
+                  >
                     Reactivate
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => void doRemove(m.id, m.email)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void doRemove(m.id, m.email)}
+                  loading={memberBusy === `${m.id}:remove`}
+                  loadingText="Removing…"
+                  disabled={memberBusy !== null}
+                >
                   Remove
                 </Button>
               </div>

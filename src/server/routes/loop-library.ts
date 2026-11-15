@@ -25,7 +25,8 @@ const TRADES = [
 ] as const;
 
 const CaptureBody = z.object({
-  firstName: z.string().trim().min(1).max(120),
+  firstName: z.string().trim().min(1).max(60),
+  lastName: z.string().trim().min(1).max(60),
   workEmail: z.string().trim().email().max(200),
   businessName: z.string().trim().min(1).max(160),
   trade: z.enum(TRADES),
@@ -60,6 +61,7 @@ export function createLoopLibraryRoutes(deps: {
       const lead = await upsertLoopLead(db, {
         email,
         firstName: parsed.data.firstName.trim(),
+        lastName: parsed.data.lastName.trim(),
         businessName: parsed.data.businessName.trim(),
         trade: parsed.data.trade,
         software: parsed.data.software?.trim() || null,

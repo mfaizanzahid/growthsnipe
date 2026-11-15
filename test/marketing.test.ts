@@ -32,6 +32,7 @@ function testDb(): Db {
       id TEXT PRIMARY KEY,
       email TEXT NOT NULL UNIQUE,
       first_name TEXT NOT NULL,
+      last_name TEXT,
       business_name TEXT NOT NULL,
       trade TEXT NOT NULL,
       software TEXT,
@@ -88,6 +89,7 @@ function req(app: ReturnType<typeof buildCaptureApp>, path: string, body?: unkno
 
 const LEAD = {
   firstName: "Ada",
+  lastName: "Owner",
   workEmail: "Ada@Example.com",
   businessName: "Ada Inspections",
   trade: "Home inspection",
@@ -107,7 +109,7 @@ describe("loop library capture", () => {
     const res = await req(app, "/api/loop-library", LEAD);
     expect(res.status).toBe(200);
     const lead = await findLoopLeadByEmail(db, "ada@example.com");
-    expect(lead).toMatchObject({ firstName: "Ada", trade: "Home inspection" });
+    expect(lead).toMatchObject({ firstName: "Ada", lastName: "Owner", trade: "Home inspection" });
     expect((await listMarketingSendsForLead(db, lead!.id))).toHaveLength(5);
     expect(outbox).toHaveLength(1);
     expect(outbox[0]?.subject).toContain("SNIPE Loops");

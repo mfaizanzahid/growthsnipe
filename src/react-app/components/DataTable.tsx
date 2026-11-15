@@ -1,6 +1,13 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { ArrowDownIcon, ArrowsUpDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  ArrowDownIcon,
+  ArrowsUpDownIcon,
+  ArrowUpIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon,
+} from "@heroicons/react/24/outline";
 import { Button } from "./ui/button";
+import { Spinner } from "./ui/spinner";
 import { Checkbox } from "./ui/checkbox";
 import { Input } from "./ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
@@ -29,6 +36,11 @@ interface Props<T> {
   rowId: (row: T) => string;
   pageSize?: number;
   searchPlaceholder?: string;
+  /** Controlled search value. Pair with onSearchChange and hideSearch. */
+  search?: string;
+  onSearchChange?: (value: string) => void;
+  /** Hide the internal search row (put the input in the card header instead). */
+  hideSearch?: boolean;
   empty?: string;
   selectable?: boolean;
   selected?: string[];
@@ -57,16 +69,29 @@ export function DataTable<T>({
   rowId,
   pageSize = 10,
   searchPlaceholder = "Search…",
+  search,
+  onSearchChange,
+  hideSearch = false,
   empty = "No rows.",
   selectable = false,
   selected = [],
   onSelect,
   bulkBar,
 }: Props<T>) {
-  const [query, setQuery] = useState("");
+  const [internalQuery, setInternalQuery] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [page, setPage] = useState(1);
+  const query = search ?? internalQuery;
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
+
+  function updateQuery(value: string) {
+    if (onSearchChange) onSearchChange(value);
+    else setInternalQuery(value);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -122,25 +147,26 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          <Input
-            placeholder={searchPlaceholder}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            className="w-full sm:max-w-2xl"
-          />
-          {selected.length > 0 && (
-            <span className="whitespace-nowrap text-sm text-muted-foreground">{selected.length} selected</span>
+      {(!hideSearch || selected.length > 0) && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-1 items-center gap-2">
+            {!hideSearch && (
+              <Input
+                placeholder={searchPlaceholder}
+                value={query}
+                onChange={(e) => updateQuery(e.target.value)}
+                className="w-full sm:max-w-2xl"
+              />
+            )}
+            {selected.length > 0 && (
+              <span className="whitespace-nowrap text-sm text-muted-foreground">{selected.length} selected</span>
+            )}
+          </div>
+          {selected.length > 0 && bulkBar && (
+            <div className="flex justify-end">{bulkBar(selected)}</div>
           )}
         </div>
-        {selected.length > 0 && bulkBar && (
-          <div className="flex justify-end">{bulkBar(selected)}</div>
-        )}
-      </div>
+      )}
 
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">{empty}</p>
@@ -206,19 +232,35 @@ export function DataTable<T>({
         </div>
       )}
 
-      {pageCount > 1 && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">
+      {filtered.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safePage <= 1}
+            onClick={() => setPage(1)}
+            aria-label="First page"
+          >
+            <ChevronDoubleLeftIcon className="size-4" />
+          </Button>
+          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
+            Previous
+          </Button>
+          <span className="px-1 text-xs text-muted-foreground">
             Page {safePage} of {pageCount} · {filtered.length} rows
           </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm" disabled={safePage >= pageCount} onClick={() => setPage(safePage + 1)}>
-              Next
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" disabled={safePage >= pageCount} onClick={() => setPage(safePage + 1)}>
+            Next
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={safePage >= pageCount}
+            onClick={() => setPage(pageCount)}
+            aria-label="Last page"
+          >
+            <ChevronDoubleRightIcon className="size-4" />
+          </Button>
         </div>
       )}
     </div>
@@ -229,17 +271,29 @@ export function DataTable<T>({
 export function RowAction({
   label,
   onClick,
+  disabled = false,
+  loading = false,
   children,
 }: {
   label: string;
   onClick: () => void;
+  disabled?: boolean;
+  loading?: boolean;
   children: ReactNode;
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" aria-label={label} onClick={onClick}>
-          {children}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          aria-label={label}
+          onClick={onClick}
+          disabled={disabled || loading}
+          aria-busy={loading || undefined}
+        >
+          {loading ? <Spinner /> : children}
         </Button>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>

@@ -16,6 +16,7 @@ export function AdminPlans() {
   const [plans, setPlans] = useState<Array<Record<string, unknown>>>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
   const [planForm, setPlanForm] = useState({ name: "", monthly: "", annual: "", maxUsers: "", briefings: true, contactOnly: false, features: "" });
   const [editingFeaturesId, setEditingFeaturesId] = useState<string | null>(null);
@@ -36,13 +37,17 @@ export function AdminPlans() {
     if (allowed) void load();
   }, [allowed]);
 
-  async function run(fn: () => Promise<unknown>, ok: string) {
+  async function run(fn: () => Promise<unknown>, ok: string, key?: string) {
+    if (busyAction) return;
+    if (key) setBusyAction(key);
     try {
       await fn();
       toast.success(ok);
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed");
+    } finally {
+      if (key) setBusyAction(null);
     }
   }
 
@@ -81,6 +86,7 @@ export function AdminPlans() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    disabled={busyAction !== null}
                     onClick={() => {
                       setEditingFeaturesId(String(p.id));
                       setEditingFeatures(typeof p.features === "string" ? p.features : "");
@@ -91,18 +97,21 @@ export function AdminPlans() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    loading={busyAction === `active:${String(p.id)}`}
+                    loadingText="Saving…"
+                    disabled={busyAction !== null}
                     onClick={() =>
                       run(async () => {
                         await api(`/api/superadmin/plans/${String(p.id)}`, {
                           method: "PATCH",
                           body: JSON.stringify({ active: Number(p.active) === 1 ? 0 : 1 }),
                         });
-                      }, "Plan updated")
+                      }, "Plan updated", `active:${String(p.id)}`)
                     }
                   >
                     {Number(p.active) === 1 ? "Archive" : "Activate"}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setDeletePlanId(String(p.id))}>
+                  <Button variant="ghost" size="sm" onClick={() => setDeletePlanId(String(p.id))} disabled={busyAction !== null}>
                     Delete
                   </Button>
                 </div>
@@ -124,6 +133,9 @@ export function AdminPlans() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
+                      loading={busyAction === `features:${String(p.id)}`}
+                      loadingText="Saving…"
+                      disabled={busyAction !== null}
                       onClick={() =>
                         run(async () => {
                           await api(`/api/superadmin/plans/${String(p.id)}`, {
@@ -131,12 +143,12 @@ export function AdminPlans() {
                             body: JSON.stringify({ features: editingFeatures.trim() === "" ? null : editingFeatures }),
                           });
                           setEditingFeaturesId(null);
-                        }, "Plan features updated")
+                        }, "Plan features updated", `features:${String(p.id)}`)
                       }
                     >
                       Save features
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingFeaturesId(null)}>
+                    <Button variant="ghost" size="sm" onClick={() => setEditingFeaturesId(null)} disabled={busyAction !== null}>
                       Cancel
                     </Button>
                   </div>
@@ -169,6 +181,9 @@ export function AdminPlans() {
               </div>
             </div>
             <Button
+              loading={busyAction === "create"}
+              loadingText="Creating…"
+              disabled={busyAction !== null}
               onClick={() =>
                 run(async () => {
                   await api("/api/superadmin/plans", {
@@ -186,7 +201,7 @@ export function AdminPlans() {
                     }),
                   });
                   setPlanForm({ name: "", monthly: "", annual: "", maxUsers: "", briefings: true, contactOnly: false, features: "" });
-                }, "Plan created")
+                }, "Plan created", "create")
               }
             >
               Create plan

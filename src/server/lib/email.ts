@@ -50,9 +50,23 @@ export function clearOutbox(): void {
  * Superadmin BCC list for a message: every SUPERADMIN_EMAILS entry except the
  * primary recipient (no duplicate delivery when the admin is the recipient).
  */
-export function superadminBcc(env: Env, to: string): string[] {
+export function superadminBcc(env: { SUPERADMIN_EMAILS?: string }, to: string): string[] {
   const normalized = to.trim().toLowerCase();
   return [...parseSuperadminEmails(env.SUPERADMIN_EMAILS)].filter((e) => e !== normalized);
+}
+
+/** Merge the superadmin audit copy into an email without duplicating addresses. */
+function withSuperadminBcc(env: EmailEnv, email: OutgoingEmail): OutgoingEmail {
+  const existing = email.bcc ?? [];
+  const seen = new Set(existing.map((e) => e.trim().toLowerCase()));
+  const extra = superadminBcc(env, email.to).filter((e) => {
+    const key = e.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (extra.length === 0) return email;
+  return { ...email, bcc: [...existing, ...extra] };
 }
 
 type EmailEnv = Pick<
@@ -63,6 +77,7 @@ type EmailEnv = Pick<
   | "BREVO_SENDER_EMAIL"
   | "BREVO_SENDER_NAME"
   | "BREVO_NEW_SIGNUP_LIST_ID"
+  | "SUPERADMIN_EMAILS"
 >;
 
 async function sendViaResend(
@@ -94,18 +109,25 @@ export async function sendEmail(
   email: OutgoingEmail,
   from?: string | undefined,
 ): Promise<void> {
+  // Non-auth emails pass the full Env, so every customer-facing message gets
+  // a hidden superadmin copy. Auth emails pass the raw Resend key and are
+  // intentionally excluded (verification, magic link, reset, invitations).
+  const message =
+    typeof envOrKey === "object" && envOrKey !== null
+      ? withSuperadminBcc(envOrKey, email)
+      : email;
   if (captureEnabled) {
-    outbox.push(email);
+    outbox.push(message);
     return;
   }
   // Legacy callers pass the raw Resend key string (or undefined).
   if (typeof envOrKey === "string" || envOrKey == null) {
     if (!envOrKey) {
       // No key (local dev without email): capture locally so flows stay testable.
-      outbox.push(email);
+      outbox.push(message);
       return;
     }
-    await sendViaResend(envOrKey, email, from);
+    await sendViaResend(envOrKey, message, from);
     return;
   }
   const env = envOrKey;
@@ -117,23 +139,23 @@ export async function sendEmail(
   });
   if (brevoKey && sender) {
     try {
-      await sendBrevoEmail(brevoKey, sender, email);
+      await sendBrevoEmail(brevoKey, sender, message);
       return;
     } catch (err) {
       // Fall through to Resend when configured; otherwise surface the error.
       // Warn so Brevo outages/misconfig don't go unnoticed (message only, no secrets).
       console.warn("[brevo] send failed, trying Resend fallback:", (err as Error)?.message ?? err);
       if (!env.RESEND_API_KEY) throw err;
-      await sendViaResend(env.RESEND_API_KEY, email, from ?? env.RESEND_FROM_EMAIL);
+      await sendViaResend(env.RESEND_API_KEY, message, from ?? env.RESEND_FROM_EMAIL);
       return;
     }
   }
   if (env.RESEND_API_KEY) {
-    await sendViaResend(env.RESEND_API_KEY, email, from ?? env.RESEND_FROM_EMAIL);
+    await sendViaResend(env.RESEND_API_KEY, message, from ?? env.RESEND_FROM_EMAIL);
     return;
   }
   // No provider configured (local dev without email): capture locally.
-  outbox.push(email);
+  outbox.push(message);
 }
 
 /**

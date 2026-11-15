@@ -33,7 +33,8 @@ const MARKETING_SPEND = ["None right now", "Under 1k/mo", "1k to 3k/mo", "3k to 
 const GROWTH_TARGETS = ["25% growth", "50% growth", "Double the business", "Not sure yet"];
 
 const EMPTY = {
-  name: "",
+  firstName: "",
+  lastName: "",
   workEmail: "",
   phone: "",
   businessName: "",
@@ -139,9 +140,14 @@ export function Book() {
               </div>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
-                <Field label="Name" htmlFor="book-name" required>
-                  <Input id="book-name" value={form.name} onChange={(e) => set("name", e.target.value)} required maxLength={120} />
-                </Field>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="First name" htmlFor="book-first-name" required>
+                    <Input id="book-first-name" value={form.firstName} onChange={(e) => set("firstName", e.target.value)} required maxLength={60} autoComplete="given-name" />
+                  </Field>
+                  <Field label="Last name" htmlFor="book-last-name" required>
+                    <Input id="book-last-name" value={form.lastName} onChange={(e) => set("lastName", e.target.value)} required maxLength={60} autoComplete="family-name" />
+                  </Field>
+                </div>
                 <Field label="Work email" htmlFor="book-email" required>
                   <Input id="book-email" type="email" value={form.workEmail} onChange={(e) => set("workEmail", e.target.value)} required maxLength={200} />
                 </Field>

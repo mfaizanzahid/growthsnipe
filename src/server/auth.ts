@@ -135,10 +135,11 @@ export function createAuth(env: Env, db: Db) {
       sendOnSignUp: true,
       autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url }) => {
-        // Auth emails send via Resend (Brevo is billing-only + signup list).
+        // Auth emails send via Resend and are intentionally excluded from the
+        // superadmin BCC copy (Brevo is billing-only + signup list).
         await sendEmail(
           env.RESEND_API_KEY,
-          { ...verificationEmail(user.email, url) /*, bcc: superadminBcc(env, user.email) */ },
+          verificationEmail(user.email, url),
           env.RESEND_FROM_EMAIL,
         );
       },
@@ -163,10 +164,11 @@ export function createAuth(env: Env, db: Db) {
             );
             return;
           }
-          // Auth emails send via Resend (Brevo is billing-only + signup list).
+          // Auth emails send via Resend and are intentionally excluded from the
+          // superadmin BCC copy (Brevo is billing-only + signup list).
           await sendEmail(
             env.RESEND_API_KEY,
-            { ...magicLinkEmail(email, url) /*, bcc: superadminBcc(env, email) */ },
+            magicLinkEmail(email, url),
             env.RESEND_FROM_EMAIL,
           );
         },
@@ -243,10 +245,10 @@ export function createAuth(env: Env, db: Db) {
         sendInvitationEmail: async (data) => {
           const support = (await getSetting(db, "support_email")) ?? "support@growthsnipe.com";
           const link = `${env.APP_BASE_URL}/accept-invitation/${data.id}`;
-          // Auth emails send via Resend (Brevo is billing-only + signup list).
+          // Auth email: intentionally excluded from the superadmin BCC copy.
           await sendEmail(
             env.RESEND_API_KEY,
-            { ...invitationEmail(data.email, data.organization.name, link, support) /*, bcc: superadminBcc(env, data.email) */ },
+            invitationEmail(data.email, data.organization.name, link, support),
             env.RESEND_FROM_EMAIL,
           );
         },

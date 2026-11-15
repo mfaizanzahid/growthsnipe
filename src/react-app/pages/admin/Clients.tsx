@@ -32,6 +32,7 @@ export function AdminClients() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [invites, setInvites] = useState<FreshInvite[]>([]);
   const [inviting, setInviting] = useState(false);
+  const [runningRenewals, setRunningRenewals] = useState(false);
 
   async function load() {
     try {
@@ -285,13 +286,19 @@ export function AdminClients() {
             <Button
               variant="outline"
               size="sm"
+              loading={runningRenewals}
+              loadingText="Running…"
+              disabled={runningRenewals}
               onClick={async () => {
+                setRunningRenewals(true);
                 try {
                   await api("/api/superadmin/billing/run-renewals", { method: "POST" });
                   toast.success("Renewal run complete");
                   await load();
                 } catch (err) {
                   toast.error(err instanceof Error ? err.message : "Failed");
+                } finally {
+                  setRunningRenewals(false);
                 }
               }}
             >

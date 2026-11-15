@@ -8,7 +8,8 @@ import type { Env } from "../src/server/types";
 const ENV = {} as unknown as Env;
 
 const VALID = {
-  name: "Ada Owner",
+  firstName: "Ada",
+  lastName: "Owner",
   workEmail: "ada@example.com",
   phone: "555-010-2030",
   businessName: "Ada Home Inspections",
@@ -59,6 +60,7 @@ describe("book-a-call route", () => {
     expect(outbox).toHaveLength(1);
     expect(outbox[0]?.to).toBe("help@test.com");
     expect(outbox[0]?.subject).toContain("Ada Home Inspections");
+    expect(outbox[0]?.html).toContain("Ada Owner");
     expect(outbox[0]?.html).toContain("Evenings work best.");
   });
 

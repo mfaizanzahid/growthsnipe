@@ -251,6 +251,9 @@ export function Dashboard() {
   const [targets, setTargets] = useState<Record<string, number>>({});
   // Inspector row currently being edited; null means every row shows its saved value.
   const [editingTarget, setEditingTarget] = useState<string | null>(null);
+  // Inspector row whose target is being saved, and whether the widget layout save is in flight.
+  const [savingTarget, setSavingTarget] = useState<string | null>(null);
+  const [savingLayout, setSavingLayout] = useState(false);
   // Earliest order date in the warehouse: anchors the All-time preset.
   // Null until the range endpoint answers (2000 fallback meanwhile).
   const [historyStart, setHistoryStart] = useState<string | null>(null);
@@ -508,10 +511,13 @@ export function Dashboard() {
   async function saveLayout(next: string[]) {
     setVisible(next);
     if (!orgId) return;
+    setSavingLayout(true);
     try {
       await api("/api/analytics/layout", { method: "PUT", body: JSON.stringify({ orgId, widgetsJson: JSON.stringify(next), defaultRange: preset }) });
     } catch {
       toast.error("Could not save layout");
+    } finally {
+      setSavingLayout(false);
     }
   }
 
@@ -528,9 +534,10 @@ export function Dashboard() {
   }
 
   async function saveTarget(name: string) {
-    if (!orgId) return;
+    if (!orgId || savingTarget) return;
     const v = Number(targetEdits[name] ?? "");
     if (!Number.isFinite(v) || v <= 0) { toast.error("Enter a jobs per day target above zero"); return; }
+    setSavingTarget(name);
     try {
       await api("/api/analytics/targets", { method: "PUT", body: JSON.stringify({ orgId, inspectorName: name, jobsPerDay: v }) });
       toast.success("Capacity target saved");
@@ -539,6 +546,8 @@ export function Dashboard() {
       await loadOverview(orgId, range.from, range.to, { force: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not save target");
+    } finally {
+      setSavingTarget(null);
     }
   }
 
@@ -767,12 +776,13 @@ export function Dashboard() {
               </div>
             </CardContent>
             {customOpen && (
-              <CardContent className="flex flex-wrap gap-3 border-t pt-3">
+              <CardContent className="flex flex-wrap items-center gap-3 border-t pt-3">
                 {WIDGETS.map((w) => (
                   <label key={w.key} className="flex cursor-pointer items-center gap-2 text-sm">
                     <input
                       type="checkbox"
                       checked={visible.includes(w.key)}
+                      disabled={savingLayout}
                       onChange={() => {
                         const next = visible.includes(w.key) ? visible.filter((x) => x !== w.key) : [...visible, w.key];
                         void saveLayout(next);
@@ -781,6 +791,9 @@ export function Dashboard() {
                     {w.label}
                   </label>
                 ))}
+                {savingLayout && (
+                  <span role="status" className="text-xs text-muted-foreground">Saving layout…</span>
+                )}
               </CardContent>
             )}
           </Card>
@@ -972,8 +985,8 @@ export function Dashboard() {
                                   {editingTarget === ins.name ? (
                                     <div className="flex gap-2">
                                       <Input className="h-8 w-20" inputMode="decimal" placeholder="2" value={targetEdits[ins.name] ?? ""} onChange={(e) => setTargetEdits((s) => ({ ...s, [ins.name]: e.target.value }))} aria-label={`Jobs per day target for ${ins.name}`} />
-                                      <Button variant="outline" size="sm" onClick={() => void saveTarget(ins.name)}>Save</Button>
-                                      <Button variant="ghost" size="sm" onClick={() => setEditingTarget(null)}>Cancel</Button>
+                                      <Button variant="outline" size="sm" onClick={() => void saveTarget(ins.name)} loading={savingTarget === ins.name} loadingText="Saving…">Save</Button>
+                                      <Button variant="ghost" size="sm" onClick={() => setEditingTarget(null)} disabled={savingTarget === ins.name}>Cancel</Button>
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-2">

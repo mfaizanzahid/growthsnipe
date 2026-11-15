@@ -55,6 +55,7 @@ const CATEGORIES = [
 
 export function LoopLibrary() {
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [workEmail, setWorkEmail] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [trade, setTrade] = useState("");
@@ -70,7 +71,7 @@ export function LoopLibrary() {
       const res = await fetch("/api/loop-library", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, workEmail, businessName, trade, software, volume }),
+        body: JSON.stringify({ firstName, lastName, workEmail, businessName, trade, software, volume }),
       });
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) throw new Error(data?.error ?? "Could not send your request");
@@ -106,9 +107,15 @@ export function LoopLibrary() {
               </div>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="loop-first-name" required>First name</Label>
-                  <Input id="loop-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={120} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="loop-first-name" required>First name</Label>
+                    <Input id="loop-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={60} autoComplete="given-name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="loop-last-name" required>Last name</Label>
+                    <Input id="loop-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required maxLength={60} autoComplete="family-name" />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="loop-email" required>Work email</Label>

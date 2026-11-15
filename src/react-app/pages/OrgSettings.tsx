@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import { Skeleton } from "../components/ui/skeleton";
+import { Spinner } from "../components/ui/spinner";
 
 interface Member {
   id: string;
@@ -52,6 +53,7 @@ export function OrgSettings() {
   const [memberLimit, setMemberLimit] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [removeId, setRemoveId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!orgId) {
@@ -84,7 +86,13 @@ export function OrgSettings() {
     void refresh();
   }, [activeOrg?.name, refresh]);
 
-  async function run(fn: () => Promise<{ error?: { message?: string } | null }>, ok: string) {
+  async function run(
+    fn: () => Promise<{ error?: { message?: string } | null }>,
+    ok: string,
+    key?: string,
+  ) {
+    if (pendingAction) return;
+    if (key) setPendingAction(key);
     try {
       const { error } = await fn();
       if (error) throw new Error(error.message ?? "Failed");
@@ -92,6 +100,8 @@ export function OrgSettings() {
       await refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed");
+    } finally {
+      if (key) setPendingAction(null);
     }
   }
 
@@ -130,8 +140,12 @@ export function OrgSettings() {
                       () =>
                         authClient.organization.update({ organizationId: orgId, data: { name: orgName } }),
                       "Workspace renamed",
+                      "rename",
                     )
                   }
+                  loading={pendingAction === "rename"}
+                  loadingText="Saving…"
+                  disabled={pendingAction !== null}
                 >
                   Save
                 </Button>
@@ -158,6 +172,7 @@ export function OrgSettings() {
                     <div className="flex gap-2">
                       <Select
                         value={m.role}
+                        disabled={pendingAction !== null}
                         onValueChange={(v) =>
                           run(
                             () =>
@@ -167,6 +182,7 @@ export function OrgSettings() {
                                 organizationId: orgId,
                               }),
                             "Role updated",
+                            `role:${m.id}`,
                           )
                         }
                       >
@@ -181,6 +197,7 @@ export function OrgSettings() {
                           ))}
                         </SelectContent>
                       </Select>
+                      {pendingAction === `role:${m.id}` && <Spinner label="Updating role" />}
                       <Button variant="ghost" size="sm" onClick={() => setRemoveId(m.id)}>
                         Remove
                       </Button>
@@ -222,7 +239,9 @@ export function OrgSettings() {
                     </SelectContent>
                   </Select>
                   <Button
-                    disabled={memberLimit !== null && members.length >= memberLimit}
+                    disabled={(memberLimit !== null && members.length >= memberLimit) || pendingAction !== null}
+                    loading={pendingAction === "invite"}
+                    loadingText="Inviting…"
                     onClick={() =>
                       run(async () => {
                         const r = await authClient.organization.inviteMember({
@@ -232,7 +251,7 @@ export function OrgSettings() {
                         });
                         setInviteEmail("");
                         return r;
-                      }, "Invitation sent")
+                      }, "Invitation sent", "invite")
                     }
                   >
                     Invite
@@ -248,8 +267,15 @@ export function OrgSettings() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          disabled={pendingAction !== null}
+                          loading={pendingAction === `cancel-invite:${inv.id}`}
+                          loadingText="Canceling…"
                           onClick={() =>
-                            run(() => authClient.organization.cancelInvitation({ invitationId: inv.id }), "Invitation canceled")
+                            run(
+                              () => authClient.organization.cancelInvitation({ invitationId: inv.id }),
+                              "Invitation canceled",
+                              `cancel-invite:${inv.id}`,
+                            )
                           }
                         >
                           Cancel
@@ -271,19 +297,22 @@ export function OrgSettings() {
             <DialogDescription>They immediately lose access to this workspace.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemoveId(null)}>
+            <Button variant="outline" onClick={() => setRemoveId(null)} disabled={pendingAction === "remove"}>
               Keep
             </Button>
             <Button
               variant="destructive"
+              loading={pendingAction === "remove"}
+              loadingText="Removing…"
+              disabled={pendingAction !== null}
               onClick={() => {
                 const id = removeId;
-                setRemoveId(null);
                 if (id && orgId) {
-                  void run(
-                    () => authClient.organization.removeMember({ memberIdOrEmail: id, organizationId: orgId }),
-                    "Member removed",
-                  );
+                  void run(async () => {
+                    const result = await authClient.organization.removeMember({ memberIdOrEmail: id, organizationId: orgId });
+                    if (!result.error) setRemoveId(null);
+                    return result;
+                  }, "Member removed", "remove");
                 }
               }}
             >

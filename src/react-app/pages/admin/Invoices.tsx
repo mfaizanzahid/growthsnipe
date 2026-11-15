@@ -35,6 +35,7 @@ export function AdminInvoices() {
   const [preview, setPreview] = useState<{ invoice: AdminInvoice; items: PreviewLine[] } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [retryState, setRetryState] = useState<{ invoice: AdminInvoice; methods: RetryMethod[] } | null>(null);
+  const [retryLoadingId, setRetryLoadingId] = useState<string | null>(null);
   const [refundInv, setRefundInv] = useState<AdminInvoice | null>(null);
   const [bulkRefundInvs, setBulkRefundInvs] = useState<AdminInvoice[] | null>(null);
   const [createState, setCreateState] = useState({ orgId: "", amount: "", description: "" });
@@ -73,11 +74,15 @@ export function AdminInvoices() {
   }
 
   async function openRetry(inv: AdminInvoice) {
+    if (retryLoadingId) return;
+    setRetryLoadingId(inv.id);
     try {
       const d = (await api(`/api/superadmin/clients/${inv.orgId}`)) as { methods: RetryMethod[] };
       setRetryState({ invoice: inv, methods: d.methods ?? [] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load methods");
+    } finally {
+      setRetryLoadingId(null);
     }
   }
 
@@ -188,7 +193,12 @@ export function AdminInvoices() {
             <DocumentDuplicateIcon className="size-4" />
           </RowAction>
           {(r.status === "due" || r.status === "failed") && (
-            <RowAction label="Retry payment" onClick={() => openRetry(r)}>
+            <RowAction
+              label="Retry payment"
+              onClick={() => void openRetry(r)}
+              loading={retryLoadingId === r.id}
+              disabled={retryLoadingId !== null}
+            >
               <ArrowPathIcon className="size-4" />
             </RowAction>
           )}

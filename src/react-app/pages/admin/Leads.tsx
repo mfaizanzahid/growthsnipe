@@ -12,6 +12,7 @@ interface Lead {
   id: string;
   email: string;
   firstName: string;
+  lastName: string | null;
   businessName: string;
   trade: string;
   unsubscribedAt: number | null;
@@ -126,7 +127,7 @@ export function AdminLeads() {
                   <button className="flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left text-sm" onClick={() => void openLead(l.id)}>
                     <span>
                       <span className="font-medium">{l.email}</span>{" "}
-                      <span className="text-muted-foreground">{l.firstName} · {l.businessName} · {l.trade}</span>
+                      <span className="text-muted-foreground">{l.firstName}{l.lastName ? ` ${l.lastName}` : ""} · {l.businessName} · {l.trade}</span>
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {l.unsubscribedAt ? "unsubscribed" : "subscribed"} · {new Date(l.createdAt).toLocaleDateString()}

@@ -9,7 +9,7 @@ import {
   sendPaymentFailed,
   sendRefundNotice,
 } from "./mail";
-import { invitationEmail, sendEmail /*, superadminBcc */ } from "../lib/email";
+import { invitationEmail, sendEmail } from "../lib/email";
 import { validateCoupon } from "./coupons";
 import { BillingError } from "./errors";
 import type { Gateway } from "./gateway";
@@ -295,18 +295,16 @@ export async function inviteOrgMember(
     inviterId: input.inviterUserId,
   });
   const settings = await store.getAllSettings();
-  // Member invitations are auth emails: Resend (Brevo is billing-only + signup list).
+  // Member invitations are auth emails: Resend only, excluded from the
+  // superadmin BCC copy (Brevo is billing-only + signup list).
   await sendEmail(
     env.RESEND_API_KEY,
-    {
-      ...invitationEmail(
-        email,
-        org.name,
-        `${env.APP_BASE_URL}/accept-invitation/${invitationId}`,
-        settings.support_email ?? "",
-      ),
-      // bcc: superadminBcc(env, email),
-    },
+    invitationEmail(
+      email,
+      org.name,
+      `${env.APP_BASE_URL}/accept-invitation/${invitationId}`,
+      settings.support_email ?? "",
+    ),
     env.RESEND_FROM_EMAIL,
   );
   return { invitationId };

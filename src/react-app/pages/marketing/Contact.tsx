@@ -9,7 +9,8 @@ import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 
 export function Contact() {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -22,7 +23,7 @@ export function Contact() {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, message }),
+        body: JSON.stringify({ firstName, lastName, email, message }),
       });
       const data = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) throw new Error(data?.error ?? "Could not send your message");
@@ -53,9 +54,15 @@ export function Contact() {
               <p className="text-sm text-muted-foreground">Thanks. Check your inbox for our reply.</p>
             ) : (
               <form onSubmit={onSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contact-name" required>Name</Label>
-                  <Input id="contact-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="contact-first-name" required>First name</Label>
+                    <Input id="contact-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={60} autoComplete="given-name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact-last-name" required>Last name</Label>
+                    <Input id="contact-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required maxLength={60} autoComplete="family-name" />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contact-email" required>Email</Label>

@@ -23,6 +23,7 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { Spinner } from "../ui/spinner";
 import { cn } from "../../lib/utils";
 import type { Org } from "../../hooks/useActiveOrg";
 
@@ -46,6 +47,8 @@ export function OrgSwitcher({ orgs, activeOrgId, defaultOrgId, onSwitch, onDefau
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
+  const [defaultingId, setDefaultingId] = useState<string | null>(null);
   const active = orgs.find((o) => o.id === activeOrgId) ?? null;
 
   async function create() {
@@ -89,33 +92,47 @@ export function OrgSwitcher({ orgs, activeOrgId, defaultOrgId, onSwitch, onDefau
             <DropdownMenuItem
               key={o.id}
               className="gap-2"
+              disabled={switchingId !== null || defaultingId !== null}
               onSelect={(e) => {
                 e.preventDefault();
+                if (switchingId || defaultingId) return;
+                setSwitchingId(o.id);
                 void onSwitch(o.id)
                   .then(() => {
                     toast.success(`Switched to ${o.name}`);
                     setOpen(false);
                     onChanged();
                   })
-                  .catch(() => toast.error("Could not switch organization"));
+                  .catch(() => toast.error("Could not switch organization"))
+                  .finally(() => setSwitchingId(null));
               }}
             >
-              <CheckIcon className={cn("size-4 shrink-0", o.id === activeOrgId ? "opacity-100" : "opacity-0")} />
+              {switchingId === o.id ? (
+                <Spinner label={`Switching to ${o.name}`} />
+              ) : (
+                <CheckIcon className={cn("size-4 shrink-0", o.id === activeOrgId ? "opacity-100" : "opacity-0")} />
+              )}
               <span className="min-w-0 flex-1 truncate">{o.name}</span>
               <button
                 aria-label={o.id === defaultOrgId ? "Default organization" : "Make default organization"}
+                disabled={switchingId !== null || defaultingId !== null}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (switchingId || defaultingId) return;
+                  setDefaultingId(o.id);
                   void onDefault(o.id)
                     .then(() => {
                       toast.success(`${o.name} is now your default organization`);
                       onChanged();
                     })
-                    .catch(() => toast.error("Could not save default organization"));
+                    .catch(() => toast.error("Could not save default organization"))
+                    .finally(() => setDefaultingId(null));
                 }}
-                className="rounded p-0.5 hover:bg-accent"
+                className="rounded p-0.5 hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
               >
-                {o.id === defaultOrgId ? (
+                {defaultingId === o.id ? (
+                  <Spinner label={`Saving default organization ${o.name}`} />
+                ) : o.id === defaultOrgId ? (
                   <StarSolidIcon className="size-4 text-amber-500" />
                 ) : (
                   <StarIcon className="size-4 text-muted-foreground" />

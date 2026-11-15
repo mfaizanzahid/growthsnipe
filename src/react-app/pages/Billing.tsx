@@ -127,6 +127,10 @@ export function Billing() {
   const [changeOpen, setChangeOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [removeId, setRemoveId] = useState<string | null>(null);
+  const [primaryPendingId, setPrimaryPendingId] = useState<string | null>(null);
+  const [canceling, setCanceling] = useState(false);
+  const [changing, setChanging] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [invoicePage, setInvoicePage] = useState(1);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [preview, setPreview] = useState<{
@@ -199,6 +203,8 @@ export function Billing() {
   }
 
   async function setPrimary(id: string) {
+    if (primaryPendingId) return;
+    setPrimaryPendingId(id);
     try {
       const res = await fetch(`/api/billing/methods/${id}?orgId=${orgId}`, {
         method: "PATCH",
@@ -211,10 +217,14 @@ export function Billing() {
       toast.success("Primary card updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setPrimaryPendingId(null);
     }
   }
 
   async function remove(id: string) {
+    if (removing) return;
+    setRemoving(true);
     try {
       const res = await fetch(`/api/billing/methods/${id}?orgId=${orgId}`, {
         method: "DELETE",
@@ -228,6 +238,8 @@ export function Billing() {
       await refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -285,7 +297,8 @@ export function Billing() {
   }
 
   async function change() {
-    if (!changePlanId) return;
+    if (!changePlanId || changing) return;
+    setChanging(true);
     try {
       const data = (await post("/api/billing/subscription/change", {
         orgId,
@@ -304,10 +317,14 @@ export function Billing() {
       setChangeOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Plan change failed");
+    } finally {
+      setChanging(false);
     }
   }
 
   async function cancel() {
+    if (canceling) return;
+    setCanceling(true);
     try {
       await post("/api/billing/subscription/cancel", { orgId });
       toast.success("Subscription canceled: access continues until period end");
@@ -316,6 +333,8 @@ export function Billing() {
       notifyBillingChanged();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Cancel failed");
+    } finally {
+      setCanceling(false);
     }
   }
 
@@ -620,7 +639,14 @@ export function Billing() {
               </div>
               <div className="flex gap-2">
                 {!m.isDefault && m.status === "active" && (
-                  <Button variant="ghost" size="sm" onClick={() => setPrimary(m.id)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => void setPrimary(m.id)}
+                    loading={primaryPendingId === m.id}
+                    loadingText="Updating…"
+                    disabled={primaryPendingId !== null}
+                  >
                     Make primary
                   </Button>
                 )}
@@ -767,10 +793,10 @@ export function Billing() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setCancelOpen(false)}>
+            <Button variant="outline" onClick={() => setCancelOpen(false)} disabled={canceling}>
               Keep subscription
             </Button>
-            <Button variant="destructive" onClick={cancel}>
+            <Button variant="destructive" onClick={() => void cancel()} loading={canceling} loadingText="Canceling…">
               Cancel at period end
             </Button>
           </div>
@@ -848,10 +874,10 @@ export function Billing() {
                 );
               })()}
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setChangeOpen(false)}>
+                <Button variant="outline" onClick={() => setChangeOpen(false)} disabled={changing}>
                   Keep current plan
                 </Button>
-                <Button onClick={change} disabled={!changePlanId}>
+                <Button onClick={change} disabled={!changePlanId} loading={changing} loadingText="Applying…">
                   Apply change
                 </Button>
               </div>
@@ -870,10 +896,10 @@ export function Billing() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setRemoveId(null)}>
+            <Button variant="outline" onClick={() => setRemoveId(null)} disabled={removing}>
               Keep
             </Button>
-            <Button variant="destructive" onClick={() => removeId && remove(removeId)}>
+            <Button variant="destructive" onClick={() => removeId && void remove(removeId)} loading={removing} loadingText="Removing…">
               Remove
             </Button>
           </div>

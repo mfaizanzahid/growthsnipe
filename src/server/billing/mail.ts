@@ -1,7 +1,7 @@
 import type { Env } from "../types";
 import type { BillingStore } from "../repositories/billing";
 import { PORTAL_NAME } from "../lib/brand";
-import { sendEmail /*, superadminBcc */ } from "../lib/email";
+import { sendEmail } from "../lib/email";
 import {
   accountCancelledContent,
   cancelWarningContent,
@@ -48,7 +48,7 @@ async function send(
     if (!recipient) continue;
     await sendEmail(
       env,
-      { to: recipient, subject: fullSubject, html /*, bcc: superadminBcc(env, recipient) */ },
+      { to: recipient, subject: fullSubject, html },
       env.RESEND_FROM_EMAIL,
     );
   }
@@ -167,7 +167,7 @@ export async function sendRenewalReminder(
     const c = renewalReminderContent(recipient, input);
     await sendEmail(
       env,
-      { to: recipient.email, subject: c.subject, html: c.html /*, bcc: superadminBcc(env, recipient.email) */ },
+      { to: recipient.email, subject: c.subject, html: c.html },
       env.RESEND_FROM_EMAIL,
     );
   }

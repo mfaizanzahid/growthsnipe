@@ -84,6 +84,20 @@ The legacy MCP connection, AI Employees, and briefing schedules remain in the co
 - Public runtime config (`GA_MEASUREMENT_ID`, `EMBED_APP_HTML`, `EMBED_MARKETING_HTML`) is served unauthenticated by `GET /api/runtime-config` and ships to every visitor. Never put a secret in any of them.
 - Provider credentials stay server-side and encrypted.
 
+## UI action feedback (hard rule)
+
+- Every control that starts async work must show immediate feedback: `Button loading` plus `loadingText`, `RowAction loading`, or `disabled` plus a spinner or label change. Never leave a clicked control enabled while the request runs.
+- Mutations are single-flight. Per-row actions use a keyed pending id, not one global boolean. Set `aria-busy` while pending.
+- Toasts complement pending feedback, never replace it. Pure navigation links and synchronous client-side toggles are exempt.
+- Follow `docs/agent-rules/10-ui-feedback.md` for every dashboard and superadmin surface.
+
+## CRUD page format (hard rule)
+
+- Collection pages use a page header with the primary "Add new ..." button on the top right, one `Card` containing a `DataTable`, and no inline create or edit forms.
+- Search sits in the table card header on the same row as the table title, aligned right. Collection tables show 50 rows per page with First / Previous / Next / Last pagination and a `text-xs` page indicator.
+- Create and edit forms live in modals opened from the top-right button and row actions. Quick mutations stay as row actions; referenced records are deactivated, not hard-deleted.
+- Follow `docs/agent-rules/11-crud-pages.md` for every new dashboard or superadmin collection page.
+
 ## Testing (minimum)
 
 - Auth (signup, verify, onboarding trial and paid flows), org create/switch, role gating, superadmin gate.
