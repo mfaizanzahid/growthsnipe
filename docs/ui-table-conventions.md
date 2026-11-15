@@ -150,8 +150,11 @@ Collection pages follow `docs/agent-rules/11-crud-pages.md`:
 - Page header with the title and description on the left and the primary "Add new ..." button on the top right.
 - One card containing the `DataTable`. No separate create card and no inline forms.
 - Search sits in the table card header on the same row as the title, aligned right (`CardAction` or `ml-auto`). Use `DataTable` controlled search so no second search bar renders above the table.
+- A status or category filter dropdown follows the search input on the same row. Ask the owner which field(s) should be filter dropdowns for a new collection.
 - Collection tables show 50 rows per page by default.
 - Pagination shows First / Previous / Next / Last with a `text-xs` page indicator.
+- When rows are selected, show `[N selected]` and bulk action buttons on the same row as the title, left-aligned after the title. Use `DataTable` selection with `hideSelectionBar` and render the bulk actions in the card header.
+- Clear selection when the page, search, or filter changes.
 - Create and edit forms live in modals opened from the top-right button and row actions.
 - Quick mutations stay as row actions. Referenced records are deactivated, not hard-deleted.
 - The Coupons page (`pages/admin/Coupons.tsx`) is the reference implementation.

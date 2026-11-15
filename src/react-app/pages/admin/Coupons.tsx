@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDaysIcon,
   PencilIcon,
@@ -28,11 +28,17 @@ import {
   SelectValue,
 } from "../../components/ui/select";
 import { DataTable, RowAction, type DataColumn } from "../../components/DataTable";
-import { api } from "../../components/billing/shared";
+import { api, runBulk, toastBulk } from "../../components/billing/shared";
 import { AdminDenied, AdminLoading, useAdminGuard } from "./guard";
 import { couponExpiryFromDays } from "../../../lib/credit-coupon";
 
 type Coupon = Record<string, unknown>;
+type CouponStatusFilter = "all" | "active" | "inactive" | "expired" | "credit";
+
+function isExpired(coupon: Coupon): boolean {
+  const validUntil = Number(coupon.validUntil);
+  return Number.isFinite(validUntil) && validUntil > 0 && validUntil * 1000 < Date.now();
+}
 
 const EMPTY_FORM = {
   code: "",
@@ -91,6 +97,9 @@ export function AdminCoupons() {
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<CouponStatusFilter>("all");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState<"activate" | "deactivate" | "extend" | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -115,6 +124,30 @@ export function AdminCoupons() {
     if (allowed) void load();
   }, [allowed]);
 
+  const visibleCoupons = useMemo(() => {
+    const now = Date.now();
+    return coupons.filter((coupon) => {
+      if (status === "active") return Number(coupon.active) === 1;
+      if (status === "inactive") return Number(coupon.active) !== 1;
+      if (status === "expired") {
+        const validUntil = Number(coupon.validUntil);
+        return Number.isFinite(validUntil) && validUntil > 0 && validUntil * 1000 < now;
+      }
+      if (status === "credit") return Boolean(coupon.sourceOrderId);
+      return true;
+    });
+  }, [coupons, status]);
+
+  function changeSearch(value: string) {
+    setSearch(value);
+    setSelected([]);
+  }
+
+  function changeStatus(value: string) {
+    setStatus(value as CouponStatusFilter);
+    setSelected([]);
+  }
+
   async function run(fn: () => Promise<unknown>, ok: string, key: string) {
     if (busyAction) return;
     setBusyAction(key);
@@ -126,6 +159,37 @@ export function AdminCoupons() {
       toast.error(err instanceof Error ? err.message : "Failed");
     } finally {
       setBusyAction(null);
+    }
+  }
+
+  async function bulk(action: "activate" | "deactivate" | "extend") {
+    if (bulkBusy || selected.length === 0) return;
+    const chosen = coupons.filter((coupon) => selected.includes(String(coupon.id)));
+    if (chosen.length === 0) return;
+    if (
+      action === "deactivate" &&
+      !confirm(`Deactivate ${chosen.length} coupon${chosen.length === 1 ? "" : "s"}?`)
+    ) {
+      return;
+    }
+    setBulkBusy(action);
+    try {
+      const result = await runBulk(chosen, (coupon) => String(coupon.code), async (coupon) => {
+        const id = String(coupon.id);
+        if (action === "extend") {
+          await extendExpiry(coupon, 30);
+          return;
+        }
+        await api(`/api/superadmin/coupons/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ active: action === "activate" ? 1 : 0 }),
+        });
+      });
+      toastBulk(action === "extend" ? "Extended" : action === "activate" ? "Activated" : "Deactivated", result);
+      setSelected([]);
+      await load();
+    } finally {
+      setBulkBusy(null);
     }
   }
 
@@ -266,6 +330,7 @@ export function AdminCoupons() {
           <Badge variant={Number(c.active) === 1 ? "success" : "secondary"}>
             {Number(c.active) === 1 ? "active" : "inactive"}
           </Badge>
+          {isExpired(c) ? <Badge variant="destructive">expired</Badge> : null}
           {c.sourceOrderId ? <Badge variant="outline">credit</Badge> : null}
         </div>
       ),
@@ -331,29 +396,88 @@ export function AdminCoupons() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Coupons</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle>Coupons</CardTitle>
+            {selected.length > 0 && (
+              <>
+                <span className="text-sm font-normal text-muted-foreground">
+                  [{selected.length} selected]
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void bulk("activate")}
+                  loading={bulkBusy === "activate"}
+                  loadingText="Activating…"
+                  disabled={bulkBusy !== null}
+                >
+                  Activate
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void bulk("deactivate")}
+                  loading={bulkBusy === "deactivate"}
+                  loadingText="Deactivating…"
+                  disabled={bulkBusy !== null}
+                >
+                  Deactivate
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void bulk("extend")}
+                  loading={bulkBusy === "extend"}
+                  loadingText="Extending…"
+                  disabled={bulkBusy !== null}
+                >
+                  Extend +30 days
+                </Button>
+              </>
+            )}
+          </div>
           <CardDescription>
-            {coupons.length} total. Credit coupons are issued automatically and can be extended here.
+            {visibleCoupons.length} total. Credit coupons are issued automatically and can be extended here.
           </CardDescription>
-          <CardAction className="w-full sm:w-64">
-            <Input
-              aria-label="Search coupons"
-              placeholder="Search code, email, or product…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full"
-            />
+          <CardAction className="w-full sm:w-auto">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <Input
+                aria-label="Search coupons"
+                placeholder="Search code, email, or product…"
+                value={search}
+                onChange={(e) => changeSearch(e.target.value)}
+                className="w-full sm:w-64"
+              />
+              <Select value={status} onValueChange={changeStatus}>
+                <SelectTrigger className="w-full sm:w-40" aria-label="Filter coupons by status">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="credit">Credit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </CardAction>
         </CardHeader>
         <CardContent>
           <DataTable
-            rows={coupons}
+            rows={visibleCoupons}
             columns={columns}
             rowId={(c) => String(c.id)}
+            selectable
+            selected={selected}
+            onSelect={setSelected}
+            hideSelectionBar
             search={search}
-            onSearchChange={setSearch}
+            onSearchChange={changeSearch}
             hideSearch
             pageSize={50}
+            pageResetKey={status}
+            onPageChange={() => setSelected([])}
             empty="No coupons yet."
           />
         </CardContent>

@@ -22,7 +22,7 @@ Product context:
 - The MCP connection, AI Employees, and briefing schedules are dormant behind the UI. Plans should not add UI for them unless explicitly asked.
 - Billing is manual and trial-first: trials never charge, renewals run through the daily Cron, and all payment mutations are idempotent.
 - Every async dashboard or superadmin control needs visible pending feedback per `docs/agent-rules/10-ui-feedback.md`; include loading/disabled states and keyed pending ids in UI plans.
-- Collection screens follow `docs/agent-rules/11-crud-pages.md`: page header with the "Add new ..." button on the top right, one card with a `DataTable`, search in the card header on the title row aligned right, 50 rows per page with First/Previous/Next/Last pagination, and create/edit forms in modals.
+- Collection screens follow `docs/agent-rules/11-crud-pages.md`: page header with the "Add new ..." button on the top right, one card with a `DataTable`, search and a status/category filter in the card header on the title row aligned right, 50 rows per page with First/Previous/Next/Last pagination, bulk actions after the title when rows are selected, and create/edit forms in modals. Ask the owner which field(s) should be filter dropdowns for a new collection.
 
 Priorities:
 1. Public marketing pages and dynamic pricing.

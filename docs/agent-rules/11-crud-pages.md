@@ -12,10 +12,21 @@ Use this layout for every dashboard or superadmin page that manages a collection
 ## Search and pagination
 
 - The search input lives in the table card header on the same row as the table title, aligned to the right. Use `CardAction` or `ml-auto`.
+- A status or category filter dropdown follows the search input on the same row. Pass the filter to the API or filter the rows before `DataTable`.
+- **Before implementing a new CRUD table, ask the owner which field(s) should be available as filter dropdowns.** Do not invent filter fields.
 - Pass a controlled search to `DataTable` (`search`, `onSearchChange`, `hideSearch`) when the input sits in the card header, so no second search bar renders above the table.
 - Collection tables show 50 rows per page by default (`pageSize={50}`).
 - Pagination shows First / Previous / Next / Last with a `text-xs` page indicator.
-- Changing the search resets the table to page 1.
+- Changing the search or filter resets the table to page 1.
+
+## Bulk actions
+
+- Enable `DataTable` row selection with `selectable`, `selected`, and `onSelect`.
+- When rows are selected, show `[N selected]` and the bulk action buttons on the same row as the table title, left-aligned after the title.
+- Render bulk actions in the card header and pass `hideSelectionBar` to `DataTable` so the internal selection row does not duplicate them.
+- Use `runBulk` and `toastBulk` for multi-record mutations. Every bulk button uses `Button loading` with a specific `loadingText` and disables the other bulk buttons while one runs.
+- Confirm destructive bulk actions and state the count.
+- Clear selection when the page, search, or filter changes (`onPageChange`, plus the search/filter handlers).
 
 ## Create and edit
 

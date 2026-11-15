@@ -41,6 +41,12 @@ interface Props<T> {
   onSearchChange?: (value: string) => void;
   /** Hide the internal search row (put the input in the card header instead). */
   hideSearch?: boolean;
+  /** Hide the internal selection/bulk row (render bulk actions in the card header). */
+  hideSelectionBar?: boolean;
+  /** Reset to page 1 when an external filter key changes. */
+  pageResetKey?: string | number;
+  /** Called when the visible page changes so the caller can clear selection. */
+  onPageChange?: () => void;
   empty?: string;
   selectable?: boolean;
   selected?: string[];
@@ -72,6 +78,9 @@ export function DataTable<T>({
   search,
   onSearchChange,
   hideSearch = false,
+  hideSelectionBar = false,
+  pageResetKey,
+  onPageChange,
   empty = "No rows.",
   selectable = false,
   selected = [],
@@ -86,11 +95,16 @@ export function DataTable<T>({
 
   useEffect(() => {
     setPage(1);
-  }, [query]);
+  }, [query, pageResetKey]);
 
   function updateQuery(value: string) {
     if (onSearchChange) onSearchChange(value);
     else setInternalQuery(value);
+  }
+
+  function goToPage(target: number) {
+    setPage(target);
+    onPageChange?.();
   }
 
   const filtered = useMemo(() => {
@@ -147,7 +161,7 @@ export function DataTable<T>({
 
   return (
     <div className="space-y-3">
-      {(!hideSearch || selected.length > 0) && (
+      {(!hideSearch || (selected.length > 0 && !hideSelectionBar)) && (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-2">
             {!hideSearch && (
@@ -158,11 +172,11 @@ export function DataTable<T>({
                 className="w-full sm:max-w-2xl"
               />
             )}
-            {selected.length > 0 && (
+            {!hideSelectionBar && selected.length > 0 && (
               <span className="whitespace-nowrap text-sm text-muted-foreground">{selected.length} selected</span>
             )}
           </div>
-          {selected.length > 0 && bulkBar && (
+          {!hideSelectionBar && selected.length > 0 && bulkBar && (
             <div className="flex justify-end">{bulkBar(selected)}</div>
           )}
         </div>
@@ -238,25 +252,25 @@ export function DataTable<T>({
             variant="outline"
             size="sm"
             disabled={safePage <= 1}
-            onClick={() => setPage(1)}
+            onClick={() => goToPage(1)}
             aria-label="First page"
           >
             <ChevronDoubleLeftIcon className="size-4" />
           </Button>
-          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)}>
+          <Button variant="outline" size="sm" disabled={safePage <= 1} onClick={() => goToPage(safePage - 1)}>
             Previous
           </Button>
           <span className="px-1 text-xs text-muted-foreground">
             Page {safePage} of {pageCount} · {filtered.length} rows
           </span>
-          <Button variant="outline" size="sm" disabled={safePage >= pageCount} onClick={() => setPage(safePage + 1)}>
+          <Button variant="outline" size="sm" disabled={safePage >= pageCount} onClick={() => goToPage(safePage + 1)}>
             Next
           </Button>
           <Button
             variant="outline"
             size="sm"
             disabled={safePage >= pageCount}
-            onClick={() => setPage(pageCount)}
+            onClick={() => goToPage(pageCount)}
             aria-label="Last page"
           >
             <ChevronDoubleRightIcon className="size-4" />
