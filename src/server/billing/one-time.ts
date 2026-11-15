@@ -41,21 +41,11 @@ import {
 export const ONE_TIME_SLUGS = ["diagnostic", "blueprint"] as const;
 export type OneTimeSlug = (typeof ONE_TIME_SLUGS)[number];
 
-/** Safepay requires a non-blank first and last name; split the single form field. */
-function customerName(fullName: string | null | undefined): {
-  firstName?: string;
-  lastName?: string;
-} {
-  const parts = (fullName ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return {};
-  if (parts.length === 1) return { firstName: parts[0], lastName: parts[0] };
-  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
-}
-
 export interface OneTimeSessionInput {
   slug: string;
   email: string;
-  name?: string | null;
+  firstName: string;
+  lastName: string;
   phone: string;
   country: string;
   businessName?: string | null;
@@ -126,7 +116,8 @@ export async function createOneTimeSession(
       const [tracker, clientToken] = await Promise.all([
         gateway.createPaymentSession({
           user: await gateway.createCustomer({
-            ...customerName(input.name),
+            firstName: input.firstName,
+            lastName: input.lastName,
             email,
             phoneNumber: input.phone,
             country: input.country,
@@ -183,7 +174,9 @@ export async function createOneTimeSession(
     id: orderId,
     productId: product.id,
     email,
-    name: input.name ?? null,
+    name: `${input.firstName.trim()} ${input.lastName.trim()}`.trim(),
+    firstName: input.firstName.trim(),
+    lastName: input.lastName.trim(),
     phone: input.phone,
     businessName: input.businessName ?? null,
     trade: input.trade ?? null,
@@ -217,7 +210,8 @@ export async function createOneTimeSession(
   const [tracker, clientToken] = await Promise.all([
     gateway.createPaymentSession({
       user: await gateway.createCustomer({
-        ...customerName(input.name),
+        firstName: input.firstName,
+        lastName: input.lastName,
         email,
         phoneNumber: input.phone,
         country: input.country,

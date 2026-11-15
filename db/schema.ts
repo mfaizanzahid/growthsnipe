@@ -15,6 +15,8 @@ import {
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   name: text("name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
   image: text("image"),
@@ -302,6 +304,8 @@ export const oneTimeOrders = sqliteTable("one_time_orders", {
   productId: text("product_id").notNull(),
   email: text("email").notNull(),
   name: text("name"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   phone: text("phone"),
   businessName: text("business_name"),
   trade: text("trade"),

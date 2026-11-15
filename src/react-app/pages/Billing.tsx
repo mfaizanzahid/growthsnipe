@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { LockClosedIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
@@ -232,7 +232,7 @@ export function Billing() {
   }
 
   async function startAddCard() {
-    // Open the modal on the billing-address step first — Cybersource rejects
+    // Open the modal on the billing-address step first â€” Cybersource rejects
     // payer authentication without street/city/state.
     setAddingCard({ state: "address" });
   }
@@ -404,7 +404,7 @@ export function Billing() {
               </span>
               {overdue && (
                 <Button size="sm" disabled={paying === overdue.id} onClick={() => pay(overdue.id)}>
-                  {paying === overdue.id ? "Processing…" : "Retry with primary card"}
+                  {paying === overdue.id ? "Processingâ€¦" : "Retry with primary card"}
                 </Button>
               )}
             </AlertDescription>
@@ -471,8 +471,8 @@ export function Billing() {
                     {plans.find((p) => p.id === subscription.planId)?.name ?? subscription.planId}
                   </span>{" "}
                   <span className="text-sm text-muted-foreground">
-                    ({subscription.interval === "month" ? "monthly" : "yearly"}) ·{" "}
-                    {formatWholeMoney(subscription.recurringAmountMinor, subscription.currency)} · next{" "}
+                    ({subscription.interval === "month" ? "monthly" : "yearly"}) Â·{" "}
+                    {formatWholeMoney(subscription.recurringAmountMinor, subscription.currency)} Â· next{" "}
                     {new Date(subscription.nextCharge * 1000).toISOString().slice(0, 10)}
                   </span>
                 </div>
@@ -582,7 +582,7 @@ export function Billing() {
           {addingCard?.state === "loading" && (
             <div className="flex items-center justify-center gap-3 py-10 text-sm text-muted-foreground" role="status" aria-live="polite">
               <span className="size-5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
-              Preparing secure checkout…
+              Preparing secure checkoutâ€¦
             </div>
           )}
           {addingCard?.state === "ready" && (
@@ -608,7 +608,7 @@ export function Billing() {
             <div key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  {m.brand ?? "Card"} •••• {m.last4 ?? "••••"}
+                  {m.brand ?? "Card"} â€¢â€¢â€¢â€¢ {m.last4 ?? "â€¢â€¢â€¢â€¢"}
                 </span>
                 {m.expiryMonth && m.expiryYear && (
                   <span className="text-muted-foreground">
@@ -677,7 +677,7 @@ export function Billing() {
                             </Button>
                             {(inv.status === "due" || inv.status === "failed") && (
                               <Button size="sm" disabled={paying === inv.id} onClick={() => pay(inv.id)}>
-                                {paying === inv.id ? "Processing…" : inv.status === "failed" ? "Retry" : "Pay"}
+                                {paying === inv.id ? "Processingâ€¦" : inv.status === "failed" ? "Retry" : "Pay"}
                               </Button>
                             )}
                           </div>
@@ -690,7 +690,7 @@ export function Billing() {
               {pageCount > 1 && (
                 <div className="flex items-center justify-between px-6 py-3 text-sm">
                   <span className="text-muted-foreground">
-                    Page {safePage} of {pageCount} · {invoices.length} invoices
+                    Page {safePage} of {pageCount} Â· {invoices.length} invoices
                   </span>
                   <div className="flex gap-2">
                     <Button
@@ -792,7 +792,7 @@ export function Billing() {
                 <Label>Plan</Label>
                 <Select value={changePlanId} onValueChange={setChangePlanId}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose a plan…" />
+                    <SelectValue placeholder="Choose a planâ€¦" />
                   </SelectTrigger>
                   <SelectContent>
                     {selfServePlans(plans).map((p) => {
@@ -893,18 +893,6 @@ interface SubscribePlan {
   allowBriefings: number | null;
   contactOnly?: number;
   features: string | null;
-}
-
-/** Card-brand marks supplied by the owner (Visa, Mastercard, Amex, Discover). */
-function CardBrandIcons() {
-  return (
-    <div className="flex items-center gap-2" role="img" aria-label="Accepted cards: Visa, Mastercard, Amex, Discover">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 22" className="h-6 w-auto" aria-hidden><g fill="none" fillRule="evenodd"><path fill="#F6F9FC" d="M26.58 21H2.42A2.4 2.4 0 0 1 0 18.62V4.38A2.4 2.4 0 0 1 2.42 2h24.16A2.4 2.4 0 0 1 29 4.38v14.25A2.4 2.4 0 0 1 26.58 21z"></path><path fill="#F99F1B" d="M0 18v.63A2.4 2.4 0 0 0 2.42 21h24.16A2.4 2.4 0 0 0 29 18.62V18H0z"></path><path fill="#2D4990" d="M0 5v-.63A2.4 2.4 0 0 1 2.42 2h24.16A2.4 2.4 0 0 1 29 4.38V5H0zm13.9 3.12l-1.48 6.77h-1.77l1.46-6.77h1.78zm7.47 4.38l.94-2.55.54 2.55h-1.48zm1.99 2.4H25l-1.44-6.78h-1.51a.8.8 0 0 0-.76.5l-2.67 6.27h1.87l.37-1h2.28l.22 1zm-4.64-2.22c0-1.78-2.51-1.88-2.5-2.68.01-.24.25-.5.76-.57a3.4 3.4 0 0 1 1.75.3l.31-1.43c-.42-.15-.97-.3-1.66-.3-1.76 0-3 .92-3 2.24-.01.97.88 1.52 1.55 1.84.7.33.93.55.93.84-.01.46-.56.66-1.07.66-.9.02-1.41-.23-1.82-.42l-.33 1.48c.42.19 1.19.35 1.98.36 1.87 0 3.09-.9 3.1-2.32zm-7.37-4.56L8.47 14.9H6.6L5.18 9.5c-.09-.33-.17-.45-.43-.6A7.53 7.53 0 0 0 3 8.33l.04-.2h3.03c.38 0 .73.26.82.7l.75 3.91 1.85-4.6h1.86z"></path></g></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 19" className="h-6 w-auto" aria-hidden><g fill="none" fillRule="evenodd"><path fill="#003663" d="M26.58 19H2.42A2.4 2.4 0 0 1 0 16.62V2.38A2.4 2.4 0 0 1 2.42 0h24.16A2.4 2.4 0 0 1 29 2.38v14.25A2.4 2.4 0 0 1 26.58 19z"></path><circle cx="10.5" cy="9.5" r="6.5" fill="#EB1C26"></circle><circle cx="18.5" cy="9.5" r="6.5" fill="#F99F1B"></circle><path fill="#EF5D20" d="M14.5 4.38a6.49 6.49 0 0 0 0 10.24 6.49 6.49 0 0 0 0-10.24z"></path></g></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 23" className="h-6 w-auto" aria-hidden><g fill="none" fillRule="evenodd"><path fill="#1D91CE" d="M26.58 21H2.42A2.4 2.4 0 0 1 0 18.62V4.38A2.4 2.4 0 0 1 29 4.38v14.25A2.4 2.4 0 0 1 26.58 21z"></path><path fill="#FFF" d="M4.063 13.896L3.591 15H-.64l3.339-7h7.975l.805 1.546L12.231 8H22.983l.919.961.987-.961h4.993l-3.545 3.492L29.729 15h-4.832l-1.081-1.031L22.744 15H5.496l-.519-1.104"></path><path fill="#1D91CE" d="M4.98 13.97h-.92.92zM15.2 9h-2.1l-1.58 3.35L9.82 9h-2.1v4.85L5.55 9H3.58l-2.32 5h1.42l.47-1.14h2.7L6.39 14H9V9.93L10.85 14h1.22l1.84-4v4h1.29V9zm8.67 1.62L22.37 9h-6.02v5h5.82l1.65-1.64L25.48 14h1.55l-2.37-2.53L27.1 9h-1.62l-1.61 1.62zM20.7 13h-3.06v-1.1h3.06v-1h-3.06V10h3.06v-.85l2.27 2.27-2.27 2.28V13zM4.53 9.82l.88 2.03H3.58l.95-2.03z"></path></g></svg>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 29 23" className="h-6 w-auto" aria-hidden><g fill="none" fillRule="evenodd"><path fill="#EBF1F8" d="M26.58 21H2.42A2.4 2.4 0 0 1 0 18.62V4.38A2.4 2.4 0 0 1 29 4.38v14.25A2.4 2.4 0 0 1 26.58 21z"></path><path fill="#F27712" d="M15.24 21h11.34A2.4 2.4 0 0 0 29 18.62v-2.85A46.81 46.81 0 0 1 15.24 21z"></path><path fill="#000" d="M28 12.9h-1.03l-1.16-1.53h-.11v1.53h-.84V9.1h1.24c.97 0 1.53.4 1.53 1.12 0 .59-.35.97-.98 1.09L28 12.9zm-1.24-2.65c0-.37-.28-.56-.8-.56h-.26v1.15h.24c.54 0 .82-.2.82-.59zM21.92 9.1h2.38v.64h-1.54v.85h1.48v.65h-1.48v1.03h1.54v.64h-2.38V9.1zm-2.7 3.9L17.4 9.09h.92l1.15 2.56 1.16-2.56h.9L19.69 13h-.45zm-7.61-.01c-1.28 0-2.28-.87-2.28-2 0-1.1 1.02-1.99 2.3-1.99.36 0 .66.07 1.03.23v.88a1.5 1.5 0 0 0-1.05-.43c-.8 0-1.41.58-1.41 1.31 0 .77.6 1.32 1.45 1.32.38 0 .67-.12 1.01-.42v.88c-.38.16-.7.22-1.05.22zm-2.54-1.25c0 .74-.61 1.25-1.49 1.25-.64 0-1.1-.22-1.49-.72l.55-.47c.19.34.51.51.91.51.38 0 .65-.23.65-.53 0-.17-.08-.3-.25-.4a3.48 3.48 0 0 0-.58-.22c-.79-.25-1.06-.52-1.06-1.05 0-.62.58-1.09 1.34-1.09.48 0 .91.15 1.27.43l-.44.5a.92.92 0 0 0-.68-.3c-.36 0-.62.18-.62.42 0 .2.15.31.65.48.96.3 1.24.58 1.24 1.2zM4.94 9.1h.84v3.81h-.84V9.1zm-2.7 3.81H1V9.1h1.24c1.36 0 2.3.78 2.3 1.9 0 .57-.28 1.11-.77 1.47-.42.3-.89.44-1.54.44zm.98-2.86c-.28-.22-.6-.3-1.15-.3h-.23v2.52h.23c.54 0 .88-.1 1.15-.3.29-.24.46-.6.46-.97s-.17-.72-.46-.95z"></path><path fill="#F27712" d="M15 9c-1.1 0-2 .88-2 1.97 0 1.16.86 2.03 2 2.03 1.12 0 2-.88 2-2s-.87-2-2-2z"></path></g></svg>
-    </div>
-  );
 }
 
 /** Yearly billing at ~10x monthly means ~2 months free vs paying monthly. */
@@ -1037,7 +1025,6 @@ function SubscribeCard({ orgId, plans, onDone }: { orgId: string; plans: Subscri
             </div>
             {session ? (
               <div className="space-y-3">
-                <CardBrandIcons />
                 <SafepayPayment
                   tracker={session.tracker}
                   clientToken={session.clientToken}
@@ -1089,7 +1076,7 @@ function SubscribeCard({ orgId, plans, onDone }: { orgId: string; plans: Subscri
                   <span>{plan ? formatMoney(price, plan.currency) : "-"}</span>
                 </div>
                 <Button type="submit" className="w-full" disabled={pending || !plan || !agreed || !billingAddressValid(billingAddress, countryCode)}>
-                  {pending ? "Starting payment…" : "Continue to payment"}
+                  {pending ? "Starting paymentâ€¦" : "Continue to payment"}
                 </Button>
               </form>
             )}

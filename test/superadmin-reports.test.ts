@@ -43,6 +43,8 @@ function testDb(includeSyncing = false): Db {
       product_id TEXT NOT NULL,
       email TEXT NOT NULL,
       name TEXT,
+      first_name TEXT,
+      last_name TEXT,
       phone TEXT,
       business_name TEXT,
       trade TEXT,

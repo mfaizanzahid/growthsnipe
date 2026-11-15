@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
+import { PDFDocument } from "pdf-lib";
 import * as schema from "../db/schema";
 import type { Db } from "../src/server/repositories/db";
 import type { Env } from "../src/server/types";
@@ -10,6 +11,8 @@ import { captureEmails } from "../src/server/lib/email";
 import { hmacSha512, toHex } from "../src/server/lib/crypto";
 import { memoryStore } from "./memory-store";
 import { createOneTimeRoutes } from "../src/server/routes/one-time";
+import { createDiagnosticRoutes } from "../src/server/routes/diagnostic";
+import { signDiagnosticToken } from "../src/server/diagnostic/tokens";
 import { completeOneTimePaidOrder, confirmOneTimeOrder, failOneTimeOrder } from "../src/server/billing/one-time";
 import { finalizeDiagnosticRun } from "../src/server/diagnostic/report";
 import { handleSafepayWebhook } from "../src/server/billing/webhooks";
@@ -22,6 +25,7 @@ import {
   type CouponRow,
 } from "../src/server/repositories/billing";
 import { formatCreditExpiry } from "../src/lib/credit-coupon";
+import { renderInvoicePdf } from "../src/server/lib/invoice-pdf";
 
 const SECRET = "wh_shared_secret";
 const ENV = {
@@ -57,6 +61,8 @@ function testDb(): Db {
       product_id TEXT NOT NULL,
       email TEXT NOT NULL,
       name TEXT,
+      first_name TEXT,
+      last_name TEXT,
       phone TEXT,
       business_name TEXT,
       trade TEXT,
@@ -262,7 +268,8 @@ function req(app: ReturnType<typeof buildApp>, path: string, body?: unknown) {
 const BUYER = {
   slug: "diagnostic",
   email: "Owner@Example.com",
-  name: "Ada Owner",
+  firstName: "Ada",
+  lastName: "Owner",
   phone: "+15551234567",
   country: "US",
   businessName: "Ada Inspections",
@@ -364,7 +371,7 @@ describe("one-time products + session", () => {
     const app = buildApp(testDb(), gateway);
     expect((await req(app, "/api/one-time/session", { ...BUYER, slug: "nope" })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, email: "bad" })).status).toBe(422);
-    expect((await req(app, "/api/one-time/session", { ...BUYER, name: "   " })).status).toBe(422);
+    expect((await req(app, "/api/one-time/session", { ...BUYER, firstName: "   " })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, businessName: "   " })).status).toBe(422);
     expect((await req(app, "/api/one-time/session", { ...BUYER, trade: "   " })).status).toBe(422);
     expect(
@@ -405,6 +412,8 @@ describe("one-time confirm", () => {
     const first = await req(app, "/api/one-time/confirm", { orderId: session.orderId, tracker: session.tracker });
     expect(first.status).toBe(200);
     expect((await getOneTimeOrder(db, session.orderId))?.status).toBe("paid");
+    const storedOrder = await getOneTimeOrder(db, session.orderId);
+    expect(storedOrder).toMatchObject({ firstName: "Ada", lastName: "Owner", name: "Ada Owner" });
     expect(outbox).toHaveLength(3);
     expect(outbox[0]?.subject).toContain("SNIPE Diagnostic");
     expect(outbox[1]?.subject).toContain("is underway");
@@ -625,6 +634,8 @@ describe("credit coupons", () => {
     expect(outbox[0]?.html).toContain("Engine");
     expect(outbox[1]?.html).toContain("already have your baseline");
     expect(outbox[1]?.html).not.toContain("Connect your booking software");
+    expect(outbox[1]?.html).not.toContain("Complete the Blueprint intake");
+    expect(outbox[1]?.html).not.toContain("Your intake checklist");
 
     const runs = await db.select().from(schema.diagnosticRuns);
     expect(runs).toHaveLength(1);
@@ -688,6 +699,8 @@ describe("credit coupons", () => {
     expect(outbox).toHaveLength(2);
     expect(outbox[1]?.html).toContain("flow=blueprint");
     expect(outbox[1]?.html).toContain("To build your SNIPE Blueprint");
+    expect(outbox[1]?.html).not.toContain("Complete the Blueprint intake");
+    expect(outbox[1]?.html).not.toContain("Your intake checklist");
 
     const runs = await db.select().from(schema.diagnosticRuns);
     expect(runs).toHaveLength(1);
@@ -900,5 +913,58 @@ describe("credit coupons", () => {
       code: coupon.code,
     });
     expect(res.status).toBe(422);
+  });
+});
+
+describe("diagnostic report links", () => {
+  it("accepts the connect token for the report download link", async () => {
+    const db = testDb();
+    const now = Date.now();
+    const orderId = "order-connect-report";
+    const runId = "run-connect-report";
+    await db.insert(schema.diagnosticRuns).values({
+      id: runId,
+      oneTimeOrderId: orderId,
+      email: "owner@example.com",
+      status: "awaiting_connection",
+      stage: "awaiting_connection",
+      progress: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const app = createDiagnosticRoutes({ ctx: { db, auth: {} as unknown as Auth } });
+    const token = await signDiagnosticToken(ENV, { orderId, purpose: "connect" });
+    const res = await app.request(
+      `/api/diagnostic/report?token=${encodeURIComponent(token)}`,
+      { method: "GET" },
+      ENV,
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: "Your report is still being prepared." });
+  });
+});
+
+describe("invoice pdf", () => {
+  it("renders a styled one-page invoice with line items", async () => {
+    const pdf = await renderInvoicePdf({
+      portalName: "GrowthSnipe",
+      supportEmail: "help@growthsnipe.com",
+      number: "INV-2026-0042",
+      status: "paid",
+      orgName: "Acme Inspections",
+      billToEmail: "owner@example.com",
+      description: "SNIPE Blueprint purchase",
+      currency: "USD",
+      lines: [
+        { description: "SNIPE Blueprint", amountMinor: 99900 },
+        { description: "Discount (DIAG-ABC123)", amountMinor: -19900 },
+      ],
+      totalMinor: 80000,
+      createdAt: Date.now(),
+      paidAt: Date.now(),
+    });
+    expect(new TextDecoder().decode(pdf.slice(0, 5))).toBe("%PDF-");
+    const doc = await PDFDocument.load(pdf);
+    expect(doc.getPageCount()).toBe(1);
   });
 });

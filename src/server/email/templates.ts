@@ -265,14 +265,6 @@ export function oneTimeInvoiceContent(input: {
   };
 }
 
-/** Intake details shared by Blueprint purchase and baseline emails. */
-function blueprintIntakeHtml(): string {
-  return (
-    `<p>Complete the Blueprint intake and provide the requested business information. The 10-business-day delivery window begins once the required information is complete.</p>` +
-    `<p>You will receive:</p><ul><li>Your intake checklist.</li><li>Secure data-submission instructions.</li><li>A confirmation when the information is complete.</li><li>A scheduling link for your 90-minute Blueprint presentation.</li></ul>`
-  );
-}
-
 /** Intake + next-steps email for one-time purchases (copy per §18 of the website strategy). */
 export function oneTimeIntakeContent(input: {
   productSlug: "diagnostic" | "blueprint";
@@ -291,8 +283,7 @@ export function oneTimeIntakeContent(input: {
       subject: "Let's build your growth plan: intake inside",
       html:
         `<p>Hi ${name},</p>` +
-        `<p>Thank you for purchasing the SNIPE Blueprint™.</p>` +
-        blueprintIntakeHtml() +
+        `<p>Thank you for purchasing the SNIPE BlueprintT.</p>` +
         credit +
         cta,
     };
@@ -371,8 +362,7 @@ export function blueprintBaselineConnectContent(input: {
       intro +
       `<p>The credentials are encrypted, used only for this baseline, and removed once the data is ready.</p>` +
       `<p><a href="${input.connectUrl}">Connect your booking software</a></p>` +
-      `<p>If the button does not work, copy this link into your browser: ${input.connectUrl}</p>` +
-      blueprintIntakeHtml(),
+      `<p>If the button does not work, copy this link into your browser: ${input.connectUrl}</p>`,
   };
 }
 
@@ -389,9 +379,8 @@ export function blueprintBaselineExistingContent(input: {
     html:
       `<p>Hi ${name},</p>` +
       (input.processing
-        ? `<p>We already have your Diagnostic information. Your Diagnostic baseline is still being prepared, and we will use it for your SNIPE Blueprint™ as soon as it is ready. The team will start working on your Blueprint.</p>`
-        : `<p>We already have your baseline data and information from your SNIPE Diagnostic™. We will use it for your SNIPE Blueprint™. The team will start working on your Blueprint.</p>`) +
-      blueprintIntakeHtml(),
+        ? `<p>We already have your Diagnostic information. Your Diagnostic baseline is still being prepared, and we will use it for your SNIPE BlueprintT as soon as it is ready. The team will start working on your Blueprint.</p>`
+        : `<p>We already have your baseline data and information from your SNIPE DiagnosticT. We will use it for your SNIPE BlueprintT. The team will start working on your Blueprint.</p>`),
   };
 }
 
@@ -407,8 +396,7 @@ export function blueprintBaselineReadyContent(input: {
       `<p>Hi ${name},</p>` +
       `<p>Your 12-month review is ready. It includes your baseline, SNIPE Framework scores, referral performance, leak map, priority findings, and a 30-day plan.</p>` +
       `<p><a href="${input.reportUrl}">Download your Diagnostic report</a></p>` +
-      `<p>We now have your baseline data and information. We will use it for your SNIPE Blueprint™. The team will start working on your Blueprint.</p>` +
-      blueprintIntakeHtml(),
+      `<p>We now have your baseline data and information. We will use it for your SNIPE BlueprintT. The team will start working on your Blueprint.</p>`,
   };
 }
 

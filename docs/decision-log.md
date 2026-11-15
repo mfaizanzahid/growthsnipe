@@ -1224,3 +1224,21 @@ The purchase email is now an invoice email with the invoice number and a signed 
 Superadmin has a new One-time orders page at `/superadmin/one-time-orders` with invoice number, email status, PDF download, and resend. Loading the page backfills invoices for paid orders that are missing one, but does not email historical buyers automatically; the resend action is explicit. Existing paid orders are therefore recoverable without a bulk email blast.
 
 Updated: `db/migrations/0051_one_time_invoices.sql` (new), `db/schema.ts`, `src/server/repositories/billing.ts`, `src/server/billing/one-time.ts`, `src/server/billing/one-time-invoices.ts` (new), `src/server/billing/one-time-invoice-token.ts` (new), `src/server/email/templates.ts`, `src/server/routes/one-time.ts`, `src/server/routes/superadmin.ts`, `src/react-app/App.tsx`, `src/react-app/components/shell/AppShell.tsx`, `src/react-app/pages/admin/OneTimeOrders.tsx` (new), `test/one-time.test.ts`, `test/superadmin-one-time.test.ts` (new).
+
+## 2026-11-14 - Split payer names, shared card marks, and invoice polish
+
+One-time checkout and onboarding now collect first and last name separately for Safepay. Migration `0052_split_payer_names.sql` adds `first_name` and `last_name` to `one_time_orders` and `users`. The combined `name` columns remain derived compatibility fields for Better Auth, greetings, and existing records. One-time sessions require both names, store them, and pass them directly to Safepay. Onboarding requires both names on signup payment, persists them to the user row, and falls back to splitting the signed-in name for add-card setup flows.
+
+The card-brand SVG marks moved from Billing into `src/react-app/components/CardBrandIcons.tsx` and render inside `SafepayPayment`, so one-time checkout, onboarding, and billing card forms all show Visa, Mastercard, Amex, and Discover.
+
+Blueprint baseline emails no longer include the intake paragraph or the "You will receive" checklist. The Blueprint thank-you page now leads with a clear "Check your email for next steps" callout and no longer lists intake items.
+
+`renderInvoicePdf` was rebuilt as a styled A4 invoice with a header band, status badge, bill-to card, invoice details, a real line-item table with wrapped descriptions, subtotal/discount/total/paid/balance totals, and a footer. Guest invoices also pass the buyer email into the PDF. This applies to both subscription and one-time invoices.
+
+Updated: `db/migrations/0052_split_payer_names.sql` (new), `db/schema.ts`, `src/server/repositories/billing.ts`, `src/server/billing/one-time.ts`, `src/server/routes/one-time.ts`, `src/server/routes/billing.ts`, `src/server/email/templates.ts`, `src/server/lib/invoice-pdf.ts`, `src/react-app/components/CardBrandIcons.tsx` (new), `src/react-app/components/SafepayPayment.tsx`, `src/react-app/pages/Billing.tsx`, `src/react-app/pages/checkout/OneTimeCheckout.tsx`, `src/react-app/pages/checkout/ThankYouBlueprint.tsx`, `src/react-app/pages/Onboarding.tsx`, `test/one-time.test.ts`, `test/billing-routes.test.ts`.
+
+## 2026-11-14 - Blueprint baseline PDFs skip the Diagnostic next-step section
+
+When a Diagnostic run is created for a Blueprint baseline, or an existing Diagnostic run is linked to a Blueprint order, the generated PDF omits the "Recommended next step" conversion page, the Blueprint credit ribbon, the "What happens next" cards, testimonials, and Blueprint/Book CTAs. `renderRunReport` resolves the baseline flag from `diagnostic_runs.purpose` and the Blueprint order link, and `renderDiagnosticPdf` skips that whole section. Methodology, appendix, and scoring rules remain.
+
+Updated: `src/server/diagnostic/pdf.ts`, `src/server/diagnostic/report.ts`, `test/diagnostic.test.ts`.

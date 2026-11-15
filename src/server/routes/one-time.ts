@@ -27,7 +27,8 @@ const SessionBody = z
   .object({
     slug: z.enum(ONE_TIME_SLUGS),
     email: z.string().trim().email().max(200),
-    name: z.string().trim().min(1).max(120),
+    firstName: z.string().trim().min(1).max(60),
+    lastName: z.string().trim().min(1).max(60),
     phone: z.string().trim().min(7).max(20),
     country: z.string().trim().length(2),
     businessName: z.string().trim().min(1).max(160),
@@ -165,7 +166,8 @@ export function createOneTimeRoutes(deps: {
       const result = await createOneTimeSession(c.get("db") as Db, env, gatewayFor(env, deps), {
         slug: parsed.data.slug,
         email: parsed.data.email,
-        name: parsed.data.name,
+        firstName: parsed.data.firstName,
+        lastName: parsed.data.lastName,
         phone: parsed.data.phone,
         country: parsed.data.country.toUpperCase(),
         businessName: parsed.data.businessName,

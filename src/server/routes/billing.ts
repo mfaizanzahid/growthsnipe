@@ -15,6 +15,7 @@ import type { Db } from "../repositories/db";
 import type { Auth } from "../auth";
 import {
   drizzleStore,
+  updateUserNames,
   type BillingStore,
   type PaymentMethodRow,
 } from "../repositories/billing";
@@ -85,6 +86,8 @@ const SessionSchema = z.object({  orgId: z.string().min(1).optional(),
   planId: z.string().optional(),
   interval: z.enum(["month", "year"]).optional(),
   couponCode: z.string().optional(),
+  firstName: z.string().trim().max(60).optional(),
+  lastName: z.string().trim().max(60).optional(),
   phone: z.string().optional(),
   country: z.string().optional(),
 });
@@ -129,7 +132,15 @@ export function createBillingRoutes(deps: BillingDeps = {}) {
     const store = billingStoreFor(c, deps);
     const parsed = SessionSchema.safeParse(await c.req.json().catch(() => undefined));
     if (!parsed.success) return c.json({ error: "Invalid session request" }, 422);
-    const { purpose, planId, interval, couponCode, phone, country } = parsed.data;
+    const { purpose, planId, interval, couponCode, firstName, lastName, phone, country } = parsed.data;
+
+    if (purpose === "signup" && (!firstName?.trim() || !lastName?.trim())) {
+      return c.json({ error: "First and last name are required for payment" }, 422);
+    }
+    const names =
+      firstName?.trim() && lastName?.trim()
+        ? { firstName: firstName.trim(), lastName: lastName.trim() }
+        : splitName(user.name);
 
     try {
       let amountMinor = 0;
@@ -157,6 +168,23 @@ export function createBillingRoutes(deps: BillingDeps = {}) {
         if (amountMinor <= 0) return c.json({ error: "Nothing to charge" }, 422);
       }
 
+      if (firstName?.trim() && lastName?.trim() && c.env.DB) {
+        try {
+          await updateUserNames(
+            c.get("db") as Db,
+            user.id,
+            firstName.trim(),
+            lastName.trim(),
+            `${firstName.trim()} ${lastName.trim()}`,
+          );
+        } catch (err) {
+          console.error(
+            "[billing] could not save payer names:",
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+
       const existing = await store.getSafepayCustomerByOrg(orgId);
       let customerToken: string;
       if (existing) {
@@ -171,7 +199,8 @@ export function createBillingRoutes(deps: BillingDeps = {}) {
         customerToken = (
           await ensureCustomer(c.env, store, gatewayFor(c.env, deps), orgId, {
             email: user.email,
-            ...splitName(user.name),
+            firstName: names.firstName,
+            lastName: names.lastName,
             phoneNumber: phone,
             country: resolvedCountry,
           })

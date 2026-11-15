@@ -828,6 +828,8 @@ export interface DiagnosticPdfLinks {
   blueprintUrl?: string;
   bookUrl?: string;
   credit?: DiagnosticCredit | null;
+  /** Blueprint baseline reports omit the Diagnostic-to-Blueprint conversion pages. */
+  baseline?: boolean;
 }
 
 export async function renderDiagnosticPdf(
@@ -1723,7 +1725,8 @@ export async function renderDiagnosticPdf(
   }
 
   // Recommended next step: conversion page.
-  section("Recommended next step");
+  if (!links.baseline) {
+    section("Recommended next step");
   report.heading("Turn this Diagnostic into your 12-month plan", { kicker: "Your next step" });
   report.text(
     "The SNIPE Blueprint™ takes the numbers in this report and turns them into a sequenced plan for revenue, channels, ticket value, follow-up, and capacity.",
@@ -1893,6 +1896,7 @@ export async function renderDiagnosticPdf(
     "No business outcome is guaranteed. The Blueprint is a planning product built from the data in this report.",
     { size: 8, color: MUTED },
   );
+  }
 
   // Methodology
   section("Methodology");

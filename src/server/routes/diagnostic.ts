@@ -122,7 +122,7 @@ export function createDiagnosticRoutes(deps: {
   routes.get("/api/diagnostic/report", async (c) => {
     const env = c.env as Env;
     const token = c.req.query("token") ?? "";
-    const orderId = await verifyDiagnosticToken(env, token, "report");
+    const orderId = await orderIdFromToken(env, token);
     if (!orderId) return c.json({ error: "This report link is invalid or has expired." }, 401);
     const db = c.get("db") as Db;
     const run = await getRunByOrderId(db, orderId);

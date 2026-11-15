@@ -90,6 +90,7 @@ export async function renderOneTimeInvoicePdf(
     number: invoice.number,
     status: invoice.status,
     orgName: order.businessName ?? order.name ?? order.email,
+    billToEmail: order.email,
     description: invoice.description,
     currency: invoice.currency,
     lines: parseOneTimeInvoiceLines(invoice),

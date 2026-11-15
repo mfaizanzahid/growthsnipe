@@ -330,6 +330,32 @@ describe("diagnostic pdf", () => {
     expect(found).toBe(true);
   });
 
+  it("omits the next-step conversion links for Blueprint baselines", async () => {
+    const f = facts();
+    const narrative = fallbackNarrative(f);
+    const bytes = await renderDiagnosticPdf(f, narrative, { baseline: true });
+    const doc = await PDFDocument.load(bytes);
+    let found = false;
+    for (const page of doc.getPages()) {
+      const annots = page.node.lookup(PDFName.of("Annots"), PDFArray);
+      if (!annots) continue;
+      for (let i = 0; i < annots.size(); i += 1) {
+        const annot = annots.lookup(i) as PDFDict;
+        const action = annot.lookup(PDFName.of("A"), PDFDict);
+        if (!action) continue;
+        const uri = action.get(PDFName.of("URI"));
+        if (
+          uri instanceof PDFString &&
+          (uri.decodeText().includes("growthsnipe.com/blueprint") ||
+            uri.decodeText().includes("growthsnipe.com/book"))
+        ) {
+          found = true;
+        }
+      }
+    }
+    expect(found).toBe(false);
+  });
+
   it("prints the Blueprint credit code and expiry", async () => {
     const f = facts();
     const narrative = fallbackNarrative(f);

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, Navigate } from "react-router-dom";
 import { ArrowRightIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import { authClient } from "../lib/auth-client";
+import { authClient, useSession } from "../lib/auth-client";
 import { useActiveOrg } from "../hooks/useActiveOrg";
 import { COUNTRIES, DEFAULT_COUNTRY_CODE } from "../lib/countries";
 import { formatMoney } from "../lib/money";
@@ -68,6 +68,9 @@ export function Onboarding() {
   const [coupon, setCoupon] = useState("");
   const [profile, setProfile] = useState<BusinessProfileValues>(EMPTY_PROFILE);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const { data: authSession } = useSession();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [countryCode, setCountryCode] = useState(DEFAULT_COUNTRY_CODE);
   const [billingAddress, setBillingAddress] = useState<BillingAddress>(EMPTY_BILLING_ADDRESS);
@@ -88,6 +91,14 @@ export function Onboarding() {
   const [flow, setFlow] = useState<Flow | null>(null);
   const [trialEndsAt, setTrialEndsAt] = useState<number | null>(null);
   const { orgs: existingOrgs, activeOrgId, loading: orgsLoading, superadmin } = useActiveOrg();
+
+  useEffect(() => {
+    const fullName = authSession?.user?.name?.trim();
+    if (!fullName) return;
+    const parts = fullName.split(/\s+/).filter(Boolean);
+    setFirstName((current) => current || parts[0] || "");
+    setLastName((current) => current || parts.slice(1).join(" ") || "");
+  }, [authSession?.user?.name]);
 
   useEffect(() => {
     fetch("/api/plans")
@@ -190,6 +201,10 @@ export function Onboarding() {
       toast.error("Please accept the terms and billing authorization to continue");
       return;
     }
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Enter your first and last name");
+      return;
+    }
     const selected = COUNTRIES.find((c) => c.code === countryCode);
     const digits = phone.replace(/\D/g, "");
     if (!selected || digits.length < 7 || digits.length > 15) {
@@ -215,6 +230,8 @@ export function Onboarding() {
           planId: plan.id,
           interval,
           couponCode: coupon || undefined,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           phone: `+${selected.dial}${digits}`,
           country: selected.code,
         }),
@@ -600,6 +617,30 @@ export function Onboarding() {
             />
             ) : (
               <form onSubmit={startPayment} className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="pay-first-name">First name</Label>
+                    <Input
+                      id="pay-first-name"
+                      autoComplete="given-name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      maxLength={60}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pay-last-name">Last name</Label>
+                    <Input
+                      id="pay-last-name"
+                      autoComplete="family-name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      maxLength={60}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
                   <div className="flex gap-2">
@@ -663,7 +704,7 @@ export function Onboarding() {
                     I authorize auto-charging of my payment method for the recurring subscription fee.
                   </span>
                 </label>
-                <Button type="submit" className="w-full" disabled={pending || !agreedTerms || !agreedBilling || !billingAddressValid(billingAddress, countryCode)}>
+                <Button type="submit" className="w-full" disabled={pending || !agreedTerms || !agreedBilling || !firstName.trim() || !lastName.trim() || !billingAddressValid(billingAddress, countryCode)}>
                   {pending ? "Starting payment…" : "Continue to payment"}
                 </Button>
               </form>

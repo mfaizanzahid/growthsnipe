@@ -935,6 +935,8 @@ export async function createOneTimeOrder(
     productId: string;
     email: string;
     name?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
     phone?: string | null;
     businessName?: string | null;
     trade?: string | null;
@@ -954,6 +956,8 @@ export async function createOneTimeOrder(
     productId: row.productId,
     email: row.email.trim().toLowerCase(),
     name: row.name ?? null,
+    firstName: row.firstName ?? null,
+    lastName: row.lastName ?? null,
     phone: row.phone ?? null,
     businessName: row.businessName ?? null,
     trade: row.trade ?? null,
@@ -1167,6 +1171,20 @@ export async function getUser(
 /** Persist the user's explicit default org (must be a member — validated by callers). */
 export async function setDefaultOrg(db: Db, userId: string, orgId: string | null): Promise<void> {
   await db.update(users).set({ defaultOrgId: orgId }).where(eq(users.id, userId));
+}
+
+/** Persist split payer names from onboarding while keeping the display name. */
+export async function updateUserNames(
+  db: Db,
+  userId: string,
+  firstName: string,
+  lastName: string,
+  name: string,
+): Promise<void> {
+  await db
+    .update(users)
+    .set({ firstName, lastName, name })
+    .where(eq(users.id, userId));
 }
 
 export async function countSubscriptionsForPlan(db: Db, planId: string): Promise<number> {

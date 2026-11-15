@@ -2,6 +2,7 @@ import { Suspense, useCallback, useRef, useState } from "react";
 import { CardCapture, PayerAuthentication, Environment } from "@sfpy/atoms";
 import { Button } from "./ui/button";
 import { Alert, AlertDescription } from "./ui/alert";
+import { CardBrandIcons } from "./CardBrandIcons";
 import type { BillingAddress } from "./BillingAddressFields";
 
 interface PayerAuthSession {
@@ -84,6 +85,11 @@ export function SafepayPayment({ tracker, clientToken, environment, billingAddre
         <Alert variant="destructive" role="alert">
           <AlertDescription>{formError}</AlertDescription>
         </Alert>
+      )}
+      {!authSession && (
+        <div className="flex justify-end">
+          <CardBrandIcons />
+        </div>
       )}
       <Suspense fallback={<div className="text-sm text-gray-500">Loading secure card form…</div>}>
         {!authSession ? (

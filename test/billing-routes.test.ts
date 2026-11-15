@@ -94,12 +94,28 @@ describe("billing session + signup routes", () => {
       planId: "launch",
       interval: "month",
       couponCode: "SAVE20",
+      firstName: "Ada",
+      lastName: "Owner",
       phone: "+923001234567",
     });
     expect(res.status).toBe(200);
     const body = (await res.json()) as { amountMinor: number; tracker: string };
     expect(body.amountMinor).toBe(15920);
     expect(body.tracker).toBe("track_sess_1");
+  });
+
+  it("requires first and last name for signup payment", async () => {
+    const store = memoryStore();
+    store.seed.plan({ id: "launch", name: "Launch" });
+    const app = buildApp(store);
+    const res = await req(app, "/api/billing/session", {
+      orgId: "o1",
+      purpose: "signup",
+      planId: "launch",
+      interval: "month",
+      phone: "+923001234567",
+    });
+    expect(res.status).toBe(422);
   });
 
   it("requires a phone number for first-time customers", async () => {
@@ -111,6 +127,8 @@ describe("billing session + signup routes", () => {
       purpose: "signup",
       planId: "launch",
       interval: "month",
+      firstName: "Ada",
+      lastName: "Owner",
     });
     expect(res.status).toBe(422);
   });

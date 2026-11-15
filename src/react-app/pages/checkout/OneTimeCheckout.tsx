@@ -45,7 +45,8 @@ export function OneTimeCheckout({
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [failed, setFailed] = useState(false);
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [trade, setTrade] = useState("");
   const [phone, setPhone] = useState("");
@@ -129,8 +130,8 @@ export function OneTimeCheckout({
   async function start(e: React.FormEvent) {
     e.preventDefault();
     if (!product) return;
-    if (!name.trim()) {
-      toast.error("Enter your name");
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Enter your first and last name");
       return;
     }
     if (!EMAIL_RE.test(email.trim())) {
@@ -175,7 +176,8 @@ export function OneTimeCheckout({
         body: JSON.stringify({
           slug,
           email: email.trim(),
-          name: name.trim(),
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           phone: `+${selected.dial}${digits}`,
           country: selected.code,
           businessName: businessName.trim(),
@@ -301,10 +303,14 @@ export function OneTimeCheckout({
                 </div>
               ) : (
                 <form onSubmit={start} className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="space-y-2">
-                      <Label htmlFor="oto-name" required>Full name</Label>
-                      <Input id="oto-name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
+                      <Label htmlFor="oto-first-name" required>First name</Label>
+                      <Input id="oto-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={60} autoComplete="given-name" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="oto-last-name" required>Last name</Label>
+                      <Input id="oto-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required maxLength={60} autoComplete="family-name" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="oto-email" required>Work email</Label>

@@ -626,7 +626,10 @@ export async function renderRunReport(
       console.error("[diagnostic] could not load the Blueprint credit:", (err as Error)?.message ?? err);
     }
   }
-  return renderDiagnosticPdf(facts, narrative, { credit });
+  const baseline =
+    run.purpose === "blueprint" ||
+    Boolean(await findBlueprintOrderForBaselineRun(db, run.id));
+  return renderDiagnosticPdf(facts, narrative, { credit, baseline });
 }
 
 /** Escape helper re-exported for route error messages that include email text. */
