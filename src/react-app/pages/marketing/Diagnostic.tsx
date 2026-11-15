@@ -37,7 +37,7 @@ const RECEIVE = [
   "Diagnostic Snapshot: a summary of the business baseline and data coverage.",
   "Leak Map: a structured view of identified friction points and estimated financial exposure where enough evidence exists.",
   "Priority Findings: the issues worth addressing first, ranked by likely impact and practical effort.",
-  "30-Minute Review: a live walkthrough, discussion and recommended next step.",
+  "30-Minute Review Call: a live walkthrough, discussion and recommended next step.",
 ];
 
 const STEPS = [
@@ -45,7 +45,7 @@ const STEPS = [
   "Receive the data checklist and secure submission instructions.",
   "Share the agreed business exports and contact details.",
   "We review the booking data and build the 12-month baseline, Leak Map and framework scores.",
-  "Join the 30-minute review and decide whether to execute independently or build a full SNIPE Blueprint™.",
+  "Join the 30-minute review call and decide whether to execute independently or build a full SNIPE Blueprint™.",
 ];
 
 const FAQS = [
@@ -84,7 +84,7 @@ export function Diagnostic() {
                 "Review of up to 12 months of supplied business data.",
                 "A business-specific Leak Map with quantified opportunities where the data supports it.",
                 "A service-mix, cancellation and referral review.",
-                "A 30-minute findings and recommendations review.",
+                "A 30-minute findings and recommendations call.",
                 "100% credited toward a SNIPE Blueprint™ purchased within 14 days.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">

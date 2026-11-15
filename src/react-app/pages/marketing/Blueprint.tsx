@@ -19,7 +19,10 @@ const INCLUDED = [
 ];
 
 const STEPS = [
-  { title: "Purchase your Blueprint", body: "Complete checkout and receive your intake instructions." },
+  {
+    title: "Purchase your Blueprint",
+    body: "Complete checkout and receive your intake instructions. Book your 30-minute discovery call to confirm goals, data access and timing.",
+  },
   { title: "Share your business information", body: "Provide the agreed booking, revenue, lead-source, marketing and capacity data. We will tell you what is needed and what can be substituted if a report is unavailable." },
   { title: "We build the plan", body: "The 10-business-day delivery window begins once the required information is complete." },
   { title: "Walk through the decisions", body: "Join a 90-minute presentation to review the plan, assumptions, priorities and economics." },
@@ -80,6 +83,7 @@ export function Blueprint() {
               {[
                 "Personalized 25 to 35-page growth plan.",
                 "Delivered within 10 business days after complete intake and data receipt.",
+                "A 30-minute discovery call with our team.",
                 "90-minute presentation and walkthrough.",
                 "30 days of follow-up questions.",
                 "100% of the Blueprint fee credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation.",
@@ -138,6 +142,16 @@ export function Blueprint() {
               </Card>
             ))}
           </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Already purchased?{" "}
+            <a
+              className="font-semibold text-primary underline underline-offset-4"
+              href="/blueprint-discovery-call"
+            >
+              Book your 30-minute discovery call
+            </a>
+            .
+          </p>
         </div>
       </section>
 

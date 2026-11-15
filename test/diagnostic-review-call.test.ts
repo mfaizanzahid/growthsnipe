@@ -65,8 +65,32 @@ describe("diagnostic review call redirect", () => {
     expect(res.headers.get("location")).toBe("/book");
   });
 
-  it("runs the redirect in the Worker before static assets", () => {
+  it("redirects the Blueprint discovery call to its configured URL", async () => {
+    const db = testDb();
+    await setSetting(db, "blueprint_discovery_call_url", "https://calendly.com/team/blueprint-discovery");
+    const res = await appFor(db).request("/blueprint-discovery-call");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("https://calendly.com/team/blueprint-discovery");
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("falls back to /book when the Blueprint discovery URL is unset", async () => {
+    const res = await appFor(testDb()).request("/blueprint-discovery-call");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/book");
+  });
+
+  it("falls back to /book when the Blueprint discovery URL is unsafe", async () => {
+    const db = testDb();
+    await setSetting(db, "blueprint_discovery_call_url", "javascript:alert(1)");
+    const res = await appFor(db).request("/blueprint-discovery-call");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/book");
+  });
+
+  it("runs both redirects in the Worker before static assets", () => {
     const wrangler = readFileSync(join(process.cwd(), "wrangler.jsonc"), "utf8");
     expect(wrangler).toContain('"/diagnostic-review-call"');
+    expect(wrangler).toContain('"/blueprint-discovery-call"');
   });
 });

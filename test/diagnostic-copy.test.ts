@@ -29,6 +29,13 @@ describe("Diagnostic copy", () => {
     expect(how).not.toContain("friction in acquisition, response, booking");
   });
 
+  it("uses the word call for the 30-minute review on the Diagnostic page", () => {
+    const diagnostic = read("src/react-app/pages/marketing/Diagnostic.tsx");
+    expect(diagnostic).toContain("30-Minute Review Call");
+    expect(diagnostic).toContain("findings and recommendations call");
+    expect(diagnostic).toContain("Join the 30-minute review call");
+  });
+
   it("uses an add-on revenue testimonial in the Diagnostic PDF", () => {
     const pdf = read("src/server/diagnostic/pdf.ts");
     expect(pdf).toContain("add-on revenue we were leaving on the table");

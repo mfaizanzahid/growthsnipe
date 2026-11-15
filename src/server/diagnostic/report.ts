@@ -523,9 +523,11 @@ async function sendBlueprintBaselineReadyEmail(
     now,
   });
   const reportUrl = `${baseUrl(env)}/api/diagnostic/report?token=${encodeURIComponent(token)}`;
+  const discoveryCallUrl = `${baseUrl(env)}/blueprint-discovery-call`;
   const content = blueprintBaselineReadyContent({
     firstName: firstNameOf(order.name),
     reportUrl,
+    discoveryCallUrl,
   });
   const support = await supportEmail(db);
   await sendEmail(

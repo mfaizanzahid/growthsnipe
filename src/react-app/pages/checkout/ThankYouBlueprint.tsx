@@ -31,6 +31,21 @@ export function ThankYouBlueprint() {
             10-business-day delivery window begins once the required information is complete.
           </p>
         </div>
+        <div>
+          <h2 className="font-semibold">Book your discovery call</h2>
+          <p className="mt-2 text-muted-foreground">
+            Book your 30-minute discovery call with our team to confirm goals, data access and
+            timing.
+          </p>
+          <p className="mt-3">
+            <a
+              className="font-semibold text-primary underline underline-offset-4"
+              href="/blueprint-discovery-call"
+            >
+              Book your 30-minute discovery call
+            </a>
+          </p>
+        </div>
       </section>
     </MarketingLayout>
   );

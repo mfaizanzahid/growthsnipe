@@ -15,7 +15,8 @@
       "/mcp",
       "/oauth/*",
       "/.well-known/*",
-      "/diagnostic-review-call"
+      "/diagnostic-review-call",
+      "/blueprint-discovery-call"
     ]
   },
   "d1_databases": [

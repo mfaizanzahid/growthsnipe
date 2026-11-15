@@ -80,7 +80,7 @@ import {
 } from "../lib/app-logs";
 import { isSafeRedirectTarget } from "../lib/safe-redirect";
 
-const SETTABLE_KEYS = ["support_email", "diagnostic_review_call_url"] as const;
+const SETTABLE_KEYS = ["support_email", "diagnostic_review_call_url", "blueprint_discovery_call_url"] as const;
 
 function reportFilename(businessName: string | null): string {
   const base = (businessName ?? "business")
@@ -127,10 +127,24 @@ const SettingsSchema = z
         message: "Use an http(s) URL or a root-relative path",
       })
       .optional(),
+    blueprint_discovery_call_url: z
+      .string()
+      .trim()
+      .max(2000)
+      .refine((value) => value === "" || isSafeRedirectTarget(value), {
+        message: "Use an http(s) URL or a root-relative path",
+      })
+      .optional(),
   })
-  .refine((v) => v.support_email !== undefined || v.diagnostic_review_call_url !== undefined, {
-    message: "Nothing to update",
-  });
+  .refine(
+    (v) =>
+      v.support_email !== undefined ||
+      v.diagnostic_review_call_url !== undefined ||
+      v.blueprint_discovery_call_url !== undefined,
+    {
+      message: "Nothing to update",
+    },
+  );
 
 export interface SettingsService {
   getAll(): Promise<Record<string, string>>;

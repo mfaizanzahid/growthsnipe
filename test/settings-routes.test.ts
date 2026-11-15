@@ -38,11 +38,12 @@ describe("superadmin settings routes", () => {
     expect((await user.request("/api/superadmin/settings")).status).toBe(403);
   });
 
-  it("superadmin reads and updates settings (support email and review call URL; name is hardcoded)", async () => {
+  it("superadmin reads and updates settings (support email and call URLs; name is hardcoded)", async () => {
     const stored = {
       portal_name: "Old",
       support_email: "a@x.com",
       diagnostic_review_call_url: "https://calendly.com/team/review",
+      blueprint_discovery_call_url: "https://calendly.com/team/discovery",
     };
     const app = settingsApp(BOSS, true, stored);
 
@@ -52,26 +53,33 @@ describe("superadmin settings routes", () => {
       settings: {
         support_email: "a@x.com",
         diagnostic_review_call_url: "https://calendly.com/team/review",
+        blueprint_discovery_call_url: "https://calendly.com/team/discovery",
       },
     });
 
     const patch = await app.request("/api/superadmin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ support_email: "b@x.com", diagnostic_review_call_url: "/book" }),
+      body: JSON.stringify({
+        support_email: "b@x.com",
+        diagnostic_review_call_url: "/book",
+        blueprint_discovery_call_url: "/contact",
+      }),
     });
     expect(patch.status).toBe(200);
     expect(stored.support_email).toBe("b@x.com");
     expect(stored.diagnostic_review_call_url).toBe("/book");
+    expect(stored.blueprint_discovery_call_url).toBe("/contact");
     expect(stored.portal_name).toBe("Old");
 
     const clear = await app.request("/api/superadmin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ diagnostic_review_call_url: "" }),
+      body: JSON.stringify({ diagnostic_review_call_url: "", blueprint_discovery_call_url: "" }),
     });
     expect(clear.status).toBe(200);
     expect(stored.diagnostic_review_call_url).toBe("");
+    expect(stored.blueprint_discovery_call_url).toBe("");
 
     const rename = await app.request("/api/superadmin/settings", {
       method: "PATCH",
@@ -89,6 +97,8 @@ describe("superadmin settings routes", () => {
       { diagnostic_review_call_url: "//evil.example.com" },
       { diagnostic_review_call_url: "ftp://example.com/file" },
       { diagnostic_review_call_url: "/\r\nSet-Cookie: x" },
+      { blueprint_discovery_call_url: "javascript:alert(1)" },
+      { blueprint_discovery_call_url: "//evil.example.com" },
     ]) {
       const res = await app.request("/api/superadmin/settings", {
         method: "PATCH",

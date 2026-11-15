@@ -369,6 +369,7 @@ The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your
 
 - Personalized 25–35-page growth plan.
 - Delivered within 10 business days after complete intake and data receipt.
+- A 30-minute discovery call with our team.
 - 90-minute presentation and walkthrough.
 - 30 days of follow-up questions.
 - 100% of the Blueprint fee credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation.
@@ -414,11 +415,13 @@ The metrics to review, target ranges, warning thresholds and corrective actions.
 
 ## How it works
 
-1. **Purchase your Blueprint.** Complete checkout and receive your intake instructions.
+1. **Purchase your Blueprint.** Complete checkout, receive your intake instructions and book your 30-minute discovery call.
 2. **Share your business information.** Provide the agreed booking, revenue, lead-source, marketing and capacity data. We will tell you what is needed and what can be substituted if a report is unavailable.
 3. **We build the plan.** The 10-business-day delivery window begins once the required information is complete.
 4. **Walk through the decisions.** Join a 90-minute presentation to review the plan, assumptions, priorities and economics.
 5. **Put the plan to work.** Use it independently or move into SNIPE Engine™. The Blueprint fee is credited toward SNIPE Engine™ setup when you sign within 30 days of the presentation.
+
+Already purchased? Book your 30-minute discovery call at `/blueprint-discovery-call`.
 
 ## Who it is for
 
@@ -509,7 +512,7 @@ How jobs are distributed across inspectors, teams, cities and service areas, and
 - **Diagnostic Snapshot:** A summary of the business baseline and data coverage.
 - **Leak Map:** A structured view of identified friction points and estimated financial exposure where enough evidence exists.
 - **Priority Findings:** The issues worth addressing first, ranked by likely impact and practical effort.
-- **30-Minute Review:** A live walkthrough, discussion and recommended next step.
+- **30-Minute Review Call:** A live walkthrough, discussion and recommended next step.
 
 Where source data is missing or incomplete, we will identify the gap rather than invent a number. Any estimates will be labeled and the assumptions shown.
 
@@ -519,7 +522,7 @@ Where source data is missing or incomplete, we will identify the gap rather than
 2. Receive the data checklist and secure submission instructions.
 3. Share the agreed business exports and contact details.
 4. We review the booking data and build the 12-month baseline, Leak Map and framework scores.
-5. Join the 30-minute review and decide whether to execute independently or build a full SNIPE Blueprint™.
+5. Join the 30-minute review call and decide whether to execute independently or build a full SNIPE Blueprint™.
 
 ## The $199 credit
 
@@ -1534,7 +1537,7 @@ The service model is designed for US home-service businesses. Service availabili
 ## Offers and pricing
 
 ### How much does the SNIPE Diagnostic™ cost?
-The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review.
+The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review call.
 
 ### How much does the SNIPE Blueprint™ cost?
 The SNIPE Blueprint™ is $999 one-time. It includes a personalized 25–35-page plan, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.
@@ -1598,7 +1601,7 @@ The best fit is an established operator with a real service history, customer de
 ## Diagnostic checkout — `/checkout/diagnostic`
 
 **Headline:** Find the leaks in your growth process.  
-**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, service-mix and referral review, and 30-minute review.  
+**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, service-mix and referral review, and a 30-minute review call.  
 **Order summary:** SNIPE Diagnostic™ — $199.  
 **Button:** `Purchase My Diagnostic`  
 **Checkout note:** The review begins after payment and receipt of the required information. The $199 fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your Diagnostic review. No business outcome is guaranteed.
@@ -1606,7 +1609,7 @@ The best fit is an established operator with a real service history, customer de
 ## Blueprint checkout — `/checkout/blueprint`
 
 **Headline:** Put your next 12 months of growth on paper—and into a plan.  
-**Subhead:** Your SNIPE Blueprint™ is $999 one-time and includes a personalized 25–35-page plan, a 90-minute presentation and 30 days of follow-up questions.  
+**Subhead:** Your SNIPE Blueprint™ is $999 one-time and includes a personalized 25–35-page plan, a 30-minute discovery call, a 90-minute presentation and 30 days of follow-up questions.  
 **Order summary:** SNIPE Blueprint™ — $999.  
 **Button:** `Purchase My SNIPE Blueprint™`  
 **Checkout note:** The 10-business-day delivery window begins after complete intake and receipt of required information. The $999 fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your Blueprint presentation.
@@ -1620,7 +1623,7 @@ Thank you for purchasing the SNIPE Diagnostic™. The next step is to provide th
 1. Check your email for the data checklist and secure submission instructions.
 2. Gather the available reports and exports.
 3. Submit the information using the secure method provided.
-4. We will confirm receipt and coordinate your 30-minute review.
+4. We will confirm receipt and coordinate your 30-minute review call.
 
 **Important:** If a data point is unavailable, tell us. We would rather identify a gap than fill it with a guess.
 
@@ -1634,6 +1637,7 @@ You will receive:
 - Your intake checklist.
 - Secure data-submission instructions.
 - A confirmation when the information is complete.
+- A link to book your 30-minute discovery call at `/blueprint-discovery-call`.
 - A scheduling link for your 90-minute Blueprint presentation.
 
 ## SNIPE Loops™ thank-you page — `/thank-you/loop-library`

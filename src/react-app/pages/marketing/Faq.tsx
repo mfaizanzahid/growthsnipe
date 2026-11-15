@@ -31,7 +31,7 @@ const GENERAL = [
 const PRICING = [
   {
     q: "How much does the SNIPE Diagnostic™ cost?",
-    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review.`,
+    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review call.`,
   },
   {
     q: "How much does the SNIPE Blueprint™ cost?",

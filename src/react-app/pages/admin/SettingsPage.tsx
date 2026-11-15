@@ -9,7 +9,11 @@ import { AdminDenied, AdminLoading, useAdminGuard } from "./guard";
 
 export function AdminSettings() {
   const allowed = useAdminGuard();
-  const [settings, setSettings] = useState({ support_email: "", diagnostic_review_call_url: "" });
+  const [settings, setSettings] = useState({
+    support_email: "",
+    diagnostic_review_call_url: "",
+    blueprint_discovery_call_url: "",
+  });
   const [loading, setLoading] = useState(true);
 
   async function load() {
@@ -19,6 +23,7 @@ export function AdminSettings() {
       setSettings({
         support_email: raw.support_email ?? "",
         diagnostic_review_call_url: raw.diagnostic_review_call_url ?? "",
+        blueprint_discovery_call_url: raw.blueprint_discovery_call_url ?? "",
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load settings");
@@ -47,7 +52,7 @@ export function AdminSettings() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Support email and the Diagnostic review call redirect.</p>
+        <p className="text-sm text-muted-foreground">Support email and the public call redirects.</p>
       </div>
       <Card className="max-w-md">
         <CardHeader>
@@ -64,12 +69,12 @@ export function AdminSettings() {
       </Card>
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>Diagnostic settings</CardTitle>
-          <CardDescription>Controls where the public review call link sends buyers.</CardDescription>
+          <CardTitle>Call settings</CardTitle>
+          <CardDescription>Controls where the public call links send buyers.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>30-minute review call URL</Label>
+            <Label>Diagnostic 30-minute review call URL</Label>
             <Input
               type="url"
               value={settings.diagnostic_review_call_url}
@@ -78,6 +83,18 @@ export function AdminSettings() {
             />
             <p className="text-xs text-muted-foreground">
               Used in the "Diagnostic is ready" email. Leave blank to fall back to /book.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Blueprint 30-minute discovery call URL</Label>
+            <Input
+              type="url"
+              value={settings.blueprint_discovery_call_url}
+              placeholder="https://calendly.com/your-team/blueprint-discovery"
+              onChange={(e) => setSettings({ ...settings, blueprint_discovery_call_url: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Used in the "Diagnostic baseline is ready" email. Leave blank to fall back to /book.
             </p>
           </div>
           <Button onClick={save}>Save settings</Button>

@@ -389,6 +389,7 @@ export function blueprintBaselineExistingContent(input: {
 export function blueprintBaselineReadyContent(input: {
   firstName: string;
   reportUrl: string;
+  discoveryCallUrl: string;
 }): { subject: string; html: string } {
   const name = escapeHtml(input.firstName);
   return {
@@ -397,7 +398,9 @@ export function blueprintBaselineReadyContent(input: {
       `<p>Hi ${name},</p>` +
       `<p>Your 12-month review is ready. It includes your baseline, SNIPE Framework scores, referral performance, leak map, priority findings, and a 30-day plan.</p>` +
       `<p><a href="${input.reportUrl}">Download your Diagnostic report</a></p>` +
-      `<p>We now have your baseline data and information. We will use it for your SNIPE BlueprintT. The team will start working on your Blueprint.</p>`,
+      `<p>We now have your baseline data and information. We will use it for your SNIPE BlueprintT. The team will start working on your Blueprint.</p>` +
+      `<p><strong>Next step:</strong> Your purchase includes a 30-minute discovery call with our team. Choose a time that works for you.</p>` +
+      `<p><a href="${input.discoveryCallUrl}">Book your 30-minute discovery call</a></p>`,
   };
 }
 

@@ -55,6 +55,13 @@ export function createDiagnosticRoutes(deps: {
     return c.redirect(isSafeRedirectTarget(target) ? target : "/book", 302);
   });
 
+  // Stable public link used in the Blueprint baseline-ready email.
+  routes.get("/blueprint-discovery-call", async (c) => {
+    const target = (await getSetting(c.get("db") as Db, "blueprint_discovery_call_url"))?.trim() ?? "";
+    c.header("Cache-Control", "no-store");
+    return c.redirect(isSafeRedirectTarget(target) ? target : "/book", 302);
+  });
+
   // Status for the connect/status page. Accepts either link purpose.
   routes.get("/api/diagnostic/run", async (c) => {
     const env = c.env as Env;

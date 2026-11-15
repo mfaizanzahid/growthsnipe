@@ -1260,3 +1260,23 @@ The setting accepts an absolute `http(s)` URL or a root-relative path. Unsafe sc
 No database migration is needed: the setting is stored in the existing `app_settings` key-value table.
 
 Updated: `src/server/email/templates.ts`, `src/server/diagnostic/report.ts`, `src/server/routes/diagnostic.ts`, `src/server/routes/superadmin.ts`, `src/server/lib/safe-redirect.ts` (new), `src/react-app/pages/admin/SettingsPage.tsx`, `wrangler.jsonc`, `test/email.test.ts`, `test/settings-routes.test.ts`, `test/diagnostic-review-call.test.ts` (new).
+
+## 2026-11-15 - Stable Blueprint discovery call redirect
+
+The "Your SNIPE Diagnostic™ baseline is ready" email now includes a 30-minute discovery call with the team. The email links to the stable public path `/blueprint-discovery-call`, which the Worker redirects to the superadmin-managed `blueprint_discovery_call_url` setting. Changing the setting updates future clicks immediately, including links in emails that were already sent.
+
+The setting uses the same validation and fallback as the Diagnostic review call: absolute `http(s)` URLs or root-relative paths only, and `/book` when blank or invalid. The route is listed in `wrangler.jsonc` under `assets.run_worker_first` because static assets would otherwise serve the SPA before the Worker.
+
+The Diagnostic page now says "30-Minute Review Call" and "Join the 30-minute review call" instead of dropping the word "call". Matching website strategy and FAQ copy were aligned.
+
+No database migration is needed: the setting is stored in the existing `app_settings` key-value table.
+
+Updated: `src/server/email/templates.ts`, `src/server/diagnostic/report.ts`, `src/server/routes/diagnostic.ts`, `src/server/routes/superadmin.ts`, `src/react-app/pages/admin/SettingsPage.tsx`, `src/react-app/pages/marketing/Diagnostic.tsx`, `src/react-app/pages/marketing/Faq.tsx`, `docs/copy-content-website-strategy.md`, `wrangler.jsonc`, `test/email.test.ts`, `test/settings-routes.test.ts`, `test/diagnostic-review-call.test.ts`, `test/superadmin-reports.test.ts`, `test/diagnostic-copy.test.ts`.
+
+## 2026-11-15 - Blueprint discovery call on the Blueprint page
+
+The Blueprint offer page now lists the 30-minute discovery call, mentions it in the first process step, and links to the stable public path `/blueprint-discovery-call`. The Blueprint checkout includes the call, and the Blueprint thank-you page gives buyers a direct link to book it.
+
+The link uses a plain `<a href>` rather than React Router's `<Link>` so the request reaches the Worker redirect instead of staying inside the SPA. The marketing copy and website strategy doc are aligned.
+
+Updated: `src/react-app/pages/marketing/Blueprint.tsx`, `src/react-app/pages/checkout/CheckoutBlueprint.tsx`, `src/react-app/pages/checkout/ThankYouBlueprint.tsx`, `docs/copy-content-website-strategy.md`, `test/blueprint-copy.test.ts` (new).

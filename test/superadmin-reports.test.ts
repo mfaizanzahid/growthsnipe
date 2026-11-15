@@ -290,6 +290,8 @@ describe("superadmin diagnostic reports", () => {
     expect(outbox).toHaveLength(1);
     expect(outbox[0]?.subject).toContain("baseline is ready");
     expect(outbox[0]?.html).toContain("We now have your baseline");
+    expect(outbox[0]?.html).toContain("https://growthsnipe.test/blueprint-discovery-call");
+    expect(outbox[0]?.html).toContain("30-minute discovery call");
   });
 
   it("rejects a report download before the run is ready", async () => {

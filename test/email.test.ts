@@ -10,7 +10,7 @@ import {
   superadminBcc,
   verificationEmail,
 } from "../src/server/lib/email";
-import { diagnosticReadyContent } from "../src/server/email/templates";
+import { blueprintBaselineReadyContent, diagnosticReadyContent } from "../src/server/email/templates";
 
 describe("email service", () => {
   it("captures instead of delivering when capture is enabled", async () => {
@@ -97,6 +97,18 @@ describe("email service", () => {
     expect(content.html).toContain("30-minute review call with our team");
     expect(content.html).toContain("https://app/diagnostic-review-call");
     expect(content.html).toContain("Book your bonus 30-minute review call");
+  });
+
+  it("includes the discovery call in the Blueprint baseline-ready email", () => {
+    const content = blueprintBaselineReadyContent({
+      firstName: "Ada",
+      reportUrl: "https://app/api/diagnostic/report?token=report",
+      discoveryCallUrl: "https://app/blueprint-discovery-call",
+    });
+    expect(content.html).toContain("<strong>Next step:</strong>");
+    expect(content.html).toContain("30-minute discovery call with our team");
+    expect(content.html).toContain("https://app/blueprint-discovery-call");
+    expect(content.html).toContain("Book your 30-minute discovery call");
   });
 
   it("bcc's superadmin emails except the primary recipient", () => {
