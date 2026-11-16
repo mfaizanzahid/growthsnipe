@@ -149,11 +149,14 @@ Collection pages follow `docs/agent-rules/11-crud-pages.md`:
 
 - Page header with the title and description on the left and the primary "Add new ..." button on the top right.
 - One card containing the `DataTable`. No separate create card and no inline forms.
-- Search sits in the table card header on the same row as the title, aligned right (`CardAction` or `ml-auto`). Use `DataTable` controlled search so no second search bar renders above the table.
+- Search sits in the table card header on the same row as the title, aligned right (`CardAction` or `ml-auto`). Use `SearchInput` so a clear X button appears when the search has text, and use `DataTable` controlled search so no second search bar renders above the table.
 - A status or category filter dropdown follows the search input on the same row. Ask the owner which field(s) should be filter dropdowns for a new collection.
+- A reset icon button with a tooltip sits last in the filter group. It clears search and filters but not sorting, and is disabled when no filters are active.
+- Persist the filter dropdown and sort order in browser storage (`growthsnipe:<table>:filter`, `growthsnipe:<table>:sort`). Do not persist free-text search by default.
 - Collection tables show 50 rows per page by default.
 - Pagination shows First / Previous / Next / Last with a `text-xs` page indicator.
-- When rows are selected, show `[N selected]` and bulk action buttons on the same row as the title, left-aligned after the title. Use `DataTable` selection with `hideSelectionBar` and render the bulk actions in the card header.
+- A sorted column shows a reset icon with a tooltip to clear sorting.
+- When rows are selected, show `[N selected]` and icon-only bulk action buttons on the same row as the title, left-aligned after the title. Use `RowAction` for tooltips, loading, and disabled states. Use `DataTable` selection with `hideSelectionBar` and render the bulk actions in the card header.
 - Clear selection when the page, search, or filter changes.
 - Below `md`, rows render as cards: primary identifier first, label/value pairs, actions at the bottom, and selection/bulk actions preserved. The shared `DataTable` handles this with `mobileCards` (default on).
 - Create and edit forms live in modals opened from the top-right button and row actions.

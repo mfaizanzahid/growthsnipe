@@ -5,12 +5,14 @@ import {
   ArrowUpIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import { Checkbox } from "./ui/checkbox";
-import { Input } from "./ui/input";
+import { SearchInput } from "./ui/search-input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { usePersistentState } from "../hooks/usePersistentState";
 import {
   Table,
   TableBody,
@@ -28,6 +30,14 @@ export interface DataColumn<T> {
   render: (row: T) => ReactNode;
   sortValue?: (row: T) => string | number;
   searchValue?: (row: T) => string;
+}
+
+type SortState = { key: string | null; dir: 1 | -1 };
+
+function isSortState(value: unknown): value is SortState {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as { key?: unknown; dir?: unknown };
+  return (candidate.key === null || typeof candidate.key === "string") && (candidate.dir === 1 || candidate.dir === -1);
 }
 
 interface Props<T> {
@@ -49,6 +59,8 @@ interface Props<T> {
   onPageChange?: () => void;
   /** Render rows as cards below md. Default true. */
   mobileCards?: boolean;
+  /** localStorage key for persisting sort key/direction. */
+  storageKey?: string;
   empty?: string;
   selectable?: boolean;
   selected?: string[];
@@ -84,6 +96,7 @@ export function DataTable<T>({
   pageResetKey,
   onPageChange,
   mobileCards = true,
+  storageKey,
   empty = "No rows.",
   selectable = false,
   selected = [],
@@ -91,9 +104,17 @@ export function DataTable<T>({
   bulkBar,
 }: Props<T>) {
   const [internalQuery, setInternalQuery] = useState("");
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const [sort, setSort] = usePersistentState<SortState>(
+    storageKey,
+    { key: null, dir: 1 },
+    isSortState,
+  );
   const [page, setPage] = useState(1);
+  const sortKey =
+    sort.key === null || columns.some((c) => c.key === sort.key && c.sortValue)
+      ? sort.key
+      : null;
+  const sortDir = sortKey !== null && sort.key === sortKey ? sort.dir : 1;
   const query = search ?? internalQuery;
 
   useEffect(() => {
@@ -138,14 +159,17 @@ export function DataTable<T>({
   function toggleSort(key: string) {
     setPage(1);
     if (sortKey !== key) {
-      setSortKey(key);
-      setSortDir(1);
+      setSort({ key, dir: 1 });
     } else if (sortDir === 1) {
-      setSortDir(-1);
+      setSort({ key, dir: -1 });
     } else {
-      setSortKey(null);
-      setSortDir(1);
+      setSort({ key: null, dir: 1 });
     }
+  }
+
+  function clearSort() {
+    setPage(1);
+    setSort({ key: null, dir: 1 });
   }
 
   function toggleAll() {
@@ -168,10 +192,11 @@ export function DataTable<T>({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-2">
             {!hideSearch && (
-              <Input
-                placeholder={searchPlaceholder}
+              <SearchInput
                 value={query}
-                onChange={(e) => updateQuery(e.target.value)}
+                onChange={updateQuery}
+                placeholder={searchPlaceholder}
+                ariaLabel="Search"
                 className="w-full sm:max-w-2xl"
               />
             )}
@@ -198,26 +223,46 @@ export function DataTable<T>({
                       <Checkbox
                         checked={allPageSelected || (somePageSelected ? "indeterminate" : false)}
                         onCheckedChange={toggleAll}
-                        aria-label="Select page"
+                        aria-label="Select all"
                       />
                     </TableHead>
                   )}
                   {columns.map((c) => (
                     <TableHead key={c.key}>
                       {c.sortable && c.sortValue ? (
-                        <button
-                          className="inline-flex items-center gap-1 hover:text-foreground"
-                          onClick={() => toggleSort(c.key)}
-                        >
-                          {c.header}
-                          {sortKey !== c.key ? (
-                            <ArrowsUpDownIcon className="size-3.5 opacity-50" />
-                          ) : sortDir === 1 ? (
-                            <ArrowUpIcon className="size-3.5" />
-                          ) : (
-                            <ArrowDownIcon className="size-3.5" />
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            className="inline-flex items-center gap-1 hover:text-foreground"
+                            onClick={() => toggleSort(c.key)}
+                          >
+                            {c.header}
+                            {sortKey !== c.key ? (
+                              <ArrowsUpDownIcon className="size-3.5 opacity-50" />
+                            ) : sortDir === 1 ? (
+                              <ArrowUpIcon className="size-3.5" />
+                            ) : (
+                              <ArrowDownIcon className="size-3.5" />
+                            )}
+                          </button>
+                          {sortKey === c.key && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-xs"
+                                  aria-label={`Clear sorting on ${c.header}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    clearSort();
+                                  }}
+                                >
+                                  <XMarkIcon className="size-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Clear sorting</TooltipContent>
+                            </Tooltip>
                           )}
-                        </button>
+                        </div>
                       ) : (
                         c.header
                       )}
@@ -256,9 +301,9 @@ export function DataTable<T>({
                   <Checkbox
                     checked={allPageSelected || (somePageSelected ? "indeterminate" : false)}
                     onCheckedChange={toggleAll}
-                    aria-label="Select page"
+                    aria-label="Select all"
                   />
-                  <span className="text-xs text-muted-foreground">Select page</span>
+                  <span className="text-xs text-muted-foreground">Select all</span>
                 </div>
               )}
               <ul className="space-y-2">

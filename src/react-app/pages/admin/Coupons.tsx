@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowPathIcon,
   CalendarDaysIcon,
+  CheckCircleIcon,
+  NoSymbolIcon,
   PencilIcon,
   PowerIcon,
 } from "@heroicons/react/24/outline";
@@ -20,6 +23,8 @@ import {
 } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { SearchInput } from "../../components/ui/search-input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../../components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -30,10 +35,17 @@ import {
 import { DataTable, RowAction, type DataColumn } from "../../components/DataTable";
 import { api, runBulk, toastBulk } from "../../components/billing/shared";
 import { AdminDenied, AdminLoading, useAdminGuard } from "./guard";
+import { usePersistentState } from "../../hooks/usePersistentState";
 import { couponExpiryFromDays } from "../../../lib/credit-coupon";
 
 type Coupon = Record<string, unknown>;
 type CouponStatusFilter = "all" | "active" | "inactive" | "expired" | "credit";
+
+const COUPON_STATUSES: CouponStatusFilter[] = ["all", "active", "inactive", "expired", "credit"];
+
+function isCouponStatusFilter(value: unknown): value is CouponStatusFilter {
+  return typeof value === "string" && (COUPON_STATUSES as string[]).includes(value);
+}
 
 function isExpired(coupon: Coupon): boolean {
   const validUntil = Number(coupon.validUntil);
@@ -97,7 +109,11 @@ export function AdminCoupons() {
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<CouponStatusFilter>("all");
+  const [status, setStatus] = usePersistentState<CouponStatusFilter>(
+    "growthsnipe:coupons:filter",
+    "all",
+    isCouponStatusFilter,
+  );
   const [selected, setSelected] = useState<string[]>([]);
   const [bulkBusy, setBulkBusy] = useState<"activate" | "deactivate" | "extend" | null>(null);
 
@@ -145,6 +161,14 @@ export function AdminCoupons() {
 
   function changeStatus(value: string) {
     setStatus(value as CouponStatusFilter);
+    setSelected([]);
+  }
+
+  const hasActiveFilters = search.trim() !== "" || status !== "all";
+
+  function resetFilters() {
+    setSearch("");
+    setStatus("all");
     setSelected([]);
   }
 
@@ -403,36 +427,32 @@ export function AdminCoupons() {
                 <span className="text-sm font-normal text-muted-foreground">
                   [{selected.length} selected]
                 </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void bulk("activate")}
-                  loading={bulkBusy === "activate"}
-                  loadingText="Activating…"
-                  disabled={bulkBusy !== null}
-                >
-                  Activate
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void bulk("deactivate")}
-                  loading={bulkBusy === "deactivate"}
-                  loadingText="Deactivating…"
-                  disabled={bulkBusy !== null}
-                >
-                  Deactivate
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void bulk("extend")}
-                  loading={bulkBusy === "extend"}
-                  loadingText="Extending…"
-                  disabled={bulkBusy !== null}
-                >
-                  Extend +30 days
-                </Button>
+                <div className="flex items-center gap-1">
+                  <RowAction
+                    label={`Activate ${selected.length} selected coupon${selected.length === 1 ? "" : "s"}`}
+                    onClick={() => void bulk("activate")}
+                    loading={bulkBusy === "activate"}
+                    disabled={bulkBusy !== null}
+                  >
+                    <CheckCircleIcon className="size-4" />
+                  </RowAction>
+                  <RowAction
+                    label={`Deactivate ${selected.length} selected coupon${selected.length === 1 ? "" : "s"}`}
+                    onClick={() => void bulk("deactivate")}
+                    loading={bulkBusy === "deactivate"}
+                    disabled={bulkBusy !== null}
+                  >
+                    <NoSymbolIcon className="size-4" />
+                  </RowAction>
+                  <RowAction
+                    label={`Extend ${selected.length} selected coupon${selected.length === 1 ? "" : "s"} by 30 days`}
+                    onClick={() => void bulk("extend")}
+                    loading={bulkBusy === "extend"}
+                    disabled={bulkBusy !== null}
+                  >
+                    <CalendarDaysIcon className="size-4" />
+                  </RowAction>
+                </div>
               </>
             )}
           </div>
@@ -441,11 +461,11 @@ export function AdminCoupons() {
           </CardDescription>
           <CardAction className="w-full sm:w-auto">
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-              <Input
-                aria-label="Search coupons"
+              <SearchInput
+                ariaLabel="Search coupons"
                 placeholder="Search code, email, or product…"
                 value={search}
-                onChange={(e) => changeSearch(e.target.value)}
+                onChange={changeSearch}
                 className="w-full sm:w-64"
               />
               <Select value={status} onValueChange={changeStatus}>
@@ -460,6 +480,20 @@ export function AdminCoupons() {
                   <SelectItem value="credit">Credit</SelectItem>
                 </SelectContent>
               </Select>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="Reset filters"
+                    disabled={!hasActiveFilters}
+                    onClick={resetFilters}
+                  >
+                    <ArrowPathIcon className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reset filters</TooltipContent>
+              </Tooltip>
             </div>
           </CardAction>
         </CardHeader>
@@ -478,6 +512,7 @@ export function AdminCoupons() {
             pageSize={50}
             pageResetKey={status}
             onPageChange={() => setSelected([])}
+            storageKey="growthsnipe:coupons:sort"
             empty="No coupons yet."
           />
         </CardContent>
