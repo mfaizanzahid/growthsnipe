@@ -88,8 +88,8 @@ export function OfferValueStack({ stack, className }: { stack: OfferStack; class
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <BonusBadge kind={bonus.kind} />
                     <p className="text-sm font-medium">{bonus.name}</p>
+                    <BonusBadge kind={bonus.kind} />
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">{bonus.body}</p>
                 </div>
