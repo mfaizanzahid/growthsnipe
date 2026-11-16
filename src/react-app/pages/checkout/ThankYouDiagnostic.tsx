@@ -1,5 +1,6 @@
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { PageHero } from "../../components/marketing/MarketingBits";
+import { OFFERS } from "../../../lib/offers";
 
 const STEPS = [
   "Check your email for the secure connect link.",
@@ -25,6 +26,14 @@ export function ThankYouDiagnostic() {
         <p className="mt-6 rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">Secure connection:</span> Your credentials are encrypted and used only for this Diagnostic. They are removed once your report is ready.
         </p>
+        <div className="mt-6 rounded-xl border bg-muted/40 p-5">
+          <h2 className="font-semibold">Your bonuses</h2>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            <li>{OFFERS.loops.name} library, a {OFFERS.loops.value.label} core price, is included. Check your email for access.</li>
+            <li>Your bonus 30-minute findings and recommendations call is included.</li>
+            <li>A {OFFERS.diagnostic.price.label} credit toward a {OFFERS.blueprint.name} within 14 days of your review.</li>
+          </ul>
+        </div>
       </section>
     </MarketingLayout>
   );

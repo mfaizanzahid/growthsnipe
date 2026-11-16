@@ -69,6 +69,9 @@ export function HowItWorks() {
             <li>Need a complete plan? Get the Blueprint.</li>
             <li>Need a partner to implement and operate the system? Explore SNIPE Engine™.</li>
           </ul>
+          <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground">
+            Every step includes the step before it as a bonus. The Diagnostic includes SNIPE Loops™, the Blueprint includes the Diagnostic and Loops, and SNIPE Engine™ includes the Blueprint, Diagnostic and Loops.
+          </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
               <Link to="/book">Find My Best Starting Point</Link>

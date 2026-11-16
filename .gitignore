@@ -10,3 +10,7 @@ dist-prerender/
 *.log
 .DS_Store
 coverage/
+
+# Local-only backups and stray assets
+*.ignore
+public/favicon3.ico

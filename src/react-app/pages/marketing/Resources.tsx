@@ -3,6 +3,7 @@ import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import { OFFERS } from "../../../lib/offers";
 
 const CATEGORIES: Array<{ title: string; items: string[] }> = [
   {
@@ -100,7 +101,7 @@ export function Resources() {
           <SectionHeading
             eyebrow="Featured lead magnet"
             title="Get SNIPE Loops™ free."
-            body="Practical recipes and scripts for the follow-up your team never has enough time to build."
+            body={`The ${OFFERS.loops.value.label} core library price is free today, 100% off. Practical recipes and scripts for the follow-up your team never has enough time to build.`}
           />
           <div className="mt-6">
             <Button size="lg" asChild>

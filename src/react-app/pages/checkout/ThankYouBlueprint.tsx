@@ -1,6 +1,7 @@
 import { EnvelopeIcon } from "@heroicons/react/24/outline";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { PageHero } from "../../components/marketing/MarketingBits";
+import { OFFERS } from "../../../lib/offers";
 
 export function ThankYouBlueprint() {
   return (
@@ -22,6 +23,16 @@ export function ThankYouBlueprint() {
               </p>
             </div>
           </div>
+        </div>
+        <div className="rounded-xl border bg-muted/40 p-5">
+          <h2 className="font-semibold">Your bonuses</h2>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            <li>{OFFERS.diagnostic.name} baseline and leak review, included as a bonus.</li>
+            <li>{OFFERS.loops.name} library, a {OFFERS.loops.value.label} value, included as a bonus.</li>
+            <li>Your bonus 30-minute discovery call and bonus 90-minute presentation are included.</li>
+            <li>30 days of follow-up questions after your presentation.</li>
+            <li>A {OFFERS.blueprint.price.label} credit toward SNIPE Engine™ setup if you sign within 30 days of your presentation.</li>
+          </ul>
         </div>
         <div>
           <h2 className="font-semibold">Your baseline</h2>

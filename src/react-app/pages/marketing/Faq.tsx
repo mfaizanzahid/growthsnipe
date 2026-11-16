@@ -31,11 +31,11 @@ const GENERAL = [
 const PRICING = [
   {
     q: "How much does the SNIPE Diagnostic™ cost?",
-    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review call.`,
+    a: `The SNIPE Diagnostic™ is ${OFFERS.diagnostic.price.label} one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, plus a bonus 30-minute review call, the SNIPE Loops™ library and SNIPE System framework scores.`,
   },
   {
     q: "How much does the SNIPE Blueprint™ cost?",
-    a: `The SNIPE Blueprint™ is ${OFFERS.blueprint.price.label} one-time. It includes a personalized 25 to 35-page plan covering your baseline and target, packaging and pricing, channels, local visibility, recurring revenue, capacity and a 12-month roadmap, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.`,
+    a: `The SNIPE Blueprint™ is ${OFFERS.blueprint.price.label} one-time. It includes a personalized 12-month growth plan covering your baseline and target, packaging and pricing, channels, local visibility, recurring revenue, capacity and a 12-month roadmap, delivered within 10 business days after complete intake and data receipt, plus a bonus 30-minute discovery call, a bonus 90-minute presentation and 30 days of follow-up questions. The Blueprint also includes the SNIPE Diagnostic™ and SNIPE Loops™ as bonuses.`,
   },
   {
     q: "What does the SNIPE Blueprint™ include?",
@@ -43,15 +43,15 @@ const PRICING = [
   },
   {
     q: "Does the SNIPE Diagnostic™ fee count toward SNIPE Blueprint™?",
-    a: `Yes. If you purchase SNIPE Blueprint™ within 14 days of your SNIPE Diagnostic™ review, the full SNIPE Diagnostic™ fee is credited toward SNIPE Blueprint™. Your remaining payment is ${blueprintRemainder}.`,
+    a: `Yes. If you purchase SNIPE Blueprint™ within 14 days of your SNIPE Diagnostic™ review, the full SNIPE Diagnostic™ fee is credited toward SNIPE Blueprint™. Your remaining payment is ${blueprintRemainder}. If you start with the Blueprint instead, the Diagnostic is already included as a bonus.`,
   },
   {
     q: "Does the SNIPE Blueprint™ fee count toward SNIPE Engine™?",
-    a: "Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full SNIPE Blueprint™ fee is credited toward your setup. We confirm the remaining amount in writing before you sign.",
+    a: "Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full SNIPE Blueprint™ fee is credited toward your setup. We confirm the remaining amount in writing before you sign. The Engine includes the Blueprint, Diagnostic and SNIPE Loops™ as bonuses.",
   },
   {
     q: "How much does SNIPE Engine™ cost?",
-    a: "Every SNIPE Engine™ engagement is scoped one on one and priced privately. Book a Growth Fit Call and we will confirm your pricing in writing before anything starts. Advertising spend is separate and paid directly by the client.",
+    a: "Every SNIPE Engine™ engagement is scoped one on one and priced privately. Book a Growth Fit Call and we will confirm your pricing in writing before anything starts. Engine includes the Blueprint, Diagnostic and SNIPE Loops™ as bonuses. Advertising spend is separate and paid directly by the client.",
   },
   {
     q: "Can I buy a Blueprint without becoming a monthly client?",
@@ -59,7 +59,15 @@ const PRICING = [
   },
   {
     q: "Are SNIPE Loops™ really free?",
-    a: "Yes. SNIPE Loops™ is a free resource. You provide your email and business details so we can deliver relevant recipes and updates. You can unsubscribe from marketing emails at any time.",
+    a: `Yes. SNIPE Loops™ has a ${OFFERS.loops.value.label} regular price and is free today, 100% off, with no card required. You provide your email and business details so we can deliver relevant recipes and updates. You can unsubscribe from marketing emails at any time.`,
+  },
+  {
+    q: "Does the SNIPE Blueprint™ include the SNIPE Diagnostic™?",
+    a: `Yes. The Blueprint includes the Diagnostic baseline and leak review as a bonus. If you bought the Diagnostic first, the ${OFFERS.diagnostic.price.label} fee is credited toward the Blueprint within 14 days of your review.`,
+  },
+  {
+    q: "Is SNIPE Loops™ included with the other offers?",
+    a: "Yes. The full SNIPE Loops™ library is included as a bonus with the Diagnostic, Blueprint and Engine. You do not pay for it twice.",
   },
 ];
 

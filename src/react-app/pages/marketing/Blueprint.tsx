@@ -1,10 +1,9 @@
-import { Link } from "react-router-dom";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, Faq, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
-import { Button } from "../../components/ui/button";
+import { OfferCtaButton, OfferValueStack } from "../../components/marketing/OfferValueStack";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import { OFFERS, OFFER_CREDITS } from "../../../lib/offers";
+import { OFFERS, OFFER_CREDITS, OFFER_STACKS } from "../../../lib/offers";
 
 const INCLUDED = [
   "The Baseline and Target Stack: your current volume, average ticket, revenue, margins and capacity mapped against the revenue target. You see how many jobs and what average ticket the goal requires, and where the gap is.",
@@ -31,11 +30,11 @@ const BENEFITS = [
 const STEPS = [
   {
     title: "Purchase your Blueprint",
-    body: "Complete checkout and receive your intake instructions. Book your 30-minute discovery call to confirm goals, data access and timing.",
+    body: "Complete checkout and receive your intake instructions. Book your bonus 30-minute discovery call to confirm goals, data access and timing.",
   },
   { title: "Share your business information", body: "Provide the agreed booking, revenue, lead-source, marketing and capacity data. We will tell you what is needed and what can be substituted if a report is unavailable." },
   { title: "We build the plan", body: "The 10-business-day delivery window begins once the required information is complete." },
-  { title: "Walk through the decisions", body: "Join a 90-minute presentation to review the plan, assumptions, priorities and economics." },
+  { title: "Walk through the decisions", body: "Join your bonus 90-minute presentation to review the plan, assumptions, priorities and economics." },
   { title: "Put the plan to work", body: "Use it independently or move into SNIPE Engine™. The Blueprint fee is credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation." },
 ];
 
@@ -72,6 +71,14 @@ const FAQS = [
     a: "You can use it with your own team or move into SNIPE Engine™ for implementation and ongoing operation.",
   },
   {
+    q: "Does the Blueprint include the SNIPE Diagnostic™?",
+    a: `Yes. The Blueprint includes the Diagnostic baseline and leak review as a bonus. If you bought the Diagnostic first, the ${OFFERS.diagnostic.price.label} fee is credited toward the Blueprint within 14 days of your review.`,
+  },
+  {
+    q: "Is SNIPE Loops™ included?",
+    a: "Yes. The full SNIPE Loops™ library is included as a bonus with the Blueprint.",
+  },
+  {
     q: "Do I need to be a GrowthSnipe client?",
     a: "No. The SNIPE Blueprint™ is available as a standalone product.",
   },
@@ -89,35 +96,8 @@ export function Blueprint() {
         title="Stop buying marketing tactics. Get the growth plan they should be following."
         lede="The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your business. It covers your baseline and target, packaging and pricing, marketing channels, local visibility, recurring revenue, referral partners, capacity and a phased roadmap, so you can stop choosing tactics in isolation."
       />
-      <section className="mx-auto w-full max-w-6xl px-4 pb-14">
-        <Card className="mx-auto max-w-2xl text-center">
-          <CardHeader>
-            <CardTitle className="text-3xl">
-              {OFFERS.blueprint.name}: {OFFERS.blueprint.price.label} one-time
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="space-y-2 text-left text-sm">
-              {[
-                "Personalized 25 to 35-page growth plan.",
-                "Covers pricing, packaging, channels, local visibility, recurring revenue, capacity and a 12-month roadmap.",
-                "Delivered within 10 business days after complete intake and data receipt.",
-                "A 30-minute discovery call with our team.",
-                "90-minute presentation and walkthrough.",
-                "30 days of follow-up questions.",
-                "100% of the Blueprint fee credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation.",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Button size="lg" className="w-full sm:w-auto" asChild>
-              <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint™</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <section className="mx-auto w-full max-w-3xl px-4 pb-14">
+        <OfferValueStack stack={OFFER_STACKS.blueprint} />
       </section>
 
       <section className="border-t bg-muted/40">
@@ -145,6 +125,9 @@ export function Blueprint() {
             </div>
           ))}
         </div>
+        <div className="mt-8 text-center">
+          <OfferCtaButton stack={OFFER_STACKS.blueprint} />
+        </div>
       </section>
 
       <section className="border-t bg-muted/40">
@@ -160,6 +143,9 @@ export function Blueprint() {
                 <p className="text-sm text-muted-foreground">{item}</p>
               </div>
             ))}
+          </div>
+          <div className="mt-8 text-center">
+            <OfferCtaButton stack={OFFER_STACKS.blueprint} variant="outline" />
           </div>
         </div>
       </section>
@@ -187,6 +173,9 @@ export function Blueprint() {
           </a>
           .
         </p>
+        <div className="mt-6 text-center">
+          <OfferCtaButton stack={OFFER_STACKS.blueprint} />
+        </div>
       </section>
 
       <section className="border-t bg-muted/40">
@@ -226,20 +215,18 @@ export function Blueprint() {
 
       <section className="mx-auto w-full max-w-3xl px-4 py-16 text-center">
         <SectionHeading
-          eyebrow="Price and next-step credit"
+          eyebrow="Next-step credit"
           title="One plan. A clear path to implementation."
         />
-        <p className="mt-4 text-2xl font-bold">
-          {OFFERS.blueprint.name}: {OFFERS.blueprint.price.label} one-time.
+        <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">{OFFER_CREDITS.blueprintToEngine.text}</p>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+          The Blueprint includes the SNIPE Diagnostic™ and SNIPE Loops™ as bonuses. If you already bought the Diagnostic, the {OFFERS.diagnostic.price.label} you paid is credited when you move into the Blueprint within 14 days of your review.
         </p>
-        <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">{OFFER_CREDITS.blueprintToEngine.text}</p>
+        <p className="mx-auto mt-2 max-w-2xl text-xs text-muted-foreground">
+          You will receive an intake checklist after checkout. Work begins when the required information is received.
+        </p>
         <div className="mt-6">
-          <Button size="lg" asChild>
-            <Link to={OFFERS.blueprint.checkoutPath}>Get My SNIPE Blueprint™, {OFFERS.blueprint.price.label}</Link>
-          </Button>
-          <p className="mt-3 text-xs text-muted-foreground">
-            You will receive an intake checklist after checkout. Work begins when the required information is received.
-          </p>
+          <OfferCtaButton stack={OFFER_STACKS.blueprint} variant="outline" />
         </div>
       </section>
 
@@ -252,7 +239,7 @@ export function Blueprint() {
 
       <CtaBand
         title="Stop buying tactics. Get the plan."
-        body="A 12-month growth plan built around your numbers, delivered in 10 business days with a 90-minute walkthrough."
+        body="A 12-month growth plan built around your numbers, delivered in 10 business days with a bonus 90-minute walkthrough."
       />
     </MarketingLayout>
   );

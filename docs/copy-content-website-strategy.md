@@ -232,7 +232,7 @@ Deliverable: SNIPE CRM™, SNIPE VoiceIQ™, SNIPE Intelligence™ and the confi
 
 We help operate acquisition, intake, follow-up, partner activity, retention and performance reviews. You get a clear operating rhythm and visibility into what needs attention next.
 
-Deliverable: SNIPE Engine™, scoped privately for your business.
+Deliverable: SNIPE Engine™, scoped one on one for your business.
 
 CTA: `See How It Works`
 
@@ -269,27 +269,29 @@ CTA: `Explore the SNIPE System`
 
 # Start with the step your business needs right now.
 
-### Free — SNIPE Loops™
-Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business.
+### $99 core price, free — SNIPE Loops™
+Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business. Free today, 100% off, no card required. Included as a bonus with every paid offer.
 
 CTA: `Download SNIPE Loops™`
 
 ### $199 — SNIPE Diagnostic™
-A focused review of your last 12 months of business performance. Find the gaps, quantify the leaks and see where growth is getting stuck.
+A focused review of your last 12 months of business performance. Find the gaps, quantify the leaks and see where growth is getting stuck. Includes SNIPE Loops™ as a bonus.
 
 CTA: `Get the Diagnostic`
 
 ### $999 — SNIPE Blueprint™
-A personalized 12-month growth plan built around your numbers, market, services, capacity and goals.
+A personalized 12-month growth plan built around your numbers, market, services, capacity and goals. Includes the SNIPE Diagnostic™ and SNIPE Loops™ as bonuses.
 
 CTA: `Build My Blueprint`
 
 ### SNIPE Engine™ — the operating partnership
-The implementation and operating partnership that puts the plan to work, and keeps it running.
+The implementation and operating partnership that puts the plan to work, and keeps it running. Includes the Blueprint, Diagnostic and SNIPE Loops™ as bonuses.
 
 CTA: `Explore SNIPE Engine™`
 
-**Credit-forward note:** Your $199 Diagnostic can be credited toward a Blueprint purchased within 14 days. Your $999 Blueprint can be credited toward a SNIPE Engine™ setup fee when you sign within 30 days of your Blueprint presentation. Terms apply.
+**Credit-forward note:** Every step includes the step before it as a bonus. If you already bought the earlier offer, the amount you paid is credited when you move up. Your $199 Diagnostic can be credited toward a Blueprint purchased within 14 days. Your $999 Blueprint can be credited toward a SNIPE Engine™ setup fee when you sign within 30 days of your Blueprint presentation. Terms apply.
+
+**Value estimate note:** Estimated values are retail-equivalent positioning estimates, not independently established market prices. They are not a promise of resale value or business results.
 
 ## Section 7 — Illustration
 
@@ -367,15 +369,34 @@ The SNIPE Blueprint™ is a practical, numbers-led 12-month growth plan for your
 
 **$999 one-time**
 
-- Personalized 25–35-page growth plan.
+- Personalized 12-month growth plan.
 - Covers pricing, packaging, channels, local visibility, recurring revenue, capacity and a 12-month roadmap.
 - Delivered within 10 business days after complete intake and data receipt.
-- A 30-minute discovery call with our team.
-- 90-minute presentation and walkthrough.
-- 30 days of follow-up questions.
-- 100% of the Blueprint fee credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation.
+- Bonus: SNIPE Diagnostic™ baseline and leak review.
+- Bonus: SNIPE Loops™ library.
+- Bonus: 30-minute discovery call with our team.
+- Bonus: 90-minute presentation and walkthrough.
+- Bonus: 30 days of follow-up questions.
+- Bonus: intake checklist and data-substitution guide.
+- Bonus credit: 100% of the Blueprint fee credited toward SNIPE Engine™ setup if you sign within 30 days of the presentation.
 
 CTA: `Get My SNIPE Blueprint™`
+
+## Value stack
+
+| Item | Type | Estimated value |
+|---|---|---:|
+| Personalized 12-month growth plan | Core | $999 |
+| SNIPE Diagnostic™ baseline and leak review | Bonus | $199 |
+| SNIPE Loops™ library | Bonus | $99 |
+| 30-minute discovery call | Bonus call | $149 |
+| 90-minute presentation call and walkthrough | Bonus call | $299 |
+| 30 days of follow-up questions | Bonus | $199 |
+| Intake checklist and data-substitution guide | Bonus | $49 |
+| **Total value with credit** | | **~~$2,992~~** |
+| **You pay** | | **$999** |
+
+The total includes the $999 Engine setup credit. Estimated values are retail-equivalent positioning estimates, not independently established market prices.
 
 ## The problem
 
@@ -499,10 +520,27 @@ You will receive a clear view of what the numbers say, what may be holding the b
 - Review of up to 12 months of supplied business data.
 - A business-specific Leak Map with quantified opportunities where the data supports it.
 - A service-mix, cancellation and referral review.
-- A 30-minute findings and recommendations call.
-- 100% credited toward a SNIPE Blueprint™ purchased within 14 days.
+- Bonus: SNIPE Loops™ library.
+- Bonus: 30-minute findings and recommendations call.
+- Bonus: data checklist and secure submission guide.
+- Bonus: SNIPE System framework scores.
+- Bonus credit: 100% credited toward a SNIPE Blueprint™ purchased within 14 days.
 
 CTA: `Get My SNIPE Diagnostic™`
+
+## Value stack
+
+| Item | Type | Estimated value |
+|---|---|---:|
+| 12-month review, Leak Map and Priority Findings | Core | $199 |
+| SNIPE Loops™ library | Bonus | $99 |
+| 30-minute findings and recommendations call | Bonus call | $149 |
+| Data checklist and secure submission guide | Bonus | $49 |
+| SNIPE System framework scores | Bonus | $99 |
+| **Total value with credit** | | **~~$794~~** |
+| **You pay** | | **$199** |
+
+The total includes the $199 Blueprint credit. Estimated values are retail-equivalent positioning estimates, not independently established market prices.
 
 ## What we investigate
 
@@ -539,15 +577,13 @@ Where source data is missing or incomplete, we will identify the gap rather than
 2. Receive the data checklist and secure submission instructions.
 3. Share the agreed business exports and contact details.
 4. We review the booking data and build the 12-month baseline, Leak Map and framework scores.
-5. Join the 30-minute review call and decide whether to execute independently or build a full SNIPE Blueprint™.
+5. Join the bonus 30-minute review call and decide whether to execute independently or build a full SNIPE Blueprint™.
 
 ## The $199 credit
 
 # Do not pay twice to keep moving forward.
 
-Purchase a SNIPE Blueprint™ within 14 days of your Diagnostic review and the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining Blueprint payment is $800.
-
-CTA: `Start My SNIPE Diagnostic™ — $199`
+Purchase a SNIPE Blueprint™ within 14 days of your Diagnostic review and the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining Blueprint payment is $800. If you start with the Blueprint instead, the Diagnostic is already included as a bonus.
 
 ## FAQ preview
 
@@ -587,6 +623,21 @@ Form fields:
 - Monthly job volume (optional)
 
 Consent microcopy: By submitting, you agree to receive the SNIPE Loops™ and related GrowthSnipe emails. Unsubscribe at any time. Link to Privacy Policy.
+
+## Value stack
+
+**$99 core price, free today, 100% off. No card required.**
+
+| Item | Type | Estimated value |
+|---|---|---:|
+| Six-category SNIPE Loops™ library | Core | $99 |
+| The Unbooked Enquiry Follow-Up Loop, 5-step recipe | Bonus | $39 |
+| Follow-up script library | Bonus | $47 |
+| Ongoing library updates and new recipes | Bonus | $59 |
+| **Total value** | | **~~$244~~** |
+| **You pay** | | **Free** |
+
+SNIPE Loops™ is included as a bonus with the SNIPE Diagnostic™, SNIPE Blueprint™ and SNIPE Engine™. Estimated values are retail-equivalent positioning estimates, not independently established market prices.
 
 ## Inside the library
 
@@ -657,6 +708,24 @@ SNIPE Engine™ turns your growth plan into a working operating system. We confi
 CTA: `Book a Free Growth Fit Call`  
 Secondary CTA: `See What's Included` (→ `#included`)
 
+## Value stack
+
+| Item | Type | Estimated value |
+|---|---|---:|
+| SNIPE Engine™ operating partnership, Core or Command | Core | Scoped with your engagement |
+| SNIPE Blueprint™ | Bonus | $999 |
+| SNIPE Diagnostic™ baseline and leak review | Bonus | $199 |
+| SNIPE Loops™ library | Bonus | $99 |
+| 21-day launch runway | Bonus | $1,499 |
+| VoIP migration and multi-line routing | Bonus | $499 |
+| Google Business Profile and service-area setup | Bonus | $499 |
+| Booking-platform configuration and custom integrations | Bonus | $749 |
+| Recurring plan review calls | Bonus call | $599 |
+| **Estimated value of included bonuses** | | **$5,142** |
+| **Your investment** | | **Contact us for pricing** |
+
+Engine Core and Command are scoped one on one. The page shows no setup or monthly price. Estimated values are retail-equivalent positioning estimates, not independently established market prices.
+
 ## What SNIPE Engine™ runs
 
 One partnership that runs the whole growth system. We install the systems below and help run them. Every engagement is scoped one on one.
@@ -672,7 +741,8 @@ One partnership that runs the whole growth system. We install the systems below 
 
 # Every system your growth runs on.
 
-- Growth strategy and recurring plan reviews tied to your numbers.
+- Growth strategy tied to your numbers.
+- Bonus: recurring plan review calls tied to your numbers.
 - Paid search and paid media campaigns, managed against your numbers.
 - Campaign and landing-page structure tied to revenue targets.
 - Local Services Ads, Search and Meta campaign management.
@@ -1554,25 +1624,31 @@ The service model is designed for US home-service businesses. Service availabili
 ## Offers and pricing
 
 ### How much does the SNIPE Diagnostic™ cost?
-The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, and a 30-minute review call.
+The SNIPE Diagnostic™ is $199 one-time. It includes a review of supplied business data covering up to 12 months, a Leak Map, a service-mix and referral review, plus a bonus 30-minute review call, the SNIPE Loops™ library and SNIPE System framework scores.
 
 ### How much does the SNIPE Blueprint™ cost?
-The SNIPE Blueprint™ is $999 one-time. It includes a personalized 25–35-page plan, delivered within 10 business days after complete intake and data receipt, a 90-minute presentation and 30 days of follow-up questions.
+The SNIPE Blueprint™ is $999 one-time. It includes a personalized 12-month plan, delivered within 10 business days after complete intake and data receipt, plus a bonus 30-minute discovery call, a bonus 90-minute presentation and 30 days of follow-up questions. The Blueprint also includes the SNIPE Diagnostic™ and SNIPE Loops™ as bonuses.
 
 ### Does the Diagnostic fee count toward the Blueprint?
-Yes. If you purchase the Blueprint within 14 days of your Diagnostic review, the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining payment is $800.
+Yes. If you purchase the Blueprint within 14 days of your Diagnostic review, the full $199 Diagnostic fee is credited toward the $999 Blueprint. Your remaining payment is $800. If you start with the Blueprint instead, the Diagnostic is already included as a bonus.
 
 ### Does the Blueprint fee count toward SNIPE Engine™?
-Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full $999 Blueprint fee is credited toward your setup. We confirm the remaining amount in writing before you sign.
+Yes. If you sign for SNIPE Engine™ within 30 days of your Blueprint presentation, the full $999 Blueprint fee is credited toward your setup. We confirm the remaining amount in writing before you sign. The Engine includes the Blueprint, Diagnostic and SNIPE Loops™ as bonuses.
 
 ### How much does SNIPE Engine™ cost?
-Every SNIPE Engine™ engagement is scoped one on one and priced privately. Book a Growth Fit Call and we will confirm your pricing in writing before anything starts. Advertising spend is separate and paid directly by the client.
+Every SNIPE Engine™ engagement is scoped one on one and priced privately. Book a Growth Fit Call and we will confirm your pricing in writing before anything starts. Engine includes the Blueprint, Diagnostic and SNIPE Loops™ as bonuses. Advertising spend is separate and paid directly by the client.
 
 ### Can I buy a Blueprint without becoming a monthly client?
 Yes. The SNIPE Blueprint™ is a standalone strategic product. You can implement it with your own team or another provider.
 
 ### Are SNIPE Loops™ really free?
-Yes. SNIPE Loops™ are a free resource. You provide your email and business details so we can deliver relevant recipes and updates. You can unsubscribe from marketing emails at any time.
+Yes. SNIPE Loops™ has a $99 regular price and is free today, 100% off, with no card required. You provide your email and business details so we can deliver relevant recipes and updates. You can unsubscribe from marketing emails at any time.
+
+### Does the SNIPE Blueprint™ include the SNIPE Diagnostic™?
+Yes. The Blueprint includes the Diagnostic baseline and leak review as a bonus. If you bought the Diagnostic first, the $199 fee is credited toward the Blueprint within 14 days of your review.
+
+### Is SNIPE Loops™ included with the other offers?
+Yes. The full SNIPE Loops™ library is included as a bonus with the Diagnostic, Blueprint and Engine. You do not pay for it twice.
 
 ## SNIPE Engine™ and delivery
 
@@ -1618,18 +1694,18 @@ The best fit is an established operator with a real service history, customer de
 ## Diagnostic checkout — `/checkout/diagnostic`
 
 **Headline:** Find the leaks in your growth process.  
-**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, service-mix and referral review, and a 30-minute review call.  
+**Subhead:** Your SNIPE Diagnostic™ is $199 one-time. Review of up to 12 months of supplied business data, a Leak Map, service-mix and referral review, plus a bonus 30-minute review call and the SNIPE Loops™ library included as a bonus.  
 **Order summary:** SNIPE Diagnostic™ — $199.  
 **Button:** `Purchase My Diagnostic`  
-**Checkout note:** The review begins after payment and receipt of the required information. The $199 fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your Diagnostic review. No business outcome is guaranteed.
+**Checkout note:** The review begins after payment and receipt of the required information. The Diagnostic includes the SNIPE Loops™ library and a bonus 30-minute review call. The $199 fee is credited toward a SNIPE Blueprint™ purchased within 14 days of your Diagnostic review. No business outcome is guaranteed.
 
 ## Blueprint checkout — `/checkout/blueprint`
 
-**Headline:** Put your next 12 months of growth on paper—and into a plan.  
-**Subhead:** Your SNIPE Blueprint™ is $999 one-time and includes a personalized 25–35-page plan, a 30-minute discovery call, a 90-minute presentation and 30 days of follow-up questions.  
+**Headline:** Put your next 12 months of growth on paper, and into a plan.  
+**Subhead:** Your SNIPE Blueprint™ is $999 one-time and includes a personalized 12-month plan, plus a bonus 30-minute discovery call, a bonus 90-minute presentation and 30 days of follow-up questions. The Blueprint also includes the SNIPE Diagnostic™ and SNIPE Loops™ as bonuses.  
 **Order summary:** SNIPE Blueprint™ — $999.  
 **Button:** `Purchase My SNIPE Blueprint™`  
-**Checkout note:** The 10-business-day delivery window begins after complete intake and receipt of required information. The $999 fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your Blueprint presentation.
+**Checkout note:** The 10-business-day delivery window begins after complete intake and receipt of required information. The Blueprint includes the SNIPE Diagnostic™ and SNIPE Loops™ as bonuses. The $999 fee is credited toward SNIPE Engine™ setup if you sign within 30 days of your Blueprint presentation.
 
 ## Diagnostic thank-you page — `/thank-you/diagnostic`
 
@@ -1640,7 +1716,9 @@ Thank you for purchasing the SNIPE Diagnostic™. The next step is to provide th
 1. Check your email for the data checklist and secure submission instructions.
 2. Gather the available reports and exports.
 3. Submit the information using the secure method provided.
-4. We will confirm receipt and coordinate your 30-minute review call.
+4. We will confirm receipt and coordinate your bonus 30-minute review call.
+
+**Your bonuses:** The SNIPE Loops™ library, a $99 core price, is included. Your bonus 30-minute review call is included. Your $199 fee is credited toward a SNIPE Blueprint™ within 14 days of your review.
 
 **Important:** If a data point is unavailable, tell us. We would rather identify a gap than fill it with a guess.
 
@@ -1654,14 +1732,18 @@ You will receive:
 - Your intake checklist.
 - Secure data-submission instructions.
 - A confirmation when the information is complete.
-- A link to book your 30-minute discovery call at `/blueprint-discovery-call`.
-- A scheduling link for your 90-minute Blueprint presentation.
+- A link to book your bonus 30-minute discovery call at `/blueprint-discovery-call`.
+- A scheduling link for your bonus 90-minute Blueprint presentation.
+
+**Your bonuses:** The SNIPE Diagnostic™ baseline and leak review, the SNIPE Loops™ library, a bonus 30-minute discovery call, a bonus 90-minute presentation, 30 days of follow-up questions and a $999 credit toward SNIPE Engine™ setup if you sign within 30 days of your presentation.
 
 ## SNIPE Loops™ thank-you page — `/thank-you/loop-library`
 
 # Your SNIPE Loops™ are ready.
 
-Check your inbox for the access link. Start with one workflow that solves a current problem—such as missed-call follow-up, quote follow-up or review requests. Configure it carefully, test it and make sure the messaging fits your customers and applicable communication rules.
+Check your inbox for the access link. Start with one workflow that solves a current problem, such as missed-call follow-up, quote follow-up or review requests. Configure it carefully, test it and make sure the messaging fits your customers and applicable communication rules.
+
+You have the $99 core library. It is also included as a bonus with the SNIPE Diagnostic™, SNIPE Blueprint™ and SNIPE Engine™.
 
 ---
 
@@ -1799,6 +1881,10 @@ We will help determine whether your best next step is a Diagnostic, Blueprint, E
 8. Explain the credit rules in plain language on the relevant sales pages and checkout confirmation.
 9. Keep ad spend and third-party usage charges visible before purchase, with the exact scope confirmed in writing.
 10. Do not use countdown timers or artificial scarcity unless a real, enforceable deadline exists.
+11. Show a value stack on every offer page: core offer with an Included feature checklist, obstacle-focused bonuses, then the total value with credit struck out and the "You pay" row at the bottom. Engine replaces the price row with a "Contact us for pricing" button.
+12. Label every bonus. Products and assets read "Bonus", included calls read "Bonus call", and credits read "Bonus credit". Bonus prices end in 3, 7 or 9.
+13. Label retail-equivalent value estimates as estimates. Do not imply guaranteed income, rankings or business results. SNIPE Loops™ shows a $99 core price, free at 100% off, with bonus values added on top.
+14. Centralize the main CTA and its supporting text in the value stack, then repeat the same CTA in multiple page sections.
 
 ## Recommended visual assets
 

@@ -490,7 +490,7 @@ export function CtaBand({ title, body }: { title: string; body: string }) {
               <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic™</Link>
             </Button>
           </div>
-          <p className="mt-4 text-xs opacity-75">We reply within one business day</p>
+          <p className="mt-4 text-xs opacity-75">Every step includes the step before it as a bonus. We reply within one business day.</p>
         </div>
       </div>
     </section>

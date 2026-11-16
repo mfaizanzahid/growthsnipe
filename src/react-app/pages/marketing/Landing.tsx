@@ -302,7 +302,9 @@ export function Landing() {
           <Card className="flex flex-col">
             <CardHeader>
               <CardTitle className="text-base">SNIPE Loops™</CardTitle>
-              <CardDescription>No card required</CardDescription>
+              <CardDescription>
+                <span className="line-through">{OFFERS.loops.value.label}</span> price, free today. No card required.
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
               <p className="flex-1">Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business.</p>
@@ -316,6 +318,7 @@ export function Landing() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
               <p className="flex-1">A focused review of your last 12 months of business performance. Find the gaps, quantify the leaks and see where growth is getting stuck.</p>
+              <p className="mt-2 text-xs font-medium text-primary">Includes {OFFERS.loops.name} as a bonus.</p>
               <Button className="mt-4" asChild><Link to="/diagnostic">Get My SNIPE Diagnostic™</Link></Button>
             </CardContent>
           </Card>
@@ -326,6 +329,7 @@ export function Landing() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
               <p className="flex-1">A personalized 12-month growth plan built around your numbers, packaging, channels, local visibility, recurring revenue, capacity and goals.</p>
+              <p className="mt-2 text-xs font-medium text-primary">Includes {OFFERS.diagnostic.name} and {OFFERS.loops.name} as bonuses.</p>
               <Button className="mt-4" asChild><Link to="/blueprint">Build My SNIPE Blueprint™</Link></Button>
             </CardContent>
           </Card>
@@ -336,12 +340,13 @@ export function Landing() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
               <p className="flex-1">The implementation and operating partnership that puts the plan to work, and keeps it running.</p>
+              <p className="mt-2 text-xs font-medium text-primary">Includes the Blueprint, Diagnostic and Loops as bonuses.</p>
               <Button className="mt-4" asChild><Link to="/engine">Explore SNIPE Engine™</Link></Button>
             </CardContent>
           </Card>
         </div>
         <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-muted-foreground">
-          {OFFER_CREDITS.diagnosticToBlueprint.text} {OFFER_CREDITS.blueprintToEngine.text} Terms apply.
+          Every step includes the step before it as a bonus. If you already bought the earlier offer, the amount you paid is credited when you move up. {OFFER_CREDITS.diagnosticToBlueprint.text} {OFFER_CREDITS.blueprintToEngine.text} Terms apply.
         </p>
       </section>
 
@@ -383,7 +388,10 @@ export function Landing() {
                 <p className="mt-2 text-sm text-muted-foreground">A dynamic, real-time analytics dashboard, plan reviews and clear next actions.</p>
           </div>
         </div>
-        <div className="mt-8 text-center">
+        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+          SNIPE Engine™ includes the Blueprint, Diagnostic and SNIPE Loops™ as bonuses.
+        </p>
+        <div className="mt-6 text-center">
           <Button size="lg" asChild>
             <Link to="/engine">Explore SNIPE Engine™</Link>
           </Button>
@@ -401,7 +409,7 @@ export function Landing() {
               Run the follow-up plays that book more jobs.
             </h2>
             <p className="mt-4 max-w-xl text-lg text-muted-foreground">
-              Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business this week. No card required.
+              Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business this week. The <span className="line-through">{OFFERS.loops.value.label}</span> core library price is free today. No card required.
             </p>
             <div className="mt-8">
               <Button size="lg" asChild>
@@ -541,7 +549,7 @@ export function Landing() {
         <SectionHeading
           eyebrow="Start here"
           title="Start with SNIPE Diagnostic™ or SNIPE Blueprint™."
-          body={`Find the leaks for ${OFFERS.diagnostic.price.label}, or get the full 12-month plan for ${OFFERS.blueprint.price.label}. Both credit forward when you keep moving.`}
+          body={`Find the leaks for ${OFFERS.diagnostic.price.label}, or get the full 12-month plan for ${OFFERS.blueprint.price.label}. Both include the previous steps as bonuses and credit forward when you keep moving.`}
         />
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button size="lg" asChild>

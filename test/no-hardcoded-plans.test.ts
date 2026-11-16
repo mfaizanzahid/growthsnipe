@@ -134,8 +134,20 @@ describe("no hard-coded plans in customer-facing plan surfaces", () => {
     }
   });
 
+  it("uses the shared value stack on every offer page", () => {
+    const root = process.cwd();
+    for (const page of ["LoopLibrary.tsx", "Diagnostic.tsx", "Blueprint.tsx", "Engine.tsx"]) {
+      const content = readFileSync(join(root, "src/react-app/pages/marketing", page), "utf8");
+      expect(content).toContain("OfferValueStack");
+      expect(content).toContain("OFFER_STACKS");
+    }
+  });
+
   it("offer prices live in a single source of truth", async () => {
     const { OFFERS, OFFER_CREDITS } = await import("../src/lib/offers");
+    expect(OFFERS.loops.value).toEqual({ amountMinor: 9900, label: "$99" });
+    expect(OFFERS.loops.price).toEqual({ amountMinor: 0, label: "$0" });
+    expect(OFFERS.loops.discountPercent).toBe(100);
     expect(OFFERS.diagnostic.price).toEqual({ amountMinor: 19900, label: "$199" });
     expect(OFFERS.blueprint.price).toEqual({ amountMinor: 99900, label: "$999" });
     expect(OFFERS.engineCore.setup.amountMinor).toBe(299900);

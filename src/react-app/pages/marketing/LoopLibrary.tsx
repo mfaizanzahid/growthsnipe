@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
+import { OfferCtaButton, OfferValueStack } from "../../components/marketing/OfferValueStack";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { OFFER_STACKS } from "../../../lib/offers";
 import {
   Select,
   SelectContent,
@@ -91,7 +93,21 @@ export function LoopLibrary() {
         title="Stop letting good customers disappear after the first interaction."
         lede="Get practical automation recipes, follow-up scripts and customer lifecycle ideas you can adapt to your home-service business. SNIPE Loops™ is designed to help you capture more of the opportunities already around you, without starting with a complicated software project."
       />
-      <section className="mx-auto w-full max-w-2xl px-4 pb-14">
+      <section className="mx-auto w-full max-w-3xl px-4 pb-10">
+        <OfferValueStack stack={OFFER_STACKS.loops} />
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-base">Why is it free?</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            The library is free because it is the fastest way to show how we think. Use one loop this
+            week. If you want the loops installed and run for you, the SNIPE Diagnostic™ and SNIPE
+            Engine™ are the next step.
+          </CardContent>
+        </Card>
+      </section>
+
+      <section id="loop-form" className="mx-auto w-full max-w-2xl scroll-mt-20 px-4 pb-14">
         <Card>
           <CardHeader>
             <CardTitle>{sent ? "Check your inbox" : "Send me SNIPE Loops™"}</CardTitle>
@@ -106,8 +122,8 @@ export function LoopLibrary() {
                 </Button>
               </div>
             ) : (
-              <form onSubmit={onSubmit} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+              <form onSubmit={onSubmit} className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="loop-first-name" required>First name</Label>
                     <Input id="loop-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={60} autoComplete="given-name" />
@@ -117,45 +133,49 @@ export function LoopLibrary() {
                     <Input id="loop-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required maxLength={60} autoComplete="family-name" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="loop-email" required>Work email</Label>
-                  <Input id="loop-email" type="email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} required maxLength={200} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="loop-email" required>Work email</Label>
+                    <Input id="loop-email" type="email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} required maxLength={200} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="loop-business" required>Business name</Label>
+                    <Input id="loop-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required maxLength={160} />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="loop-business" required>Business name</Label>
-                  <Input id="loop-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required maxLength={160} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="loop-trade" required>Trade / industry</Label>
-                  <Select value={trade} onValueChange={setTrade} required>
-                    <SelectTrigger id="loop-trade"><SelectValue placeholder="Select your trade" /></SelectTrigger>
-                    <SelectContent>
-                      {TRADES.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="loop-software">Business software (optional)</Label>
-                  <Input id="loop-software" value={software} onChange={(e) => setSoftware(e.target.value)} maxLength={120} placeholder="e.g. Spectora, ServiceTitan" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="loop-volume">Monthly job volume (optional)</Label>
-                  <Select value={volume} onValueChange={setVolume}>
-                    <SelectTrigger id="loop-volume"><SelectValue placeholder="Select a range" /></SelectTrigger>
-                    <SelectContent>
-                      {VOLUMES.map((v) => (
-                        <SelectItem key={v} value={v}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="loop-trade" required>Trade / industry</Label>
+                    <Select value={trade} onValueChange={setTrade} required>
+                      <SelectTrigger id="loop-trade"><SelectValue placeholder="Select your trade" /></SelectTrigger>
+                      <SelectContent>
+                        {TRADES.map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="loop-software">Business software (optional)</Label>
+                    <Input id="loop-software" value={software} onChange={(e) => setSoftware(e.target.value)} maxLength={120} placeholder="e.g. Spectora, ServiceTitan" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="loop-volume">Monthly job volume (optional)</Label>
+                    <Select value={volume} onValueChange={setVolume}>
+                      <SelectTrigger id="loop-volume"><SelectValue placeholder="Select a range" /></SelectTrigger>
+                      <SelectContent>
+                        {VOLUMES.map((v) => (
+                          <SelectItem key={v} value={v}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   By submitting, you agree to receive SNIPE Loops™ and related GrowthSnipe emails. Unsubscribe at any time. See our <Link className="underline" to="/privacy">Privacy Policy</Link>.
                 </p>
                 <Button type="submit" className="w-full" disabled={pending}>
-                  {pending ? "Sending…" : "Download SNIPE Loops™"}
+                  {pending ? "Sending…" : "Get SNIPE Loops™ Free"}
                 </Button>
               </form>
             )}
@@ -179,6 +199,9 @@ export function LoopLibrary() {
               </Card>
             ))}
           </div>
+          <div className="mt-8 text-center">
+            <OfferCtaButton stack={OFFER_STACKS.loops} />
+          </div>
         </div>
       </section>
 
@@ -190,6 +213,9 @@ export function LoopLibrary() {
               {t}
             </span>
           ))}
+        </div>
+        <div className="mt-6 text-center">
+          <OfferCtaButton stack={OFFER_STACKS.loops} variant="outline" />
         </div>
       </section>
 
@@ -209,6 +235,9 @@ export function LoopLibrary() {
           <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
             The recipe is a starting point, not a plug-and-play guarantee. Timing, wording, consent and platform configuration should be adapted to the business and applicable communication rules.
           </p>
+          <div className="mt-6 text-center">
+            <OfferCtaButton stack={OFFER_STACKS.loops} />
+          </div>
         </div>
       </section>
 

@@ -3,7 +3,7 @@ import { MarketingLayout } from "../../../components/marketing/MarketingLayout";
 import { CtaBand, PageHero, SectionHeading } from "../../../components/marketing/MarketingBits";
 import { Button } from "../../../components/ui/button";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import { OFFERS } from "../../../../lib/offers";
+import { OFFER_LADDER, OFFERS } from "../../../../lib/offers";
 
 export interface IndustryCopy {
   eyebrow: string;
@@ -71,7 +71,7 @@ export function IndustryTemplate({ copy }: { copy: IndustryCopy }) {
           <SectionHeading
             eyebrow="Offer pathway"
             title="Start where it makes sense."
-            body={`Start with the ${OFFERS.diagnostic.price.label} SNIPE Diagnostic™ to see where the business is leaking opportunities. Move into the ${OFFERS.blueprint.price.label} SNIPE Blueprint™ for a full 12-month plan, or choose SNIPE Engine™ when you are ready for an implementation partner.`}
+            body={`Start with the ${OFFERS.diagnostic.price.label} SNIPE Diagnostic™ to see where the business is leaking opportunities. Move into the ${OFFERS.blueprint.price.label} SNIPE Blueprint™ for a full 12-month plan, or choose SNIPE Engine™ when you are ready for an implementation partner. ${OFFER_LADDER.loopsIncluded}`}
           />
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button asChild>

@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
+import { OfferCtaButton, OfferValueStack } from "../../components/marketing/OfferValueStack";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { CheckCircleIcon } from "@heroicons/react/24/outline";
+import { OFFER_STACKS } from "../../../lib/offers";
 
 const FEATURES: Array<{ title: string; body: string }> = [
   {
@@ -33,7 +34,8 @@ const FEATURES: Array<{ title: string; body: string }> = [
 ];
 
 const FLAT_FEATURES: string[] = [
-  "Growth strategy and recurring plan reviews tied to your numbers.",
+  "Growth strategy tied to your numbers.",
+  "Bonus: recurring plan review calls tied to your numbers.",
   "Paid search and paid media campaigns, managed against your numbers.",
   "Campaign and landing-page structure tied to revenue targets.",
   "Local Services Ads, Search and Meta campaign management.",
@@ -57,16 +59,12 @@ export function Engine() {
         title="We do not hand you a plan and disappear. We help run the system."
         lede="SNIPE Engine™ turns your growth plan into a working operating system. We configure the infrastructure, manage the agreed marketing and follow-up activities, support call capture and keep performance visible, so the owner is not left coordinating a collection of disconnected vendors."
       />
-      <section className="mx-auto w-full max-w-6xl px-4 pb-14">
-        <div className="mx-auto max-w-2xl text-center">
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button size="lg" asChild>
-              <Link to="/book">Book a Free Growth Fit Call</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <a href="#included">See What&apos;s Included</a>
-            </Button>
-          </div>
+      <section className="mx-auto w-full max-w-4xl px-4 pb-14">
+        <OfferValueStack stack={OFFER_STACKS.engine} />
+        <div className="mt-6 text-center">
+          <Button size="lg" variant="outline" asChild>
+            <a href="#included">See What&apos;s Included</a>
+          </Button>
         </div>
       </section>
 
@@ -85,6 +83,9 @@ export function Engine() {
               </div>
             ))}
           </div>
+          <div className="mt-8 text-center">
+            <OfferCtaButton stack={OFFER_STACKS.engine} />
+          </div>
         </div>
       </section>
 
@@ -102,6 +103,9 @@ export function Engine() {
               </li>
             ))}
           </ul>
+          <div className="mt-8 text-center">
+            <OfferCtaButton stack={OFFER_STACKS.engine} variant="outline" />
+          </div>
         </div>
       </section>
 
@@ -128,9 +132,7 @@ export function Engine() {
               <p>
                 Tell us about your business, goals and capacity. We will confirm the scope and next steps in writing before anything starts. Advertising spend is paid separately by the client to the advertising platform.
               </p>
-              <Button asChild>
-                <Link to="/book">Book a Free Growth Fit Call</Link>
-              </Button>
+              <OfferCtaButton stack={OFFER_STACKS.engine} size="default" />
             </CardContent>
           </Card>
         </div>

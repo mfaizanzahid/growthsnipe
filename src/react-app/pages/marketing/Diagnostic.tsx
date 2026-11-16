@@ -1,10 +1,8 @@
-import { Link } from "react-router-dom";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, Faq, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
-import { Button } from "../../components/ui/button";
+import { OfferCtaButton, OfferValueStack } from "../../components/marketing/OfferValueStack";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { CheckCircleIcon } from "@heroicons/react/24/outline";
-import { OFFERS, OFFER_CREDITS } from "../../../lib/offers";
+import { OFFER_CREDITS, OFFER_STACKS } from "../../../lib/offers";
 
 const INVESTIGATES = [
   {
@@ -37,7 +35,7 @@ const RECEIVE = [
   "Diagnostic Snapshot: a summary of the business baseline and data coverage.",
   "Leak Map: a structured view of identified friction points and estimated financial exposure where enough evidence exists.",
   "Priority Findings: the issues worth addressing first, ranked by likely impact and practical effort.",
-  "30-Minute Review Call: a live walkthrough, discussion and recommended next step.",
+  "Bonus: a 30-minute review call with a live walkthrough, discussion and recommended next step.",
 ];
 
 const STEPS = [
@@ -45,7 +43,7 @@ const STEPS = [
   "Receive the data checklist and secure submission instructions.",
   "Share the agreed business exports and contact details.",
   "We review the booking data and build the 12-month baseline, Leak Map and framework scores.",
-  "Join the 30-minute review call and decide whether to execute independently or build a full SNIPE Blueprint™.",
+  "Join your bonus 30-minute review call and decide whether to execute independently or build a full SNIPE Blueprint™.",
 ];
 
 const FAQS = [
@@ -61,6 +59,14 @@ const FAQS = [
     q: "Does the Diagnostic include implementation?",
     a: "No. It is a paid analysis and review. Implementation is available through the Blueprint and SNIPE Engine™.",
   },
+  {
+    q: "Does the Diagnostic include SNIPE Loops™?",
+    a: "Yes. The full SNIPE Loops™ library is included as a bonus with the Diagnostic.",
+  },
+  {
+    q: "Is the review call an extra cost?",
+    a: "No. The 30-minute findings and recommendations call is included as a bonus.",
+  },
 ];
 
 export function Diagnostic() {
@@ -71,33 +77,8 @@ export function Diagnostic() {
         title="Where is your business losing the growth it has already paid to create?"
         lede="The SNIPE Diagnostic™ reviews your last 12 months of jobs, revenue, service mix, cancellations, referral partners and repeat customers. You will receive a clear view of what the numbers say, what may be holding the business back and where to investigate first."
       />
-      <section className="mx-auto w-full max-w-6xl px-4 pb-14">
-        <Card className="mx-auto max-w-2xl text-center">
-          <CardHeader>
-            <CardTitle className="text-3xl">
-              {OFFERS.diagnostic.name}: {OFFERS.diagnostic.price.label} one-time
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="space-y-2 text-left text-sm">
-              {[
-                "Review of up to 12 months of supplied business data.",
-                "A business-specific Leak Map with quantified opportunities where the data supports it.",
-                "A service-mix, cancellation and referral review.",
-                "A 30-minute findings and recommendations call.",
-                "100% credited toward a SNIPE Blueprint™ purchased within 14 days.",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckCircleIcon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Button size="lg" className="w-full sm:w-auto" asChild>
-              <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic™</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <section className="mx-auto w-full max-w-3xl px-4 pb-14">
+        <OfferValueStack stack={OFFER_STACKS.diagnostic} />
       </section>
 
       <section className="border-t bg-muted/40">
@@ -115,6 +96,9 @@ export function Diagnostic() {
                 <CardContent className="text-sm text-muted-foreground">{item.body}</CardContent>
               </Card>
             ))}
+          </div>
+          <div className="mt-8 text-center">
+            <OfferCtaButton stack={OFFER_STACKS.diagnostic} />
           </div>
         </div>
       </section>
@@ -135,6 +119,9 @@ export function Diagnostic() {
             </div>
           ))}
         </div>
+        <div className="mt-8 text-center">
+          <OfferCtaButton stack={OFFER_STACKS.diagnostic} variant="outline" />
+        </div>
       </section>
 
       <section className="border-t bg-muted/40">
@@ -153,6 +140,9 @@ export function Diagnostic() {
           <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-muted-foreground">
             The review begins after payment and receipt of the required information. No business outcome is guaranteed.
           </p>
+          <div className="mt-6 text-center">
+            <OfferCtaButton stack={OFFER_STACKS.diagnostic} />
+          </div>
         </div>
       </section>
 
@@ -162,12 +152,11 @@ export function Diagnostic() {
           title="Do not pay twice to keep moving forward."
         />
         <p className="mt-4 text-muted-foreground">{OFFER_CREDITS.diagnosticToBlueprint.text}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          If you start with the SNIPE Blueprint™ instead, the Diagnostic is already included as a bonus.
+        </p>
         <div className="mt-6">
-          <Button size="lg" asChild>
-            <Link to={OFFERS.diagnostic.checkoutPath}>
-              Start My SNIPE Diagnostic™, {OFFERS.diagnostic.price.label}
-            </Link>
-          </Button>
+          <OfferCtaButton stack={OFFER_STACKS.diagnostic} variant="outline" />
         </div>
       </section>
 
@@ -178,7 +167,7 @@ export function Diagnostic() {
 
       <CtaBand
         title="Find the leaks before you spend more."
-        body="A 12-month performance review, a quantified Leak Map and a 30-minute review call with a clear recommended next step."
+        body="A 12-month performance review, a quantified Leak Map and a bonus 30-minute review call with a clear recommended next step."
       />
     </MarketingLayout>
   );

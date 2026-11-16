@@ -31,9 +31,15 @@ describe("Diagnostic copy", () => {
 
   it("uses the word call for the 30-minute review on the Diagnostic page", () => {
     const diagnostic = read("src/react-app/pages/marketing/Diagnostic.tsx");
-    expect(diagnostic).toContain("30-Minute Review Call");
+    expect(diagnostic).toMatch(/30-minute review call/i);
     expect(diagnostic).toContain("findings and recommendations call");
-    expect(diagnostic).toContain("Join the 30-minute review call");
+    expect(diagnostic).toContain("Join your bonus 30-minute review call");
+  });
+
+  it("uses the shared value stack on the Diagnostic page", () => {
+    const diagnostic = read("src/react-app/pages/marketing/Diagnostic.tsx");
+    expect(diagnostic).toContain("OfferValueStack");
+    expect(diagnostic).toContain("OFFER_STACKS");
   });
 
   it("uses an add-on revenue testimonial in the Diagnostic PDF", () => {

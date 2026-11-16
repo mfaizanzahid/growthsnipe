@@ -24,7 +24,7 @@ describe("Blueprint discovery call copy", () => {
 
   it("mirrors the discovery call in the website strategy doc", () => {
     const strategy = read("docs/copy-content-website-strategy.md");
-    expect(strategy).toContain("A 30-minute discovery call with our team.");
+    expect(strategy).toContain("30-minute discovery call with our team");
     expect(strategy).toContain("/blueprint-discovery-call");
   });
 });
@@ -51,6 +51,20 @@ describe("Blueprint deliverable copy", () => {
   it("keeps the website strategy doc in sync", () => {
     const strategy = read("docs/copy-content-website-strategy.md");
     for (const name of components) expect(strategy).toContain(name);
+  });
+
+  it("uses the shared value stack and removes page counts", () => {
+    const page = read("src/react-app/pages/marketing/Blueprint.tsx");
+    expect(page).toContain("OfferValueStack");
+    expect(page).toContain("OFFER_STACKS");
+    const surfaces = [
+      "src/react-app/pages/marketing/Blueprint.tsx",
+      "src/react-app/pages/checkout/CheckoutBlueprint.tsx",
+      "src/react-app/pages/marketing/Faq.tsx",
+    ];
+    for (const path of surfaces) {
+      expect(read(path)).not.toMatch(/25\s*(to|-|–|—)\s*35|35-page|35 page/i);
+    }
   });
 
   it("avoids em dashes in the Blueprint marketing surfaces", () => {
