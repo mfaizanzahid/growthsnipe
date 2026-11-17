@@ -61,6 +61,8 @@ function testDb(includeSyncing = false): Db {
       coupon_redeemed_at INTEGER,
       receipt_sent_at INTEGER,
       intake_sent_at INTEGER,
+      document_sent_at INTEGER,
+      welcome_scheduled_at INTEGER,
       baseline_run_id TEXT,
       baseline_email_sent_at INTEGER,
       created_at INTEGER NOT NULL,

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DatabaseSync } from "node:sqlite";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { PDFDocument } from "pdf-lib";
@@ -13,6 +13,8 @@ import { memoryStore } from "./memory-store";
 import { createOneTimeRoutes } from "../src/server/routes/one-time";
 import { createDiagnosticRoutes } from "../src/server/routes/diagnostic";
 import { signDiagnosticToken } from "../src/server/diagnostic/tokens";
+import { signLoopsDocumentToken } from "../src/server/loops/tokens";
+import { runDueMarketing } from "../src/server/marketing/runner";
 import { completeOneTimePaidOrder, confirmOneTimeOrder, failOneTimeOrder } from "../src/server/billing/one-time";
 import { finalizeDiagnosticRun } from "../src/server/diagnostic/report";
 import { handleSafepayWebhook } from "../src/server/billing/webhooks";
@@ -54,6 +56,7 @@ function testDb(): Db {
     );
     INSERT INTO one_time_products (id, slug, name, amount_minor, currency, active, created_at)
     VALUES
+      ('otp_loops', 'loops', 'SNIPE Loops', 9900, 'USD', 1, 1000),
       ('otp_diagnostic', 'diagnostic', 'SNIPE Diagnostic', 19900, 'USD', 1, 1000),
       ('otp_blueprint', 'blueprint', 'SNIPE Blueprint', 99900, 'USD', 1, 1000);
     CREATE TABLE one_time_orders (
@@ -79,6 +82,8 @@ function testDb(): Db {
       coupon_redeemed_at INTEGER,
       receipt_sent_at INTEGER,
       intake_sent_at INTEGER,
+      document_sent_at INTEGER,
+      welcome_scheduled_at INTEGER,
       baseline_run_id TEXT,
       baseline_email_sent_at INTEGER,
       created_at INTEGER NOT NULL,
@@ -112,6 +117,52 @@ function testDb(): Db {
     );
     CREATE UNIQUE INDEX coupons_source_order_idx ON coupons (source_order_id)
       WHERE source_order_id IS NOT NULL;
+    INSERT INTO coupons (
+      id, code, kind, percent_off, amount_off_minor, currency, duration, duration_cycles,
+      applies_to_setup, max_redemptions, redeemed_count, valid_from, valid_until,
+      restricted_email, one_time_product_slug, source_order_id, active, created_by,
+      created_at, updated_at
+    )
+    VALUES (
+      'cpn_loops100', 'LOOPS100', 'percent', 100, NULL, 'USD', 'forever', NULL,
+      0, NULL, 0, NULL, NULL, NULL, 'loops', NULL, 1, 'test', 1000, 1000
+    );
+    CREATE TABLE loop_library_leads (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      first_name TEXT NOT NULL,
+      last_name TEXT,
+      business_name TEXT NOT NULL,
+      trade TEXT NOT NULL,
+      software TEXT,
+      monthly_volume TEXT,
+      consent_at INTEGER NOT NULL,
+      consent_text_version TEXT NOT NULL DEFAULT 'v1',
+      unsubscribed_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX loop_leads_email_idx ON loop_library_leads (email);
+    CREATE TABLE marketing_sends (
+      id TEXT PRIMARY KEY,
+      lead_id TEXT,
+      email TEXT NOT NULL,
+      sequence TEXT NOT NULL,
+      step_key TEXT NOT NULL,
+      due_at INTEGER NOT NULL,
+      sent_at INTEGER,
+      status TEXT NOT NULL DEFAULT 'pending',
+      error TEXT,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+    CREATE UNIQUE INDEX marketing_sends_dedupe_idx ON marketing_sends (email, sequence, step_key);
+    CREATE INDEX marketing_sends_due_idx ON marketing_sends (status, due_at);
+    CREATE TABLE marketing_suppressions (
+      email TEXT PRIMARY KEY,
+      reason TEXT NOT NULL DEFAULT 'unsubscribe',
+      created_at INTEGER NOT NULL
+    );
     CREATE TABLE coupon_plans (
       coupon_id TEXT NOT NULL,
       plan_id TEXT NOT NULL,
@@ -354,12 +405,13 @@ beforeEach(() => {
 });
 
 describe("one-time products + session", () => {
-  it("lists the two active products with server-computed amounts", async () => {
+  it("lists the active products with server-computed amounts", async () => {
     const app = buildApp(testDb(), fakeGateway());
     const res = await req(app, "/api/one-time/products");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       products: [
+        { slug: "loops", name: "SNIPE Loops", amountMinor: 9900, currency: "USD" },
         { slug: "diagnostic", name: "SNIPE Diagnostic", amountMinor: 19900, currency: "USD" },
         { slug: "blueprint", name: "SNIPE Blueprint", amountMinor: 99900, currency: "USD" },
       ],
@@ -397,6 +449,146 @@ describe("one-time products + session", () => {
     const second = (await (await req(app, "/api/one-time/session", { ...BUYER, idempotencyKey: "idem-key-09" })).json()) as { orderId: string; cached: boolean };
     expect(second.orderId).toBe(first.orderId);
     expect(second.cached).toBe(true);
+  });
+});
+
+describe("SNIPE Loops checkout", () => {
+  const LOOPS_BUYER = { ...BUYER, slug: "loops" as const };
+
+  it("returns the standing 100% coupon for the checkout", async () => {
+    const app = buildApp(testDb(), fakeGateway());
+    const res = await req(app, "/api/one-time/auto-coupon?slug=loops");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      code: "LOOPS100",
+      discountMinor: 9900,
+      amountMinor: 0,
+      currency: "USD",
+    });
+  });
+
+  it("completes at $0, emails the playbook, and schedules the welcome series five hours later", async () => {
+    const db = testDb();
+    const outbox = captureEmails();
+    const app = buildApp(db, fakeGateway("succeeded"));
+
+    const res = await req(app, "/api/one-time/session", LOOPS_BUYER);
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as { orderId: string; amountMinor: number; paid: boolean };
+    expect(data.amountMinor).toBe(0);
+    expect(data.paid).toBe(true);
+
+    const order = await getOneTimeOrder(db, data.orderId);
+    expect(order?.status).toBe("paid");
+    expect(order?.chargeId).toBe("free");
+    expect(order?.couponCode).toBe("LOOPS100");
+    expect(order?.discountMinor).toBe(9900);
+    expect(order?.documentSentAt).toBeTruthy();
+    expect(order?.welcomeScheduledAt).toBeTruthy();
+
+    const invoice = await getOneTimeInvoiceByOrderId(db, data.orderId);
+    expect(invoice?.amountMinor).toBe(0);
+
+    const subjects = outbox.map((email) => email.subject);
+    expect(subjects.some((subject) => /playbook is ready/i.test(subject))).toBe(true);
+    expect(subjects.some((subject) => /start with one loop/i.test(subject))).toBe(false);
+
+    const sends = await db.select().from(schema.marketingSends);
+    expect(sends).toHaveLength(5);
+    expect(sends.every((send) => send.status === "pending")).toBe(true);
+    const day0 = sends.find((send) => send.stepKey === "day0");
+    expect(day0?.dueAt).toBe((order?.paidAt ?? 0) + 5 * 60 * 60 * 1000);
+    const lead = await db.select().from(schema.loopLibraryLeads);
+    expect(lead).toHaveLength(1);
+    expect(lead[0]?.businessName).toBe(LOOPS_BUYER.businessName);
+
+    // Nothing goes out before the five-hour mark.
+    await runDueMarketing(db, ENV, (order?.paidAt ?? 0) + 4 * 60 * 60 * 1000);
+    expect(
+      outbox.some((email) => email.subject.includes("Start with one loop from your SNIPE Loops™ playbook")),
+    ).toBe(false);
+
+    // Day 0 lands once the delay has passed and acknowledges the delivered PDF.
+    await runDueMarketing(db, ENV, (order?.paidAt ?? 0) + 5 * 60 * 60 * 1000);
+    const day0Email = outbox.find((email) =>
+      email.subject.includes("Start with one loop from your SNIPE Loops™ playbook"),
+    );
+    expect(day0Email).toBeTruthy();
+    expect(day0Email?.html).toContain("playbook was emailed to you after checkout");
+    expect(day0Email?.html).toContain("Open the SNIPE Loops™ library");
+  });
+
+  it("serves the signed playbook PDF and rejects a bad link", async () => {
+    const db = testDb();
+    const app = buildApp(db, fakeGateway());
+    const session = await req(app, "/api/one-time/session", LOOPS_BUYER);
+    const { orderId } = (await session.json()) as { orderId: string };
+
+    const token = await signLoopsDocumentToken(ENV, { orderId });
+    const res = await req(
+      app,
+      `/api/one-time/loops/${encodeURIComponent(orderId)}/document?token=${encodeURIComponent(token)}`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("application/pdf");
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
+    const pdf = await PDFDocument.load(bytes);
+    expect(pdf.getPageCount()).toBeGreaterThan(10);
+
+    const bad = await req(
+      app,
+      `/api/one-time/loops/${encodeURIComponent(orderId)}/document?token=bogus`,
+    );
+    expect(bad.status).toBe(401);
+
+    const otherToken = await signLoopsDocumentToken(ENV, { orderId: "someone-else" });
+    const wrongOrder = await req(
+      app,
+      `/api/one-time/loops/${encodeURIComponent(orderId)}/document?token=${encodeURIComponent(otherToken)}`,
+    );
+    expect(wrongOrder.status).toBe(401);
+  });
+
+  it("adds the purchaser to the Brevo new signup list", async () => {
+    const db = testDb();
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(JSON.stringify({ id: 1 }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const app = buildApp(db, fakeGateway());
+      const env = { ...ENV, BREVO_API_KEY: "brevo_test" } as Env;
+      const res = await app.request(
+        "/api/one-time/session",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(LOOPS_BUYER),
+        },
+        env,
+      );
+      expect(res.status).toBe(200);
+
+      const contact = fetchMock.mock.calls.find(([url]) => String(url).includes("/v3/contacts"));
+      expect(contact).toBeTruthy();
+      const body = JSON.parse(String((contact?.[1] as RequestInit).body));
+      expect(body.email).toBe("owner@example.com");
+      expect(body.listIds).toEqual([8]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("does not apply the Loops coupon to another product", async () => {
+    const db = testDb();
+    const app = buildApp(db, fakeGateway());
+    const res = await req(app, "/api/one-time/session", {
+      ...BUYER,
+      couponCode: "LOOPS100",
+    });
+    expect(res.status).toBe(422);
   });
 });
 
@@ -890,13 +1082,50 @@ describe("credit coupons", () => {
     expect(gateway.calls).toEqual([]);
     expect((await getOneTimeOrder(db, body.orderId))?.status).toBe("paid");
     expect((await store.getCouponById(coupon.id))?.redeemedCount).toBe(1);
-    expect(await getOneTimeInvoiceByOrderId(db, body.orderId)).toMatchObject({
-      status: "paid",
-      amountMinor: 0,
-    });
+    const invoice = await getOneTimeInvoiceByOrderId(db, body.orderId);
+    expect(invoice).toMatchObject({ status: "paid", amountMinor: 0 });
+    expect(invoice?.emailSentAt).toBeTruthy();
     expect(outbox).toHaveLength(3);
     expect(outbox[0]?.subject).toContain("Invoice");
     expect(outbox[0]?.html).toContain("No payment was due");
+    expect(outbox[0]?.html).toContain("/api/one-time/invoices/");
+  });
+
+  it("sends the invoice email when a 100% Diagnostic code makes the order free", async () => {
+    const db = testDb();
+    const store = drizzleStore(db);
+    const coupon = await seedDiagnosticCoupon(db, {
+      code: "DIAG100",
+      kind: "percent",
+      percentOff: 100,
+      amountOffMinor: null,
+      oneTimeProductSlug: "diagnostic",
+      restrictedEmail: null,
+      maxRedemptions: null,
+    });
+    const app = buildApp(db, fakeGateway());
+    const outbox = captureEmails();
+
+    const session = await req(app, "/api/one-time/session", {
+      ...BUYER,
+      couponCode: coupon.code,
+      idempotencyKey: "free-diagnostic-100",
+    });
+    expect(session.status).toBe(200);
+    const body = (await session.json()) as { orderId: string; amountMinor: number; paid: boolean };
+    expect(body).toMatchObject({ amountMinor: 0, paid: true });
+    expect((await store.getCouponById(coupon.id))?.redeemedCount).toBe(1);
+
+    const invoice = await getOneTimeInvoiceByOrderId(db, body.orderId);
+    expect(invoice).toMatchObject({ status: "paid", amountMinor: 0 });
+    expect(invoice?.emailSentAt).toBeTruthy();
+
+    const invoiceEmail = outbox.find((email) => email.subject.includes("Invoice"));
+    expect(invoiceEmail).toBeTruthy();
+    expect(invoiceEmail?.to).toBe("owner@example.com");
+    expect(invoiceEmail?.html).toContain("No payment was due");
+    expect(invoiceEmail?.html).toContain("/api/one-time/invoices/");
+    expect(outbox.some((email) => email.subject.toLowerCase().includes("connect your software"))).toBe(true);
   });
 
   it("still rejects setup-credit coupons on one-time purchases", async () => {

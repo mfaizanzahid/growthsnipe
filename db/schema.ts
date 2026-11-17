@@ -325,6 +325,10 @@ export const oneTimeOrders = sqliteTable("one_time_orders", {
   couponRedeemedAt: integer("coupon_redeemed_at"),
   receiptSentAt: integer("receipt_sent_at"),
   intakeSentAt: integer("intake_sent_at"),
+  /** When the SNIPE Loops playbook download email was sent. */
+  documentSentAt: integer("document_sent_at"),
+  /** When the Loops welcome marketing sequence was scheduled. */
+  welcomeScheduledAt: integer("welcome_scheduled_at"),
   /** Diagnostic run used as this Blueprint order's baseline. */
   baselineRunId: text("baseline_run_id"),
   /** When the Blueprint baseline/connect email was sent. */

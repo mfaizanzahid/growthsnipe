@@ -60,8 +60,12 @@ export function planCron(input: CronPlanInput): CronPlan {
     runAnalytics: !isDaily,
     // Retention is a once-a-day sweep.
     runRetentionPurge: isDaily,
-    // Marketing sequences are day-granular like billing: daily trigger, or
-    // any other trigger as catch-up when the daily run has not happened yet.
-    runMarketing: isDaily || input.lastBillingDay !== input.today,
+    // Marketing sequences run on the daily trigger and every hourly tick.
+    // The hourly tick exists so the Loops welcome email can start about five
+    // hours after checkout instead of waiting for the next 03:00 run. Sends
+    // stay due-gated by marketing_sends.due_at, so extra ticks are safe.
+    // Any other trigger still catches up when the daily run was missed.
+    runMarketing:
+      isDaily || input.cron === input.hourlyCron || input.lastBillingDay !== input.today,
   };
 }

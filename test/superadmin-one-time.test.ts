@@ -34,7 +34,9 @@ function testDb(): Db {
       created_at INTEGER NOT NULL
     );
     INSERT INTO one_time_products (id, slug, name, amount_minor, currency, active, created_at)
-    VALUES ('otp_blueprint', 'blueprint', 'SNIPE Blueprint', 99900, 'USD', 1, 1000);
+    VALUES
+      ('otp_blueprint', 'blueprint', 'SNIPE Blueprint', 99900, 'USD', 1, 1000),
+      ('otp_loops', 'loops', 'SNIPE Loops', 9900, 'USD', 1, 1000);
 
     CREATE TABLE one_time_orders (
       id TEXT PRIMARY KEY,
@@ -59,6 +61,8 @@ function testDb(): Db {
       coupon_redeemed_at INTEGER,
       receipt_sent_at INTEGER,
       intake_sent_at INTEGER,
+      document_sent_at INTEGER,
+      welcome_scheduled_at INTEGER,
       baseline_run_id TEXT,
       baseline_email_sent_at INTEGER,
       created_at INTEGER NOT NULL,
@@ -211,6 +215,45 @@ describe("superadmin one-time orders", () => {
     const invoice = await getOneTimeInvoiceByOrderId(db, ORDER_ID);
     expect(invoice?.emailSentAt).toBeTruthy();
     expect(invoice?.emailResendCount).toBe(1);
+  });
+
+  it("resends the Loops playbook and rejects products without a document", async () => {
+    const db = testDb();
+    await db.insert(schema.oneTimeOrders).values({
+      id: "order-loops-1",
+      productId: "otp_loops",
+      email: "loops@example.com",
+      name: "Ada Buyer",
+      firstName: "Ada",
+      lastName: "Buyer",
+      businessName: "Acme Inspections",
+      trade: "Home inspection",
+      amountMinor: 0,
+      currency: "USD",
+      status: "paid",
+      idempotencyKey: "loops-order-idem",
+      createdAt: NOW,
+      updatedAt: NOW,
+      paidAt: NOW,
+    });
+    const outbox = captureEmails();
+    const res = await call(
+      buildApp(db),
+      "/api/superadmin/one-time-orders/order-loops-1/resend-document",
+      "POST",
+    );
+    expect(res.status).toBe(200);
+    expect(outbox).toHaveLength(1);
+    expect(outbox[0]?.to).toBe("loops@example.com");
+    expect(outbox[0]?.subject).toContain("playbook");
+    expect(outbox[0]?.html).toContain("/api/one-time/loops/");
+
+    const wrongProduct = await call(
+      buildApp(db),
+      `/api/superadmin/one-time-orders/${ORDER_ID}/resend-document`,
+      "POST",
+    );
+    expect(wrongProduct.status).toBe(422);
   });
 
   it("downloads the guest invoice PDF", async () => {

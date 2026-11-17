@@ -67,7 +67,7 @@ export function LoopLibraryAccess() {
             <CardContent className="space-y-4 pt-6">
               <p className="text-sm text-muted-foreground">This link is invalid or expired. Request a fresh one from the SNIPE Loops™ page.</p>
               <Button asChild>
-                  <Link to="/loop-library">Download SNIPE Loops™</Link>
+                  <Link to="/checkout/loops">Get SNIPE Loops™</Link>
               </Button>
             </CardContent>
           </Card>

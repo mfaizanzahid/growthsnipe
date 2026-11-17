@@ -21,7 +21,7 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
   "/loop-library": {
     title: "SNIPE Loops™ | Home-Service Follow-Up & Automation Recipes",
     description:
-      "Get free follow-up scripts, automation recipes and customer lifecycle workflows for home inspectors, HVAC, plumbing, electrical, roofing and contractors.",
+      "Get the free SNIPE Loops™ playbook: eight revenue loops, trade-specific steps, recipes and follow-up scripts for home-service businesses.",
   },
   "/engine": {
     title: "SNIPE Engine™ | Managed Growth Marketing & Operations for Home Services",
@@ -131,6 +131,11 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
     description:
       "Purchase the SNIPE Blueprint™: a personalized 12-month growth plan with a 90-minute presentation.",
   },
+  "/checkout/loops": {
+    title: "Get the SNIPE Loops™ Playbook | GrowthSnipe",
+    description:
+      "Complete checkout for the free SNIPE Loops™ playbook. The branded PDF is emailed immediately with a clickable table of contents.",
+  },
   "/thank-you/diagnostic": {
     title: "Your Diagnostic Is Underway | GrowthSnipe",
     description: "Thank you for purchasing the SNIPE Diagnostic™. Next steps for your data checklist and review.",
@@ -139,9 +144,9 @@ export const PAGE_META: Record<string, { title: string; description: string }> =
     title: "Let's Build Your Growth Plan | GrowthSnipe",
     description: "Thank you for purchasing the SNIPE Blueprint™. Next steps for intake and your presentation.",
   },
-  "/thank-you/loop-library": {
-    title: "Your SNIPE Loops™ Are Ready | GrowthSnipe",
-    description: "Check your inbox for access to free SNIPE Loops™ follow-up workflows and scripts.",
+  "/thank-you/loops": {
+    title: "Your SNIPE Loops™ Playbook Is On the Way | GrowthSnipe",
+    description: "Check your inbox for the SNIPE Loops™ playbook download link.",
   },
   "/results-disclaimer": {
     title: "Results Disclaimer | GrowthSnipe",

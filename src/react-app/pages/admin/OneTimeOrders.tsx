@@ -25,11 +25,13 @@ interface AdminOneTimeOrder {
   name: string | null;
   businessName: string | null;
   productName: string | null;
+  productSlug: string | null;
   amountMinor: number;
   currency: string;
   status: string;
   createdAt: number;
   paidAt: number | null;
+  documentSentAt: number | null;
   invoice: AdminOneTimeInvoice | null;
 }
 
@@ -66,14 +68,27 @@ export function AdminOneTimeOrders() {
     if (allowed) void load();
   }, [allowed]);
 
-  async function resend(order: AdminOneTimeOrder) {
-    setBusy(order.id);
+  async function resend(order: AdminOneTimeOrder, kind: "invoice" | "document") {
+    setBusy(`${order.id}:${kind}`);
     try {
-      await api(`/api/superadmin/one-time-orders/${order.id}/resend-invoice`, { method: "POST" });
-      toast.success(`Invoice re-sent to ${order.email}`);
+      await api(
+        `/api/superadmin/one-time-orders/${order.id}/${kind === "invoice" ? "resend-invoice" : "resend-document"}`,
+        { method: "POST" },
+      );
+      toast.success(
+        kind === "invoice"
+          ? `Invoice re-sent to ${order.email}`
+          : `Playbook re-sent to ${order.email}`,
+      );
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not resend invoice");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : kind === "invoice"
+            ? "Could not resend invoice"
+            : "Could not resend playbook",
+      );
     } finally {
       setBusy(null);
     }
@@ -149,34 +164,70 @@ export function AdminOneTimeOrders() {
       searchValue: (order) => order.invoice?.number ?? "",
     },
     {
+      key: "document",
+      header: "Playbook",
+      sortable: true,
+      render: (order) =>
+        order.productSlug === "loops" ? (
+          <span className="text-xs">
+            {order.documentSentAt ? `Sent ${shortDate(order.documentSentAt)}` : "Not sent"}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">-</span>
+        ),
+      sortValue: (order) => order.documentSentAt ?? 0,
+    },
+    {
       key: "actions",
       header: "Actions",
       render: (order) => {
-        if (!order.invoice) {
-          return <span className="text-xs text-muted-foreground">No invoice</span>;
+        const invoiceBusy = busy === `${order.id}:invoice`;
+        const documentBusy = busy === `${order.id}:document`;
+        const hasInvoice = Boolean(order.invoice);
+        const hasDocument = order.productSlug === "loops" && order.status === "paid";
+        if (!hasInvoice && !hasDocument) {
+          return <span className="text-xs text-muted-foreground">No actions</span>;
         }
         return (
           <div className="flex justify-start gap-0.5">
-            <RowAction
-              label="Download invoice"
-              onClick={() =>
-                window.open(
-                  `/api/superadmin/one-time-orders/${order.id}/invoice`,
-                  "_blank",
-                  "noopener,noreferrer",
-                )
-              }
-            >
-              <ArrowDownTrayIcon className="size-4" />
-            </RowAction>
-            <RowAction
-              label={busy === order.id ? "Sending…" : "Resend invoice"}
-              onClick={() => {
-                if (busy !== order.id && order.status === "paid") void resend(order);
-              }}
-            >
-              <PaperAirplaneIcon className="size-4" />
-            </RowAction>
+            {hasInvoice && (
+              <RowAction
+                label="Download invoice"
+                onClick={() =>
+                  window.open(
+                    `/api/superadmin/one-time-orders/${order.id}/invoice`,
+                    "_blank",
+                    "noopener,noreferrer",
+                  )
+                }
+              >
+                <ArrowDownTrayIcon className="size-4" />
+              </RowAction>
+            )}
+            {hasInvoice && (
+              <RowAction
+                label={invoiceBusy ? "Sending…" : "Resend invoice"}
+                loading={invoiceBusy}
+                disabled={busy !== null || order.status !== "paid"}
+                onClick={() => {
+                  if (busy === null && order.status === "paid") void resend(order, "invoice");
+                }}
+              >
+                <PaperAirplaneIcon className="size-4" />
+              </RowAction>
+            )}
+            {hasDocument && (
+              <RowAction
+                label={documentBusy ? "Sending…" : "Resend Loops playbook"}
+                loading={documentBusy}
+                disabled={busy !== null}
+                onClick={() => {
+                  if (busy === null) void resend(order, "document");
+                }}
+              >
+                <PaperAirplaneIcon className="size-4" />
+              </RowAction>
+            )}
           </div>
         );
       },
@@ -188,15 +239,15 @@ export function AdminOneTimeOrders() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">One-time orders</h1>
         <p className="text-sm text-muted-foreground">
-          Guest Diagnostic and Blueprint purchases with their invoices. Paid orders without an
-          invoice are backfilled when this page loads.
+          Guest Diagnostic, Blueprint and SNIPE Loops purchases with their invoices. Paid orders
+          without an invoice are backfilled when this page loads.
         </p>
       </div>
       <Card>
         <CardHeader>
           <CardTitle>Guest purchases</CardTitle>
           <CardDescription>
-            Download an invoice or send a fresh invoice email to the buyer.
+            Download an invoice, send a fresh invoice email, or resend the Loops playbook.
           </CardDescription>
         </CardHeader>
         <CardContent>

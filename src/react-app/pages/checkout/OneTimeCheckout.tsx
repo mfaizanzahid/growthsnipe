@@ -33,6 +33,9 @@ export function OneTimeCheckout({
   includes,
   checkoutNote,
   thankYouPath,
+  autoCouponCode,
+  requireBillingAddress = true,
+  showMarketingConsent = false,
 }: {
   slug: string;
   eyebrow: string;
@@ -41,6 +44,12 @@ export function OneTimeCheckout({
   includes: string[];
   checkoutNote: string;
   thankYouPath: string;
+  /** Standing coupon resolved and applied without a code entry. */
+  autoCouponCode?: string;
+  /** $0 products do not need a billing address or card capture. */
+  requireBillingAddress?: boolean;
+  /** Adds the marketing email consent sentence to the terms line. */
+  showMarketingConsent?: boolean;
 }) {
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
@@ -68,6 +77,7 @@ export function OneTimeCheckout({
   } | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
   const [showCouponField, setShowCouponField] = useState(false);
+  const [autoCouponError, setAutoCouponError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/one-time/products")
@@ -82,6 +92,44 @@ export function OneTimeCheckout({
       })
       .catch(() => setFailed(true));
   }, [slug]);
+
+  useEffect(() => {
+    if (!autoCouponCode) return;
+    let cancelled = false;
+    fetch(`/api/one-time/auto-coupon?slug=${encodeURIComponent(slug)}`)
+      .then(async (r) => {
+        const data = (await r.json().catch(() => null)) as {
+          code?: string;
+          discountMinor?: number;
+          amountMinor?: number;
+          currency?: string;
+          error?: string;
+        } | null;
+        if (!r.ok || !data?.code || data.discountMinor == null || data.amountMinor == null) {
+          throw new Error(data?.error ?? "The free offer is not available right now");
+        }
+        return data;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setAppliedCoupon({
+          code: data.code!,
+          discountMinor: data.discountMinor!,
+          amountMinor: data.amountMinor!,
+          currency: data.currency ?? "USD",
+          expiresOn: "",
+        });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : "The free offer is not available right now";
+        setAutoCouponError(message);
+        toast.error(message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [autoCouponCode, slug]);
 
   async function applyCoupon() {
     if (!product) return;
@@ -130,6 +178,10 @@ export function OneTimeCheckout({
   async function start(e: React.FormEvent) {
     e.preventDefault();
     if (!product) return;
+    if (autoCouponError) {
+      toast.error(autoCouponError);
+      return;
+    }
     if (!firstName.trim() || !lastName.trim()) {
       toast.error("Enter your first and last name");
       return;
@@ -150,7 +202,7 @@ export function OneTimeCheckout({
       toast.error("Enter your trade or industry");
       return;
     }
-    if (couponCode.trim() && !appliedCoupon) {
+    if (!autoCouponCode && couponCode.trim() && !appliedCoupon) {
       toast.error("Apply your code first, or clear it");
       return;
     }
@@ -160,7 +212,7 @@ export function OneTimeCheckout({
       toast.error("Enter a valid phone number");
       return;
     }
-    if (!billingAddressValid(billingAddress, countryCode)) {
+    if (requireBillingAddress && !billingAddressValid(billingAddress, countryCode)) {
       toast.error(
         requiresStateCode(countryCode)
           ? "Enter your billing street address, city and 2-letter state code"
@@ -275,10 +327,20 @@ export function OneTimeCheckout({
                   </span>
                 </span>
               </div>
-              {appliedCoupon && (
+              {appliedCoupon && autoCouponCode ? (
+                <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300">
+                  {appliedCoupon.code} applied: 100% off. You pay{" "}
+                  {formatMoney(appliedCoupon.amountMinor, product.currency)} today.
+                </p>
+              ) : appliedCoupon ? (
                 <p className="text-sm text-green-700 dark:text-green-400">
                   {appliedCoupon.code} applied. You save {formatMoney(appliedCoupon.discountMinor, product.currency)}.
                   {appliedCoupon.expiresOn ? ` Valid through ${appliedCoupon.expiresOn}.` : ""}
+                </p>
+              ) : null}
+              {autoCouponError && (
+                <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {autoCouponError}
                 </p>
               )}
               {session ? (
@@ -320,7 +382,7 @@ export function OneTimeCheckout({
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
-                          setAppliedCoupon(null);
+                          if (!autoCouponCode) setAppliedCoupon(null);
                         }}
                         required
                         maxLength={200}
@@ -376,50 +438,66 @@ export function OneTimeCheckout({
                       </div>
                     ) : null}
                   </div>
-                  <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} layout="inline" showRequired />
-                  {!showCouponField ? (
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-primary underline underline-offset-4"
-                      onClick={() => setShowCouponField(true)}
-                    >
-                      Have a credit or discount code?
-                    </button>
-                  ) : (
-                    <div className="space-y-2 rounded-md border p-3">
-                      <Label htmlFor="oto-coupon">Credit or discount code</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="oto-coupon"
-                          value={couponCode}
-                          onChange={(e) => {
-                            setCouponCode(e.target.value.toUpperCase());
-                            setAppliedCoupon(null);
-                          }}
-                          placeholder="Enter code"
-                          maxLength={64}
-                          autoComplete="off"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => void applyCoupon()}
-                          disabled={applyingCoupon || !couponCode.trim()}
-                        >
-                          {applyingCoupon ? "Applying…" : "Apply"}
-                        </Button>
+                  {requireBillingAddress ? (
+                    <BillingAddressFields value={billingAddress} onChange={setBillingAddress} idPrefix="oto-billing" countryCode={countryCode} layout="inline" showRequired />
+                  ) : null}
+                  {!autoCouponCode ? (
+                    !showCouponField ? (
+                      <button
+                        type="button"
+                        className="text-sm font-medium text-primary underline underline-offset-4"
+                        onClick={() => setShowCouponField(true)}
+                      >
+                        Have a credit or discount code?
+                      </button>
+                    ) : (
+                      <div className="space-y-2 rounded-md border p-3">
+                        <Label htmlFor="oto-coupon">Credit or discount code</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="oto-coupon"
+                            value={couponCode}
+                            onChange={(e) => {
+                              setCouponCode(e.target.value.toUpperCase());
+                              setAppliedCoupon(null);
+                            }}
+                            placeholder="Enter code"
+                            maxLength={64}
+                            autoComplete="off"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => void applyCoupon()}
+                            disabled={applyingCoupon || !couponCode.trim()}
+                          >
+                            {applyingCoupon ? "Applying…" : "Apply"}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )
+                  ) : null}
                   <label className="flex cursor-pointer items-start gap-2 text-xs/relaxed text-muted-foreground">
                     <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(v === true)} aria-label="Agree to Terms of Service and Privacy Policy" />
                     <span>
                       I agree to the <a className="underline" href="/terms" target="_blank" rel="noreferrer">Terms of Service</a>{" "}
                       and <a className="underline" href="/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>, and I
                       understand no business outcome is guaranteed.
+                      {showMarketingConsent
+                        ? " I also agree to receive SNIPE Loops™ and related GrowthSnipe emails. Unsubscribe at any time."
+                        : null}
                     </span>
                   </label>
-                  <Button type="submit" className="w-full" disabled={pending || !agreed || !billingAddressValid(billingAddress, countryCode)}>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={
+                      pending ||
+                      !agreed ||
+                      Boolean(autoCouponError) ||
+                      (requireBillingAddress && !billingAddressValid(billingAddress, countryCode))
+                    }
+                  >
                     {pending
                       ? "Starting payment…"
                       : (appliedCoupon?.amountMinor ?? product.amountMinor) === 0

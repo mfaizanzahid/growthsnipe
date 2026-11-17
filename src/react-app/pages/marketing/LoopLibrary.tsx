@@ -1,21 +1,8 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { toast } from "sonner";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { CtaBand, PageHero, SectionHeading } from "../../components/marketing/MarketingBits";
 import { OfferCtaButton, OfferValueStack } from "../../components/marketing/OfferValueStack";
-import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
 import { OFFER_STACKS } from "../../../lib/offers";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
 
 const TRADES = [
   "Home inspection",
@@ -25,8 +12,6 @@ const TRADES = [
   "Roofing",
   "General contracting",
 ];
-
-const VOLUMES = ["1 to 10", "11 to 30", "31 to 75", "More than 75", "Prefer not to say"];
 
 const CATEGORIES = [
   {
@@ -56,36 +41,6 @@ const CATEGORIES = [
 ];
 
 export function LoopLibrary() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [workEmail, setWorkEmail] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [trade, setTrade] = useState("");
-  const [software, setSoftware] = useState("");
-  const [volume, setVolume] = useState("");
-  const [pending, setPending] = useState(false);
-  const [sent, setSent] = useState(false);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setPending(true);
-    try {
-      const res = await fetch("/api/loop-library", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, workEmail, businessName, trade, software, volume }),
-      });
-      const data = (await res.json().catch(() => null)) as { error?: string } | null;
-      if (!res.ok) throw new Error(data?.error ?? "Could not send your request");
-      setSent(true);
-      toast.success("Check your inbox for access to SNIPE Loops™.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not send your request");
-    } finally {
-      setPending(false);
-    }
-  }
-
   return (
     <MarketingLayout>
       <PageHero
@@ -107,78 +62,21 @@ export function LoopLibrary() {
         </Card>
       </section>
 
-      <section id="loop-form" className="mx-auto w-full max-w-2xl scroll-mt-20 px-4 pb-14">
+      <section className="mx-auto w-full max-w-2xl px-4 pb-14">
         <Card>
           <CardHeader>
-            <CardTitle>{sent ? "Check your inbox" : "Send me SNIPE Loops™"}</CardTitle>
-            {!sent && <CardDescription>Get free access. We usually reply within one business day.</CardDescription>}
+            <CardTitle>Get the playbook</CardTitle>
+            <CardDescription>
+              Free. No card required. Your branded PDF is emailed as soon as checkout is complete.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {sent ? (
-              <div className="space-y-4 text-sm text-muted-foreground">
-                <p>Thanks. Check your inbox for the access link.</p>
-                <Button variant="outline" asChild>
-                  <Link to="/thank-you/loop-library">What happens next</Link>
-                </Button>
-              </div>
-            ) : (
-              <form onSubmit={onSubmit} className="space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="loop-first-name" required>First name</Label>
-                    <Input id="loop-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required maxLength={60} autoComplete="given-name" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="loop-last-name" required>Last name</Label>
-                    <Input id="loop-last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} required maxLength={60} autoComplete="family-name" />
-                  </div>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="loop-email" required>Work email</Label>
-                    <Input id="loop-email" type="email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} required maxLength={200} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="loop-business" required>Business name</Label>
-                    <Input id="loop-business" value={businessName} onChange={(e) => setBusinessName(e.target.value)} required maxLength={160} />
-                  </div>
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="loop-trade" required>Trade / industry</Label>
-                    <Select value={trade} onValueChange={setTrade} required>
-                      <SelectTrigger id="loop-trade"><SelectValue placeholder="Select your trade" /></SelectTrigger>
-                      <SelectContent>
-                        {TRADES.map((t) => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="loop-software">Business software (optional)</Label>
-                    <Input id="loop-software" value={software} onChange={(e) => setSoftware(e.target.value)} maxLength={120} placeholder="e.g. Spectora, ServiceTitan" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="loop-volume">Monthly job volume (optional)</Label>
-                    <Select value={volume} onValueChange={setVolume}>
-                      <SelectTrigger id="loop-volume"><SelectValue placeholder="Select a range" /></SelectTrigger>
-                      <SelectContent>
-                        {VOLUMES.map((v) => (
-                          <SelectItem key={v} value={v}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  By submitting, you agree to receive SNIPE Loops™ and related GrowthSnipe emails. Unsubscribe at any time. See our <Link className="underline" to="/privacy">Privacy Policy</Link>.
-                </p>
-                <Button type="submit" className="w-full" disabled={pending}>
-                  {pending ? "Sending…" : "Get SNIPE Loops™ Free"}
-                </Button>
-              </form>
-            )}
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              The full playbook includes the eight revenue loops, six trade chapters, the customer lifecycle
+              map, sample recipes and a follow-up script library. The discount is applied automatically at
+              checkout.
+            </p>
+            <OfferCtaButton stack={OFFER_STACKS.loops} />
           </CardContent>
         </Card>
       </section>
@@ -243,7 +141,7 @@ export function LoopLibrary() {
 
       <CtaBand
         title="Take one leak off the table this week."
-        body="Get the free recipes, adapt one to your process and start building a more consistent customer journey."
+        body="Get the free playbook, adapt one loop to your process and start building a more consistent customer journey."
       />
     </MarketingLayout>
   );

@@ -1288,3 +1288,35 @@ The Blueprint offer page now lists the 30-minute discovery call, mentions it in 
 The link uses a plain `<a href>` rather than React Router's `<Link>` so the request reaches the Worker redirect instead of staying inside the SPA. The marketing copy and website strategy doc are aligned.
 
 Updated: `src/react-app/pages/marketing/Blueprint.tsx`, `src/react-app/pages/checkout/CheckoutBlueprint.tsx`, `src/react-app/pages/checkout/ThankYouBlueprint.tsx`, `docs/copy-content-website-strategy.md`, `test/blueprint-copy.test.ts` (new).
+
+## 2026-11-17 - SNIPE Loops checkout, playbook PDF, and delayed welcome series
+
+SNIPE Loops now uses the same guest one-time checkout as the Diagnostic and Blueprint. Migration `0054_loops_checkout.sql` seeds a $99 one-time product and a standing `LOOPS100` coupon (100% off, email-unbound, no redemption cap, no expiry). The checkout applies the coupon automatically, so every order completes at $0 with no card and no billing address. The server re-validates the coupon on every session and fails closed if it is inactive.
+
+A paid order emails a signed, long-lived download link that renders the standard playbook on demand from `docs/SNIPE_Loops_Playbook.md` (bundled by `scripts/inline-knowledge.mjs`). The PDF shares the Diagnostic's page geometry, palette, header, footer, contents page, tables and callouts through the new `src/server/lib/pdf-report.ts` engine. It has a personalized cover, a two-level clickable table of contents, trade chapters, recipes and scripts.
+
+Paid Loops buyers are also treated as marketing leads. The existing five-step welcome series is scheduled with a five-hour delay (`paidAt + 5h`), and `planCron` now runs the due-gated marketing runner on the hourly tick so Day 0 lands within about five to six hours. `document_sent_at` and `welcome_scheduled_at` keep delivery and scheduling idempotent. The old `/loop-library` capture form is removed; the page remains as marketing copy with every CTA pointed at `/checkout/loops`, and `/thank-you/loop-library` redirects to `/thank-you/loops`. The gated `/loop-library/access` page and unsubscribe route remain for existing sequences.
+
+Superadmin can resend the playbook from the One-time orders page, audited as `one_time.document_resent`.
+
+Updated: `db/migrations/0054_loops_checkout.sql` (new), `db/schema.ts`, `src/lib/offers.ts`, `scripts/inline-knowledge.mjs`, `src/server/loops/playbook.ts` (generated), `src/server/lib/pdf-report.ts` (new), `src/server/loops/pdf.ts` (new), `src/server/loops/tokens.ts` (new), `src/server/loops/document.ts` (new), `src/server/diagnostic/pdf.ts`, `src/server/billing/one-time.ts`, `src/server/routes/one-time.ts`, `src/server/routes/superadmin.ts`, `src/server/email/templates.ts`, `src/server/lib/cron-plan.ts`, `src/react-app/pages/checkout/OneTimeCheckout.tsx`, `src/react-app/pages/checkout/CheckoutLoops.tsx` (new), `src/react-app/pages/checkout/ThankYouLoops.tsx` (new), `src/react-app/pages/marketing/LoopLibrary.tsx`, `src/react-app/pages/marketing/LoopLibraryAccess.tsx`, `src/react-app/marketing-routes.tsx`, `src/react-app/App.tsx`, `src/react-app/components/marketing/page-meta.ts`, `src/react-app/pages/admin/OneTimeOrders.tsx`, `test/one-time.test.ts`, `test/superadmin-one-time.test.ts`, `test/cron-plan.test.ts`, `test/knowledge-sync.test.ts`, `test/loops-pdf.test.ts` (new).
+
+## 2026-11-17 - Loops follow-up copy, thank-you CTAs, and PDF next steps
+
+The SNIPE Loops Day 0 welcome email now assumes the playbook was already delivered. It no longer presents the library as new access; it tells the buyer the playbook was emailed after checkout and points to one loop to start with. The checkout checklist, thank-you page, and page meta no longer mention the internal welcome sequence or its five-hour delay.
+
+All three product thank-you pages now end with a shared next-steps block: "Book a Growth Fit Call" first, then the next product offer page (Diagnostic to Blueprint, Blueprint to Engine, Loops to Diagnostic). The checkout and thank-you transactional lines that explain how the PDF arrives stay in place.
+
+The Loops PDF gains a closing "Recommended next steps" page in the same branded style as the Diagnostic conversion page. It presents the Diagnostic, Blueprint and Engine with value-based copy, uses prices and credit rules from `src/lib/offers.ts`, adds clickable offer and Growth Fit Call buttons, and is listed in the contents.
+
+The 100% Diagnostic invoice path is now covered by a dedicated regression test: a percent-100 Diagnostic coupon completes at $0, the invoice is created, and the invoice email with its signed PDF link is sent before the intake and connect emails.
+
+Updated: `src/server/email/templates.ts`, `src/react-app/pages/checkout/CheckoutLoops.tsx`, `src/react-app/pages/checkout/ThankYouLoops.tsx`, `src/react-app/pages/checkout/ThankYouDiagnostic.tsx`, `src/react-app/pages/checkout/ThankYouBlueprint.tsx`, `src/react-app/pages/checkout/ThankYouNextSteps.tsx` (new), `src/react-app/components/marketing/page-meta.ts`, `src/server/loops/pdf.ts`, `src/server/routes/one-time.ts`, `test/one-time.test.ts`, `test/loops-copy.test.ts` (new).
+
+## 2026-11-17 - Purchaser emails join the Brevo new signup list
+
+Every paid one-time order now adds the buyer to the Brevo "GrowthSnipe New Signup" list, including SNIPE Diagnostic, SNIPE Blueprint and SNIPE Loops, whether the order is paid or fully discounted. The same best-effort subscription runs after a paid subscription signup or subscribe conversion, using the buyer's account email. Verified auth users were already covered by the Better Auth hook; these checkout hooks close the guest-purchase gap.
+
+The subscription uses `BREVO_NEW_SIGNUP_LIST_ID` (default 8) and never blocks a payment, invoice, receipt or document email. Failures are logged without the buyer's email address.
+
+Updated: `src/server/lib/email.ts`, `src/server/billing/one-time.ts`, `src/server/billing/trials.ts`, `src/server/billing/signup.ts`, `test/one-time.test.ts`, `test/billing-trials.test.ts`, `test/billing-routes.test.ts`.

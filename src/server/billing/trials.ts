@@ -7,6 +7,7 @@ import type { BillingStore } from "../repositories/billing";
 import { consumeRedemption, validateCoupon, CouponError } from "./coupons";
 import { syncWalletMethods } from "./methods";
 import { sendChargeReceipt, sendSubscriptionNotice, sendTrialReminder } from "./mail";
+import { subscribePurchaserToBrevo } from "../lib/email";
 import { BillingError } from "./errors";
 import type { Gateway } from "./gateway";
 import { TRIAL_DAYS, TRIAL_PLAN_ID, isPrepaidTrial, isPurchasablePlan } from "./access";
@@ -327,6 +328,15 @@ export async function subscribe(
     });
     if (!prepaid) {
       await sendSubscriptionNotice(env, store, input.recipientEmails, "active", plan.name);
+    }
+    // The buyer joins the Brevo new signup list. Best-effort: billing never
+    // depends on the marketing list.
+    const purchaserEmail = input.buyerEmail?.trim() || input.recipientEmails[0];
+    if (purchaserEmail) {
+      const subscribed = await subscribePurchaserToBrevo(env, { email: purchaserEmail });
+      if (subscribed === "failed") {
+        console.warn("[billing] could not add purchaser to the Brevo signup list");
+      }
     }
     await logEvent(env, {
       level: "info",

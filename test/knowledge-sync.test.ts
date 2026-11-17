@@ -12,6 +12,7 @@ import {
   employeeMarketing,
   employeeQuality,
 } from "../src/server/sidekick/knowledge";
+import { loopsPlaybook } from "../src/server/loops/playbook";
 
 const root = process.cwd();
 const normalize = (s: string) => s.replace(/\r\n/g, "\n");
@@ -29,6 +30,7 @@ describe("knowledge sync", () => {
     ["src/server/sidekick/employees/customer-manager.md", employeeCustomer],
     ["src/server/sidekick/employees/marketing-analyst.md", employeeMarketing],
     ["src/server/sidekick/employees/quality-risk-manager.md", employeeQuality],
+    ["docs/SNIPE_Loops_Playbook.md", loopsPlaybook],
   ];
   for (const [file, bundled] of cases) {
     it(`${file} matches the bundle`, () => {

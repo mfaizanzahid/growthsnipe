@@ -19,10 +19,16 @@ export const OFFERS = {
     name: "SNIPE Loops™",
     /** Retail-equivalent positioning value, not a market price. */
     value: { amountMinor: 9900, label: "$99" },
+    /** List price before the standing 100% discount. */
+    listPrice: { amountMinor: 9900, label: "$99" },
     price: { amountMinor: 0, label: "$0" },
     discountPercent: 100,
     kind: "free",
     path: "/loop-library",
+    checkoutPath: "/checkout/loops",
+    thankYouPath: "/thank-you/loops",
+    /** Standing 100% coupon applied automatically at Loops checkout. */
+    promoCode: "LOOPS100",
   },
   diagnostic: {
     id: "diagnostic",
@@ -360,7 +366,6 @@ export const OFFER_STACKS: Record<"loops" | "diagnostic" | "blueprint" | "engine
       features: [
         "Six loop categories",
         "Trade-specific examples",
-        "Follow-up scripts",
         "Customer lifecycle map",
         "Sample end-to-end recipe",
       ],
@@ -377,7 +382,7 @@ export const OFFER_STACKS: Record<"loops" | "diagnostic" | "blueprint" | "engine
     priceLabel: "You pay",
     priceNote: null,
     priceCta: null,
-    cta: { label: "Get SNIPE Loops™ Free", href: "#loop-form" },
+    cta: { label: "Get SNIPE Loops™ Free", href: OFFERS.loops.checkoutPath },
     ctaNote:
       "Free today. No card required. Best for owners who want a better follow-up system without starting with a software project.",
   },

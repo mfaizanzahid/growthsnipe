@@ -1,6 +1,8 @@
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { PageHero } from "../../components/marketing/MarketingBits";
 import { OFFERS } from "../../../lib/offers";
+import { ThankYouEmailNote } from "./ThankYouEmailNote";
+import { ThankYouNextSteps } from "./ThankYouNextSteps";
 
 const STEPS = [
   "Check your email for the secure connect link.",
@@ -23,6 +25,7 @@ export function ThankYouDiagnostic() {
             <li key={step}>{step}</li>
           ))}
         </ol>
+        <ThankYouEmailNote />
         <p className="mt-6 rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">Secure connection:</span> Your credentials are encrypted and used only for this Diagnostic. They are removed once your report is ready.
         </p>
@@ -34,6 +37,12 @@ export function ThankYouDiagnostic() {
             <li>A {OFFERS.diagnostic.price.label} credit toward a {OFFERS.blueprint.name} within 14 days of your review.</li>
           </ul>
         </div>
+        <ThankYouNextSteps
+          title="Turn the findings into a 12-month plan"
+          body={`The ${OFFERS.blueprint.name} includes your Diagnostic and ${OFFERS.loops.name}. A ${OFFERS.diagnostic.price.label} credit applies within 14 days of your review.`}
+          nextLabel={`Explore ${OFFERS.blueprint.name}`}
+          nextHref="/blueprint"
+        />
       </section>
     </MarketingLayout>
   );

@@ -1001,7 +1001,7 @@ export async function findOneTimeOrderByIdempotencyKey(db: Db, key: string): Pro
 export async function updateOneTimeOrder(
   db: Db,
   id: string,
-  patch: Partial<Pick<OneTimeOrderRow, "status" | "tracker" | "chargeId" | "couponId" | "couponCode" | "discountMinor" | "couponRedeemedAt" | "receiptSentAt" | "intakeSentAt" | "baselineRunId" | "baselineEmailSentAt" | "paidAt" | "updatedAt">>,
+  patch: Partial<Pick<OneTimeOrderRow, "status" | "tracker" | "chargeId" | "couponId" | "couponCode" | "discountMinor" | "couponRedeemedAt" | "receiptSentAt" | "intakeSentAt" | "documentSentAt" | "welcomeScheduledAt" | "baselineRunId" | "baselineEmailSentAt" | "paidAt" | "updatedAt">>,
 ): Promise<void> {
   await db.update(oneTimeOrders).set(patch).where(eq(oneTimeOrders.id, id));
 }

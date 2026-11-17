@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Env } from "../src/server/types";
 import { encryptSecret } from "../src/server/lib/crypto";
 import { captureEmails } from "../src/server/lib/email";
@@ -145,6 +145,45 @@ describe("billing session + signup routes", () => {
     const second = await req(app, "/api/billing/signup", payload);
     expect(second.status).toBe(200);
     expect(((await second.json()) as { cached: boolean }).cached).toBe(true);
+  });
+
+  it("adds the signup purchaser to the Brevo new signup list", async () => {
+    const store = memoryStore();
+    store.seed.plan({ id: "launch", name: "Launch" });
+    store.seed.customer("o1", await encryptSecret("cus_1", KEY));
+    store.seed.session({ tracker: "track_1", orgId: "o1", amountMinor: 19900 });
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(JSON.stringify({ id: 1 }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const app = buildApp(store);
+      const env = { ...ENV, BREVO_API_KEY: "brevo_test" } as Env;
+      const res = await app.request(
+        "/api/billing/signup",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orgId: "o1",
+            planId: "launch",
+            interval: "month",
+            tracker: "track_1",
+          }),
+        },
+        env,
+      );
+      expect(res.status).toBe(201);
+
+      const contact = fetchMock.mock.calls.find(([url]) => String(url).includes("/v3/contacts"));
+      expect(contact).toBeTruthy();
+      const body = JSON.parse(String((contact?.[1] as RequestInit).body));
+      expect(body.email).toBe(USER.email);
+      expect(body.listIds).toEqual([8]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

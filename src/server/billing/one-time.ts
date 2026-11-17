@@ -1,8 +1,9 @@
+import { OFFERS } from "../../lib/offers";
 import type { Env } from "../types";
 import type { Db } from "../repositories/db";
 import { getSetting } from "../repositories";
 import { PORTAL_NAME } from "../lib/brand";
-import { sendEmail } from "../lib/email";
+import { sendEmail, subscribePurchaserToBrevo } from "../lib/email";
 import {
   escapeHtml,
   firstNameOf,
@@ -21,6 +22,7 @@ import {
   issueDiagnosticCreditCoupon,
 } from "./credits";
 import { startBlueprintBaseline, startDiagnosticRun } from "../diagnostic/report";
+import { ensureLoopsWelcome, sendLoopsDocumentEmail } from "../loops/document";
 import { ensureOneTimeInvoice, sendOneTimeInvoiceEmail } from "./one-time-invoices";
 import {
   createOneTimeOrder,
@@ -38,8 +40,20 @@ import {
   type OneTimeProductRow,
 } from "../repositories/billing";
 
-export const ONE_TIME_SLUGS = ["diagnostic", "blueprint"] as const;
+export const ONE_TIME_SLUGS = ["diagnostic", "blueprint", "loops"] as const;
 export type OneTimeSlug = (typeof ONE_TIME_SLUGS)[number];
+
+/**
+ * Standing coupon applied to a product without the buyer entering a code.
+ * Loops is $99 list, 100% off, so every order completes at $0.
+ */
+const AUTO_COUPON_BY_SLUG: Partial<Record<OneTimeSlug, string>> = {
+  loops: OFFERS.loops.promoCode,
+};
+
+export function autoCouponCodeFor(slug: string): string | null {
+  return AUTO_COUPON_BY_SLUG[slug as OneTimeSlug] ?? null;
+}
 
 export interface OneTimeSessionInput {
   slug: string;
@@ -144,15 +158,16 @@ export async function createOneTimeSession(
   }
 
   const store = drizzleStore(db);
+  const requestedCoupon = input.couponCode?.trim() || autoCouponCodeFor(product.slug) || "";
   let couponId: string | null = null;
   let couponCode: string | null = null;
   let discountMinor = 0;
   let amountMinor = product.amountMinor;
-  if (input.couponCode?.trim()) {
+  if (requestedCoupon) {
     try {
       const valid = await validateOneTimeCoupon(
         store,
-        input.couponCode.trim(),
+        requestedCoupon,
         product.slug,
         product.amountMinor,
         email,
@@ -341,6 +356,16 @@ export async function completeOneTimePaidOrder(
   });
   const fresh = (await getOneTimeOrder(db, order.id)) ?? order;
 
+  // Every paid buyer joins the Brevo new signup list. Best-effort: the paid
+  // order, invoice and delivery emails never depend on Brevo.
+  const subscribed = await subscribePurchaserToBrevo(env, {
+    email: fresh.email,
+    name: fresh.name,
+  });
+  if (subscribed === "failed") {
+    console.warn("[one-time] could not add buyer to the Brevo signup list:", order.id);
+  }
+
   let invoice: OneTimeInvoiceRow | null = null;
   try {
     invoice = await ensureOneTimeInvoice(db, fresh, product, now);
@@ -362,7 +387,20 @@ export async function completeOneTimePaidOrder(
       console.error("[one-time] could not send purchase email:", (err as Error)?.message ?? err);
     }
   }
-  if (product.slug === "blueprint") {
+  if (product.slug === "loops") {
+    try {
+      await sendLoopsDocumentEmail(db, env, fresh, false, now);
+    } catch (err) {
+      // The paid order stands even if the playbook email cannot be sent now.
+      console.error("[loops] could not send playbook email:", (err as Error)?.message ?? err);
+    }
+    try {
+      await ensureLoopsWelcome(db, fresh, now);
+    } catch (err) {
+      // Marketing scheduling must never affect a paid order.
+      console.error("[loops] could not schedule welcome sequence:", (err as Error)?.message ?? err);
+    }
+  } else if (product.slug === "blueprint") {
     try {
       await startBlueprintBaseline(db, env, fresh, now);
     } catch (err) {

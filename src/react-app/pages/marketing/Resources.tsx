@@ -67,7 +67,7 @@ export function Resources() {
       <section className="mx-auto w-full max-w-6xl px-4 pb-14">
         <div className="text-center">
           <Button size="lg" asChild>
-            <Link to="/loop-library">Download SNIPE Loops™</Link>
+            <Link to="/checkout/loops">Download SNIPE Loops™</Link>
           </Button>
         </div>
       </section>
@@ -105,7 +105,7 @@ export function Resources() {
           />
           <div className="mt-6">
             <Button size="lg" asChild>
-              <Link to="/loop-library">Download SNIPE Loops™</Link>
+              <Link to="/checkout/loops">Download SNIPE Loops™</Link>
             </Button>
           </div>
         </div>

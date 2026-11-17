@@ -159,11 +159,11 @@ export async function sendEmail(
 }
 
 /**
- * Best-effort subscribe of a verified user to the "GrowthSnipe New Signup"
- * Brevo list (default id 8, override via BREVO_NEW_SIGNUP_LIST_ID).
- * Never throws — signup/login must succeed even when Brevo is down.
+ * Best-effort subscribe to the "GrowthSnipe New Signup" Brevo list
+ * (default id 8, override via BREVO_NEW_SIGNUP_LIST_ID). Never throws:
+ * auth and checkout must succeed even when Brevo is down.
  */
-export async function subscribeVerifiedUserToBrevo(
+async function subscribeToNewSignupList(
   env: Pick<EmailEnv, "BREVO_API_KEY" | "BREVO_NEW_SIGNUP_LIST_ID">,
   input: { email: string; name?: string | null },
 ): Promise<"subscribed" | "skipped" | "failed"> {
@@ -183,6 +183,12 @@ export async function subscribeVerifiedUserToBrevo(
     return "failed";
   }
 }
+
+/** Auth hook: a user whose email is verified joins the new signup list. */
+export const subscribeVerifiedUserToBrevo = subscribeToNewSignupList;
+
+/** Checkout hook: every buyer joins the same list, verified or not. */
+export const subscribePurchaserToBrevo = subscribeToNewSignupList;
 
 export function verificationEmail(to: string, url: string): OutgoingEmail {
   return { to, ...verificationContent(url) };

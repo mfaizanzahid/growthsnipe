@@ -69,6 +69,7 @@ import {
   renderOneTimeInvoicePdf,
   sendOneTimeInvoiceEmail,
 } from "../billing/one-time-invoices";
+import { sendLoopsDocumentEmail } from "../loops/document";
 import {
   LOG_LEVELS,
   LOG_SURFACES,
@@ -680,6 +681,7 @@ export function createSuperadminRoutes(deps: {
       enriched.push({
         ...order,
         productName: product?.name ?? null,
+        productSlug: product?.slug ?? null,
         invoice,
       });
     }
@@ -738,6 +740,34 @@ export function createSuperadminRoutes(deps: {
       userEmail: user?.email ?? null,
     });
     return c.json({ ok: true, invoice });
+  });
+
+  routes.post("/api/superadmin/one-time-orders/:id/resend-document", guard, gate, async (c) => {
+    const db = c.get("db") as Db;
+    const order = await getOneTimeOrder(db, c.req.param("id"));
+    if (!order) return c.json({ error: "Order not found" }, 404);
+    if (order.status !== "paid") return c.json({ error: "Order is not paid" }, 422);
+    const product = await getOneTimeProduct(db, order.productId);
+    if (!product || product.slug !== "loops") {
+      return c.json({ error: "This order has no Loops document" }, 422);
+    }
+    try {
+      await sendLoopsDocumentEmail(db, c.env as Env, order, true);
+    } catch (err) {
+      return c.json(
+        { error: err instanceof Error ? err.message : "Could not send document" },
+        422,
+      );
+    }
+    const user = c.get("user") as SessionUser | undefined;
+    await writeAppLog(db, {
+      level: "info",
+      event: "one_time.document_resent",
+      surface: "superadmin",
+      message: `SNIPE Loops playbook re-sent for one-time order ${order.id}`,
+      userEmail: user?.email ?? null,
+    });
+    return c.json({ ok: true });
   });
 
   // Usage charges (create invoice + charge now).

@@ -2,6 +2,8 @@ import { EnvelopeIcon } from "@heroicons/react/24/outline";
 import { MarketingLayout } from "../../components/marketing/MarketingLayout";
 import { PageHero } from "../../components/marketing/MarketingBits";
 import { OFFERS } from "../../../lib/offers";
+import { ThankYouEmailNote } from "./ThankYouEmailNote";
+import { ThankYouNextSteps } from "./ThankYouNextSteps";
 
 export function ThankYouBlueprint() {
   return (
@@ -18,12 +20,12 @@ export function ThankYouBlueprint() {
             <div>
               <h2 className="font-semibold">Check your email for next steps</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Your invoice and the instructions for the next step are on the way. If you do not
-                see the email, check your spam folder or contact support.
+                Your invoice and the instructions for the next step are on the way.
               </p>
             </div>
           </div>
         </div>
+        <ThankYouEmailNote />
         <div className="rounded-xl border bg-muted/40 p-5">
           <h2 className="font-semibold">Your bonuses</h2>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
@@ -57,6 +59,12 @@ export function ThankYouBlueprint() {
             </a>
           </p>
         </div>
+        <ThankYouNextSteps
+          title="Ready to have the system run for you?"
+          body="SNIPE Engine™ installs and runs the marketing, call coverage, CRM, follow-up loops and reporting. Core and Command are scoped one on one."
+          nextLabel="Explore SNIPE Engine™"
+          nextHref="/engine"
+        />
       </section>
     </MarketingLayout>
   );

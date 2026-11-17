@@ -59,10 +59,11 @@ describe("planCron", () => {
     expect(plan.runBilling).toBe(true);
   });
 
-  it("runs marketing sequences on the daily trigger and on catch-up ticks", () => {
+  it("runs marketing sequences hourly so Loops welcome email delays are close to five hours", () => {
     expect(planCron(input(DAILY)).runMarketing).toBe(true);
+    expect(planCron(input(TICK)).runMarketing).toBe(true);
     expect(planCron(input(TICK, "2026-10-19")).runMarketing).toBe(true);
-    expect(planCron(input(TICK)).runMarketing).toBe(false);
+    expect(planCron(input(MINUTELY)).runMarketing).toBe(false);
     expect(planCron(input("15 2 * * *")).runMarketing).toBe(false);
   });
 

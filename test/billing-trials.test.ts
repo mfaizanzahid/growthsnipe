@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TRIAL_DAYS } from "../src/server/billing/access";
 import { processTrials, startTrial, subscribe } from "../src/server/billing/trials";
 import { utcMidnight, advanceBillingDate } from "../src/server/lib/billing-dates";
@@ -99,6 +99,51 @@ describe("processTrials", () => {
       expect.stringMatching(/ended 3 days ago/),
       expect.stringMatching(/ended 5 days ago/),
     ]);
+  });
+});
+
+describe("purchaser Brevo subscription", () => {
+  it("adds the buyer to the new signup list after a paid subscribe", async () => {
+    const store = baseStore();
+    store.seed.customer("o1", await enc("cus_1"));
+    store.seed.session({ tracker: "t1", orgId: "o1", amountMinor: 1900 });
+    captureEmails();
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(JSON.stringify({ id: 1 }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      const env = {
+        SAFEPAY_PUBLIC_KEY: "pk",
+        TOKEN_ENCRYPTION_KEY: KEY,
+        BREVO_API_KEY: "brevo_test",
+      } as never;
+      await subscribe(
+        env,
+        store,
+        store,
+        fakeGateway(),
+        {
+          orgId: "o1",
+          userId: "u1",
+          planId: "starter",
+          interval: "month",
+          tracker: "t1",
+          buyerEmail: "buyer@example.com",
+          recipientEmails: ["buyer@example.com"],
+        },
+        NOW,
+      );
+
+      const contact = fetchMock.mock.calls.find(([url]) => String(url).includes("/v3/contacts"));
+      expect(contact).toBeTruthy();
+      const body = JSON.parse(String((contact?.[1] as RequestInit).body));
+      expect(body.email).toBe("buyer@example.com");
+      expect(body.listIds).toEqual([8]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

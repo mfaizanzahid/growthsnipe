@@ -8,6 +8,7 @@ import { safepayGateway, type Gateway } from "../billing/gateway";
 import { BillingError } from "../billing/errors";
 import { CouponError, validateOneTimeCoupon } from "../billing/coupons";
 import {
+  autoCouponCodeFor,
   confirmOneTimeOrder,
   createOneTimeSession,
   listProducts,
@@ -15,10 +16,13 @@ import {
 } from "../billing/one-time";
 import { renderOneTimeInvoicePdf } from "../billing/one-time-invoices";
 import { verifyOneTimeInvoiceToken } from "../billing/one-time-invoice-token";
+import { renderLoopsPdf } from "../loops/pdf";
+import { verifyLoopsDocumentToken } from "../loops/tokens";
 import {
   drizzleStore,
   getOneTimeInvoiceById,
   getOneTimeOrder,
+  getOneTimeProduct,
   getOneTimeProductBySlug,
 } from "../repositories/billing";
 import { formatCreditExpiry } from "../../lib/credit-coupon";
@@ -95,6 +99,37 @@ export function createOneTimeRoutes(deps: {
     });
   });
 
+  // Standing coupon for a product, so the checkout can show the discount
+  // before the buyer enters an email. Only unbound, product-scoped coupons.
+  routes.get("/api/one-time/auto-coupon", async (c) => {
+    const slug = (c.req.query("slug") ?? "").trim();
+    const code = autoCouponCodeFor(slug);
+    if (!code) return c.json({ error: "No automatic discount for this product." }, 404);
+    const db = c.get("db") as Db;
+    const product = await getOneTimeProductBySlug(db, slug);
+    if (!product || product.active !== 1) {
+      return c.json({ error: "Product is not available" }, 404);
+    }
+    try {
+      const valid = await validateOneTimeCoupon(
+        drizzleStore(db),
+        code,
+        product.slug,
+        product.amountMinor,
+        "",
+      );
+      return c.json({
+        code: valid.coupon.code,
+        discountMinor: valid.discountMinor,
+        amountMinor: valid.amountMinor,
+        currency: product.currency,
+      });
+    } catch (err) {
+      if (err instanceof CouponError) return c.json({ error: err.message }, err.status);
+      return c.json({ error: "Could not load the automatic discount" }, 400);
+    }
+  });
+
   routes.get("/api/one-time/invoices/:orderId/pdf", async (c) => {
     const env = c.env as Env;
     const token = c.req.query("token") ?? "";
@@ -113,6 +148,43 @@ export function createOneTimeRoutes(deps: {
     const headers = new Headers({
       "content-type": "application/pdf",
       "content-disposition": `attachment; filename="${invoice.number}.pdf"`,
+      "cache-control": "private, no-store",
+    });
+    const body = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;
+    return new Response(body, { status: 200, headers });
+  });
+
+  // Render the standard SNIPE Loops playbook on demand from a signed link.
+  routes.get("/api/one-time/loops/:orderId/document", async (c) => {
+    const env = c.env as Env;
+    const token = c.req.query("token") ?? "";
+    const verified = await verifyLoopsDocumentToken(env, token);
+    if (!verified || verified.orderId !== c.req.param("orderId")) {
+      return c.json({ error: "This download link is invalid or has expired." }, 401);
+    }
+    const db = c.get("db") as Db;
+    const order = await getOneTimeOrder(db, verified.orderId);
+    if (!order) return c.json({ error: "Order not found." }, 404);
+    if (order.status !== "paid") {
+      return c.json({ error: "This playbook is not available yet." }, 409);
+    }
+    const product = await getOneTimeProduct(db, order.productId);
+    if (!product || product.slug !== "loops") {
+      return c.json({ error: "Playbook not found." }, 404);
+    }
+    const pdf = await renderLoopsPdf({
+      businessName: order.businessName,
+      trade: order.trade,
+      preparedAt: order.paidAt ?? order.createdAt,
+      baseUrl: env.APP_BASE_URL,
+    });
+    const business = (order.businessName ?? "playbook")
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 48);
+    const headers = new Headers({
+      "content-type": "application/pdf",
+      "content-disposition": `attachment; filename="SNIPE-Loops-${business || "playbook"}.pdf"`,
       "cache-control": "private, no-store",
     });
     const body = pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.byteLength) as ArrayBuffer;

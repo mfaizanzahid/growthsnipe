@@ -44,7 +44,8 @@ export function firstNameOf(name: string | null | undefined): string {
 function brandProductName(value: string): string {
   return value
     .replace(/SNIPE Diagnostic(?!™)/g, "SNIPE Diagnostic™")
-    .replace(/SNIPE Blueprint(?!™)/g, "SNIPE Blueprint™");
+    .replace(/SNIPE Blueprint(?!™)/g, "SNIPE Blueprint™")
+    .replace(/SNIPE Loops(?!™)/g, "SNIPE Loops™");
 }
 
 export interface EmailCreditCoupon {
@@ -319,6 +320,33 @@ export function diagnosticConnectContent(input: {
   };
 }
 
+/** SNIPE Loops: the standard playbook, with a signed download link. */
+export function loopsDocumentContent(input: {
+  firstName: string;
+  documentUrl: string;
+  diagnosticUrl: string;
+}): { subject: string; html: string } {
+  const name = escapeHtml(input.firstName);
+  return {
+    subject: "Your SNIPE Loops™ playbook is ready",
+    html:
+      `<p>Hi ${name},</p>` +
+      `<p>Your SNIPE Loops™ playbook is ready. It gives you eight practical revenue loops for home-service businesses, with trade-specific steps, a customer lifecycle map, sample recipes and a follow-up script library.</p>` +
+      `<p><a href="${input.documentUrl}">Download your SNIPE Loops™ playbook (PDF)</a></p>` +
+      `<p>If the button does not work, copy this link into your browser: ${input.documentUrl}</p>` +
+      `<p><strong>What is inside:</strong></p>` +
+      `<ul>` +
+      `<li>The eight revenue loops, from booking-cart upsell to partner reactivation.</li>` +
+      `<li>Trade chapters for home inspection, HVAC, plumbing, electrical, roofing and general contracting.</li>` +
+      `<li>Sample end-to-end recipes and ready-to-adapt call, text and email scripts.</li>` +
+      `<li>A simple monthly review so you can see what is working.</li>` +
+      `</ul>` +
+      `<p>Start with one loop that fixes a current problem. You do not need to install all eight at once.</p>` +
+      `<p>If you want the loops installed and run for you, the SNIPE Diagnostic™ is the next step.</p>` +
+      `<p><a href="${input.diagnosticUrl}">Get My SNIPE Diagnostic™</a></p>`,
+  };
+}
+
 /** Diagnostic: report ready with the signed download link. */
 export function diagnosticReadyContent(input: {
   firstName: string;
@@ -548,13 +576,13 @@ export interface WelcomeEmailInput {
 export function loopWelcomeDay0(input: WelcomeEmailInput): { subject: string; html: string } {
   const name = escapeHtml(firstNameOf(input.firstName));
   return {
-    subject: "Your SNIPE Loops™ are ready",
+    subject: "Start with one loop from your SNIPE Loops™ playbook",
     html:
       `<p>Hi ${name},</p>` +
-      `<p>Here is your access to SNIPE Loops™.</p>` +
-      `<p><a href="${input.libraryLink}">Access SNIPE Loops™</a></p>` +
-      `<p>Start with the workflow that fixes the most obvious gap in your business. For many operators, that is missed-call follow-up, unbooked enquiries or quote follow-up.</p>` +
-      `<p>Do not install everything at once. Pick one loop, adapt it to the way your team works, test it and measure what changes.</p>` +
+      `<p>Your SNIPE Loops™ playbook was emailed to you after checkout. If you do not see it, check your spam folder or open the library with the link below.</p>` +
+      `<p>The fastest way to use it is to pick one loop that fixes a problem you have this week. Open the chapter for your trade, choose the loop closest to revenue, and follow its four parts: when to start, what to do, keep in mind, and when to stop / what to track.</p>` +
+      `<p>Do not install every loop at once. Pick one, adapt it to your team, test it and measure what changes.</p>` +
+      `<p><a href="${input.libraryLink}">Open the SNIPE Loops™ library</a></p>` +
       `<p>GrowthSnipe</p>` +
       marketingFooter(input.unsubscribeUrl),
   };

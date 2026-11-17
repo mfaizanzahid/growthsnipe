@@ -45,6 +45,7 @@ export const router = createBrowserRouter([
   { path: "/integrations", element: <Navigate to="/how-it-works" replace /> },
   { path: "/who-we-help", element: <Navigate to="/home-inspectors" replace /> },
   { path: "/pricing", element: <Navigate to="/engine" replace /> },
+  { path: "/thank-you/loop-library", element: <Navigate to="/thank-you/loops" replace /> },
   { path: "/forgot-password", element: <Navigate to="/login" replace /> },
   { path: "/reset-password", element: <Navigate to="/login" replace /> },
   { path: "/verify-email", element: <Navigate to="/login" replace /> },

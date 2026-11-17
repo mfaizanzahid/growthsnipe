@@ -21,9 +21,10 @@ import { Faq } from "./pages/marketing/Faq";
 import { ResultsDisclaimer } from "./pages/marketing/ResultsDisclaimer";
 import { CheckoutDiagnostic } from "./pages/checkout/CheckoutDiagnostic";
 import { CheckoutBlueprint } from "./pages/checkout/CheckoutBlueprint";
+import { CheckoutLoops } from "./pages/checkout/CheckoutLoops";
 import { ThankYouDiagnostic } from "./pages/checkout/ThankYouDiagnostic";
 import { ThankYouBlueprint } from "./pages/checkout/ThankYouBlueprint";
-import { ThankYouLoopLibrary } from "./pages/checkout/ThankYouLoopLibrary";
+import { ThankYouLoops } from "./pages/checkout/ThankYouLoops";
 import { HomeInspectors } from "./pages/marketing/industries/HomeInspectors";
 import { Hvac } from "./pages/marketing/industries/Hvac";
 import { Plumbing } from "./pages/marketing/industries/Plumbing";
@@ -81,7 +82,8 @@ export const MARKETING_ROUTES: MarketingRoute[] = [
   { path: "/unsubscribe", Component: Unsubscribe },
   { path: "/checkout/diagnostic", Component: CheckoutDiagnostic },
   { path: "/checkout/blueprint", Component: CheckoutBlueprint },
+  { path: "/checkout/loops", Component: CheckoutLoops },
   { path: "/thank-you/diagnostic", Component: ThankYouDiagnostic },
   { path: "/thank-you/blueprint", Component: ThankYouBlueprint },
-  { path: "/thank-you/loop-library", Component: ThankYouLoopLibrary },
+  { path: "/thank-you/loops", Component: ThankYouLoops },
 ];

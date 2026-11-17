@@ -30,7 +30,7 @@ export function IndustryTemplate({ copy }: { copy: IndustryCopy }) {
             <Link to="/book">{copy.heroCta}</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
-            <Link to="/loop-library">Download SNIPE Loops™</Link>
+            <Link to="/checkout/loops">Download SNIPE Loops™</Link>
           </Button>
         </div>
       </section>

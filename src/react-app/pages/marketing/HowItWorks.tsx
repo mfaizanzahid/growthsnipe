@@ -77,7 +77,7 @@ export function HowItWorks() {
               <Link to="/book">Find My Best Starting Point</Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link to="/loop-library">Download SNIPE Loops™</Link>
+              <Link to="/checkout/loops">Download SNIPE Loops™</Link>
             </Button>
           </div>
         </div>
