@@ -19,9 +19,9 @@
       ],
       "enabled": true
     },
-    "resend": {
+    "resend-docs": {
       "type": "remote",
-      "url": "https://mcp.resend.com/mcp",
+      "url": "https://resend.com/docs/mcp",
       "enabled": true
     },
 	"brevo-docs": {
