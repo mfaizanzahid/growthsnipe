@@ -308,7 +308,7 @@ export function Landing() {
             </CardHeader>
             <CardContent className="flex flex-1 flex-col text-sm text-muted-foreground">
               <p className="flex-1">Practical automation recipes, follow-up sequences, scripts and workflow ideas you can adapt to your business.</p>
-              <Button className="mt-4" asChild><Link to="/checkout/loops">Download SNIPE Loops™ For Free</Link></Button>
+              <Button className="mt-4" asChild><Link to="/loop-library">Download SNIPE Loops™ For Free</Link></Button>
             </CardContent>
           </Card>
           <Card className="flex flex-col">
@@ -413,7 +413,7 @@ export function Landing() {
             </p>
             <div className="mt-8">
               <Button size="lg" asChild>
-                <Link to="/checkout/loops">Download SNIPE Loops™ For Free</Link>
+                <Link to="/loop-library">Download SNIPE Loops™ For Free</Link>
               </Button>
             </div>
           </div>

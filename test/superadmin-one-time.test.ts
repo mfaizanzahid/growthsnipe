@@ -217,7 +217,7 @@ describe("superadmin one-time orders", () => {
     expect(invoice?.emailResendCount).toBe(1);
   });
 
-  it("resends the Loops playbook and rejects products without a document", async () => {
+  it("resends the Loops playbook for any one-time product", async () => {
     const db = testDb();
     await db.insert(schema.oneTimeOrders).values({
       id: "order-loops-1",
@@ -248,12 +248,15 @@ describe("superadmin one-time orders", () => {
     expect(outbox[0]?.subject).toContain("playbook");
     expect(outbox[0]?.html).toContain("/api/one-time/loops/");
 
-    const wrongProduct = await call(
+    const blueprintResend = await call(
       buildApp(db),
       `/api/superadmin/one-time-orders/${ORDER_ID}/resend-document`,
       "POST",
     );
-    expect(wrongProduct.status).toBe(422);
+    expect(blueprintResend.status).toBe(200);
+    expect(outbox).toHaveLength(2);
+    expect(outbox[1]?.to).toBe("buyer@example.com");
+    expect(outbox[1]?.subject).toContain("playbook");
   });
 
   it("downloads the guest invoice PDF", async () => {

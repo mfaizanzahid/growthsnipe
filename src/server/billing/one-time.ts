@@ -389,12 +389,6 @@ export async function completeOneTimePaidOrder(
   }
   if (product.slug === "loops") {
     try {
-      await sendLoopsDocumentEmail(db, env, fresh, false, now);
-    } catch (err) {
-      // The paid order stands even if the playbook email cannot be sent now.
-      console.error("[loops] could not send playbook email:", (err as Error)?.message ?? err);
-    }
-    try {
       await ensureLoopsWelcome(db, fresh, now);
     } catch (err) {
       // Marketing scheduling must never affect a paid order.
@@ -421,6 +415,17 @@ export async function completeOneTimePaidOrder(
       console.error("[diagnostic] could not start run:", (err as Error)?.message ?? err);
     }
   }
+
+  // Every one-time buyer receives the SNIPE Loops playbook as a bonus,
+  // rendered for the trade stored on the order. Sent last so the core
+  // purchase and next-step emails land first.
+  try {
+    await sendLoopsDocumentEmail(db, env, fresh, false, now);
+  } catch (err) {
+    // The paid order stands even if the playbook email cannot be sent now.
+    console.error("[one-time] could not send Loops playbook email:", (err as Error)?.message ?? err);
+  }
+
   return { transitioned: true, order: (await getOneTimeOrder(db, order.id)) ?? fresh };
 }
 

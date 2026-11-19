@@ -1,6 +1,8 @@
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { TRADE_OPTIONS } from "../../lib/loops-trades";
 
 export interface BusinessProfileValues {
   businessName: string;
@@ -36,6 +38,11 @@ export function BusinessProfileForm({
 }) {
   const set = (k: keyof BusinessProfileValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange({ ...value, [k]: e.target.value });
+  // Keep a legacy free-text trade selectable until the owner changes it.
+  const tradeOptions =
+    value.trade && !(TRADE_OPTIONS as readonly string[]).includes(value.trade)
+      ? [value.trade, ...TRADE_OPTIONS]
+      : TRADE_OPTIONS;
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -45,7 +52,18 @@ export function BusinessProfileForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-trade`}>Trade *</Label>
-          <Input id={`${idPrefix}-trade`} placeholder="Home inspection" value={value.trade} onChange={set("trade")} required maxLength={120} />
+          <Select value={value.trade} onValueChange={(trade) => onChange({ ...value, trade })} required>
+            <SelectTrigger id={`${idPrefix}-trade`}>
+              <SelectValue placeholder="Select your trade" />
+            </SelectTrigger>
+            <SelectContent>
+              {tradeOptions.map((trade) => (
+                <SelectItem key={trade} value={trade}>
+                  {trade}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

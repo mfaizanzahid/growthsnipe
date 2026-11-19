@@ -24,16 +24,20 @@ export function OfferCtaButton({
   size = "lg",
   variant = "default",
   className,
+  label,
 }: {
   stack: OfferStack;
   size?: "default" | "sm" | "lg";
   variant?: "default" | "outline" | "secondary";
   className?: string;
+  /** Override the stack CTA text while keeping its destination. */
+  label?: string;
 }) {
-  const { label, href } = stack.cta;
+  const { label: defaultLabel, href } = stack.cta;
+  const buttonLabel = label ?? defaultLabel;
   return (
     <Button size={size} variant={variant} className={className} asChild>
-      {href.startsWith("#") ? <a href={href}>{label}</a> : <Link to={href}>{label}</Link>}
+      {href.startsWith("#") ? <a href={href}>{buttonLabel}</a> : <Link to={href}>{buttonLabel}</Link>}
     </Button>
   );
 }

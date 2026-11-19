@@ -1320,3 +1320,29 @@ Every paid one-time order now adds the buyer to the Brevo "GrowthSnipe New Signu
 The subscription uses `BREVO_NEW_SIGNUP_LIST_ID` (default 8) and never blocks a payment, invoice, receipt or document email. Failures are logged without the buyer's email address.
 
 Updated: `src/server/lib/email.ts`, `src/server/billing/one-time.ts`, `src/server/billing/trials.ts`, `src/server/billing/signup.ts`, `test/one-time.test.ts`, `test/billing-trials.test.ts`, `test/billing-routes.test.ts`.
+
+## 2026-11-18 - SNIPE Loops trade editions and homepage routing
+
+The homepage SNIPE Loops section CTA now opens `/loop-library` instead of checkout. The offer-ladder card keeps its direct checkout link.
+
+The Loops checkout replaces the free-text trade field with a dropdown: Home inspection, HVAC, Plumbing, Electrical, Roofing, General contracting and Others. The selected trade is stored on the order. Known trades receive a trade-specific PDF edition that keeps the generic playbook, lifecycle map, eight loops, recipes, scripts, tracking section and next steps, but replaces the six-chapter trade section with the selected chapter and a trade-specific intro. The cover shows the canonical trade label. Others, blank values and legacy unknown trades receive the combined all-trade edition. Legacy aliases such as home inspector, plumber and general contractor still map to their canonical chapters.
+
+The contents page is renumbered after filtering so it lists only the retained sections and the selected trade chapter. Checkout and Loops page copy now explain that the buyer gets the chapter for their trade, with Others for the combined edition.
+
+Updated: `src/lib/loops-trades.ts` (new), `src/react-app/pages/marketing/Landing.tsx`, `src/react-app/pages/checkout/OneTimeCheckout.tsx`, `src/react-app/pages/checkout/CheckoutLoops.tsx`, `src/react-app/pages/marketing/LoopLibrary.tsx`, `src/server/loops/pdf.ts`, `test/loops-trades.test.ts` (new), `test/loops-pdf.test.ts`.
+
+## 2026-11-18 - Trade dropdown everywhere and Loops playbook for every one-time buyer
+
+Every form with a trade field now uses the shared dropdown: one-time checkout for Diagnostic, Blueprint and Loops; onboarding and the business profile form; and the Growth Fit Call booking form. The shared options live in `src/lib/loops-trades.ts`. Existing free-text profile trades remain selectable until the owner changes them, so legacy data is not silently lost.
+
+Every paid Diagnostic and Blueprint order now receives the SNIPE Loops playbook email too, rendered for the trade stored on the order. The playbook is sent last, after the invoice, intake and connect or baseline emails, so the core purchase and next-step messages land first. The signed document route and the superadmin resend action now accept all three one-time products. `document_sent_at` continues to make the send idempotent.
+
+Updated: `src/lib/loops-trades.ts`, `src/react-app/pages/checkout/OneTimeCheckout.tsx`, `src/react-app/pages/checkout/CheckoutLoops.tsx`, `src/react-app/components/BusinessProfileForm.tsx`, `src/react-app/pages/marketing/Book.tsx`, `src/server/billing/one-time.ts`, `src/server/routes/one-time.ts`, `src/server/routes/superadmin.ts`, `src/react-app/pages/admin/OneTimeOrders.tsx`, `test/one-time.test.ts`, `test/superadmin-one-time.test.ts`, `test/loops-trades.test.ts`.
+
+## 2026-11-18 - Homepage Solutions Loops CTA and Engine qualification CTAs
+
+The SNIPE Loops card in the homepage Solutions section now opens `/loop-library` instead of checkout, matching the dedicated Loops section below it. The Loops page remains the place where the visitor starts checkout.
+
+On the SNIPE Engine page, every conversion CTA now uses a qualification variation: "See if you qualify", "See if you're a fit", "Check if you qualify" and "Find out if you qualify". The value stack price CTA ("Contact us for pricing") is unchanged. `OfferCtaButton` accepts an optional label override while keeping the stack destination, and `CtaBand` accepts optional labels, links and a null secondary CTA. The Engine closing band now renders a single qualification button rather than the default Diagnostic button.
+
+Updated: `src/react-app/pages/marketing/Landing.tsx`, `src/react-app/pages/marketing/Engine.tsx`, `src/react-app/components/marketing/OfferValueStack.tsx`, `src/react-app/components/marketing/MarketingBits.tsx`.

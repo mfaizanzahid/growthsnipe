@@ -22,9 +22,10 @@ import {
   type TocEntry,
 } from "../lib/pdf-report";
 import { OFFERS, OFFER_CREDITS } from "../../lib/offers";
+import { loopsTradeChapter, loopsTradeLabel } from "../../lib/loops-trades";
 import { loopsPlaybook } from "./playbook";
 
-type Block =
+export type Block =
   | { kind: "h1"; text: string; toc?: number }
   | { kind: "h2"; text: string; toc?: number }
   | { kind: "h3"; text: string }
@@ -202,6 +203,78 @@ function parsePlaybook(markdown: string): { preamble: Block[]; blocks: Block[] }
   return { preamble, blocks };
 }
 
+function cloneBlock(block: Block): Block {
+  if (block.kind === "bullets" || block.kind === "ordered") {
+    return { ...block, items: [...block.items] };
+  }
+  if (block.kind === "table") {
+    return { ...block, header: [...block.header], rows: block.rows.map((row) => [...row]) };
+  }
+  if (block.kind === "code") {
+    return { ...block, lines: [...block.lines] };
+  }
+  return { ...block };
+}
+
+function renumberToc(blocks: Block[]): Block[] {
+  let index = 0;
+  for (const block of blocks) {
+    if ((block.kind === "h1" || block.kind === "h2") && block.toc !== undefined) {
+      block.toc = index;
+      index += 1;
+    }
+  }
+  return blocks;
+}
+
+/**
+ * Keep the full playbook for Others/unknown trades. For a known trade, keep
+ * only that trade's chapter and replace the generic chapter-picker intro with
+ * a trade-specific one.
+ */
+export function selectPlaybookForTrade(blocks: Block[], trade?: string | null): Block[] {
+  const source = blocks.map(cloneBlock);
+  const chapter = loopsTradeChapter(trade);
+  if (!chapter) return renumberToc(source);
+
+  const h1Index = source.findIndex(
+    (block) => block.kind === "h1" && block.text === "Trade-Specific Revenue Loops",
+  );
+  if (h1Index < 0) return renumberToc(source);
+
+  let sectionEnd = source.length;
+  for (let index = h1Index + 1; index < source.length; index += 1) {
+    if (source[index]!.kind === "h1") {
+      sectionEnd = index;
+      break;
+    }
+  }
+  const section = source.slice(h1Index, sectionEnd);
+  const chapterIndex = section.findIndex((block) => block.kind === "h2" && block.text === chapter);
+  if (chapterIndex < 0) return renumberToc(source);
+
+  let chapterEnd = section.length;
+  for (let index = chapterIndex + 1; index < section.length; index += 1) {
+    if (section[index]!.kind === "h2") {
+      chapterEnd = index;
+      break;
+    }
+  }
+
+  const intro: Block = {
+    kind: "para",
+    text: `This edition is built for ${chapter} businesses. Each loop shows when to start, what to do, what to watch out for, and what results to track.`,
+  };
+
+  return renumberToc([
+    ...source.slice(0, h1Index),
+    section[0]!,
+    intro,
+    ...section.slice(chapterIndex, chapterEnd),
+    ...source.slice(sectionEnd),
+  ]);
+}
+
 function stripEmphasis(value: string): string {
   return value.replace(/\*\*/g, "").replace(/(^|\s)\*(\S[^*]*)\*/g, "$1$2");
 }
@@ -268,7 +341,9 @@ export async function renderLoopsPdf(input: LoopsPdfInput = {}): Promise<Uint8Ar
     mono: await doc.embedFont(StandardFonts.Courier),
   };
   const report = new Report(doc, fonts.regular, fonts.bold, { productName: "SNIPE Loops™" });
-  const { preamble, blocks } = parsePlaybook(loopsPlaybook);
+  const parsed = parsePlaybook(loopsPlaybook);
+  const preamble = parsed.preamble;
+  const blocks = selectPlaybookForTrade(parsed.blocks, input.trade);
   const tocTitles = blocks.filter((block) => (block.kind === "h1" || block.kind === "h2") && block.toc !== undefined);
   const nextStepsIndex = tocTitles.length;
   const tocPageCount = Math.max(1, Math.ceil((tocTitles.length + 1) / TOC_PER_PAGE));
@@ -296,8 +371,9 @@ export async function renderLoopsPdf(input: LoopsPdfInput = {}): Promise<Uint8Ar
     font: fonts.bold,
     color: INK,
   });
-  if (input.trade?.trim()) {
-    cover.drawText(sanitize(input.trade.trim()), {
+  const tradeLabel = loopsTradeLabel(input.trade);
+  if (tradeLabel) {
+    cover.drawText(sanitize(tradeLabel), {
       x: MARGIN,
       y: PAGE_H - 304,
       size: 11,

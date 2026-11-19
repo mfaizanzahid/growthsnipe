@@ -84,7 +84,7 @@ export function Engine() {
             ))}
           </div>
           <div className="mt-8 text-center">
-            <OfferCtaButton stack={OFFER_STACKS.engine} />
+            <OfferCtaButton stack={OFFER_STACKS.engine} label="See if you qualify" />
           </div>
         </div>
       </section>
@@ -104,7 +104,11 @@ export function Engine() {
             ))}
           </ul>
           <div className="mt-8 text-center">
-            <OfferCtaButton stack={OFFER_STACKS.engine} variant="outline" />
+            <OfferCtaButton
+              stack={OFFER_STACKS.engine}
+              variant="outline"
+              label="See if you're a fit"
+            />
           </div>
         </div>
       </section>
@@ -132,7 +136,11 @@ export function Engine() {
               <p>
                 Tell us about your business, goals and capacity. We will confirm the scope and next steps in writing before anything starts. Advertising spend is paid separately by the client to the advertising platform.
               </p>
-              <OfferCtaButton stack={OFFER_STACKS.engine} size="default" />
+              <OfferCtaButton
+                stack={OFFER_STACKS.engine}
+                size="default"
+                label="Check if you qualify"
+              />
             </CardContent>
           </Card>
         </div>
@@ -141,6 +149,8 @@ export function Engine() {
       <CtaBand
         title="Your plan deserves an operating team."
         body="Book a free 20-minute Growth Fit Call. We will discuss your goals, current setup, capacity and the level of support that makes sense."
+        primaryLabel="Find out if you qualify"
+        secondaryLabel={null}
       />
     </MarketingLayout>
   );

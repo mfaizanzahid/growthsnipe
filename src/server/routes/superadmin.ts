@@ -748,7 +748,7 @@ export function createSuperadminRoutes(deps: {
     if (!order) return c.json({ error: "Order not found" }, 404);
     if (order.status !== "paid") return c.json({ error: "Order is not paid" }, 422);
     const product = await getOneTimeProduct(db, order.productId);
-    if (!product || product.slug !== "loops") {
+    if (!product || !["loops", "diagnostic", "blueprint"].includes(product.slug)) {
       return c.json({ error: "This order has no Loops document" }, 422);
     }
     try {

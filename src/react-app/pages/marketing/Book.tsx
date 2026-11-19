@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { TRADE_OPTIONS } from "../../../lib/loops-trades";
 
 const REVENUE_RANGES = [
   "Under $250k",
@@ -70,6 +71,10 @@ export function Book() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.trade.trim()) {
+      toast.error("Select your trade");
+      return;
+    }
     setPending(true);
     try {
       const res = await fetch("/api/book", {
@@ -161,7 +166,18 @@ export function Book() {
                   <Input id="book-website" inputMode="url" placeholder="https://" value={form.website} onChange={(e) => set("website", e.target.value)} required maxLength={300} />
                 </Field>
                 <Field label="Trade / industry" htmlFor="book-trade" required>
-                  <Input id="book-trade" placeholder="Home inspection" value={form.trade} onChange={(e) => set("trade", e.target.value)} required maxLength={120} />
+                  <Select value={form.trade} onValueChange={(v) => set("trade", v)} required>
+                    <SelectTrigger id="book-trade">
+                      <SelectValue placeholder="Select your trade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TRADE_OPTIONS.map((trade) => (
+                        <SelectItem key={trade} value={trade}>
+                          {trade}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 <Field label="Primary service area" htmlFor="book-area" required>
                   <Input id="book-area" placeholder="City, region" value={form.serviceArea} onChange={(e) => set("serviceArea", e.target.value)} required maxLength={160} />

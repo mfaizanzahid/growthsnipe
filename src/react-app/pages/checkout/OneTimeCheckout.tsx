@@ -14,6 +14,7 @@ import { SafepayPayment } from "../../components/SafepayPayment";
 import { BillingAddressFields, EMPTY_BILLING_ADDRESS, billingAddressValid, requiresStateCode, type BillingAddress } from "../../components/BillingAddressFields";
 import { COUNTRIES, DEFAULT_COUNTRY_CODE } from "../../lib/countries";
 import { formatMoney } from "../../lib/money";
+import { TRADE_OPTIONS } from "../../../lib/loops-trades";
 
 interface Product {
   slug: string;
@@ -390,14 +391,18 @@ export function OneTimeCheckout({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="oto-trade" required>Trade / industry</Label>
-                      <Input
-                        id="oto-trade"
-                        placeholder="Home inspection"
-                        value={trade}
-                        onChange={(e) => setTrade(e.target.value)}
-                        required
-                        maxLength={120}
-                      />
+                      <Select value={trade} onValueChange={setTrade} required>
+                        <SelectTrigger id="oto-trade">
+                          <SelectValue placeholder="Select your trade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TRADE_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className={`grid gap-4 ${slug === "blueprint" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>

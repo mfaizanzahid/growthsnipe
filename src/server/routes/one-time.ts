@@ -154,7 +154,8 @@ export function createOneTimeRoutes(deps: {
     return new Response(body, { status: 200, headers });
   });
 
-  // Render the standard SNIPE Loops playbook on demand from a signed link.
+  // Render the SNIPE Loops playbook on demand from a signed link. Diagnostic,
+  // Blueprint and Loops orders all receive it as a bonus.
   routes.get("/api/one-time/loops/:orderId/document", async (c) => {
     const env = c.env as Env;
     const token = c.req.query("token") ?? "";
@@ -169,7 +170,7 @@ export function createOneTimeRoutes(deps: {
       return c.json({ error: "This playbook is not available yet." }, 409);
     }
     const product = await getOneTimeProduct(db, order.productId);
-    if (!product || product.slug !== "loops") {
+    if (!product || !["loops", "diagnostic", "blueprint"].includes(product.slug)) {
       return c.json({ error: "Playbook not found." }, 404);
     }
     const pdf = await renderLoopsPdf({

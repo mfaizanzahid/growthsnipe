@@ -20,4 +20,17 @@ describe("SNIPE Loops playbook PDF", () => {
     const pdf = await PDFDocument.load(bytes);
     expect(pdf.getPageCount()).toBeGreaterThan(20);
   });
+
+  it(
+    "renders a shorter edition for one trade and the combined edition for Others",
+    async () => {
+      const combined = await PDFDocument.load(await renderLoopsPdf());
+      const hvac = await PDFDocument.load(await renderLoopsPdf({ trade: "HVAC" }));
+      const others = await PDFDocument.load(await renderLoopsPdf({ trade: "Others" }));
+
+      expect(hvac.getPageCount()).toBeLessThan(combined.getPageCount());
+      expect(others.getPageCount()).toBe(combined.getPageCount());
+    },
+    20_000,
+  );
 });

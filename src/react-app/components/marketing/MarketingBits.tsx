@@ -470,7 +470,22 @@ export function FeatureBadge({ children }: { children: ReactNode }) {
 }
 
 /** Closing call-to-action band used at the foot of marketing pages. */
-export function CtaBand({ title, body }: { title: string; body: string }) {
+export function CtaBand({
+  title,
+  body,
+  primaryLabel = "Book a Free Growth Fit Call",
+  primaryHref = "/book",
+  secondaryLabel = `Get My ${OFFERS.diagnostic.name}`,
+  secondaryHref = OFFERS.diagnostic.checkoutPath,
+}: {
+  title: string;
+  body: string;
+  primaryLabel?: string;
+  primaryHref?: string;
+  /** Set to null to render a single CTA. */
+  secondaryLabel?: string | null;
+  secondaryHref?: string;
+}) {
   return (
     <section className="border-t">
       <div className="mx-auto w-full max-w-6xl px-4 py-14">
@@ -479,16 +494,18 @@ export function CtaBand({ title, body }: { title: string; body: string }) {
           <p className="mx-auto mt-3 max-w-xl opacity-90">{body}</p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" variant="secondary" asChild>
-              <Link to="/book">Book a Free Growth Fit Call</Link>
+              <Link to={primaryHref}>{primaryLabel}</Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
-              asChild
-            >
-              <Link to={OFFERS.diagnostic.checkoutPath}>Get My SNIPE Diagnostic™</Link>
-            </Button>
+            {secondaryLabel ? (
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                asChild
+              >
+                <Link to={secondaryHref}>{secondaryLabel}</Link>
+              </Button>
+            ) : null}
           </div>
           <p className="mt-4 text-xs opacity-75">Every step includes the step before it as a bonus. We reply within one business day.</p>
         </div>

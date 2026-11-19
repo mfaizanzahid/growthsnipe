@@ -168,7 +168,7 @@ export function AdminOneTimeOrders() {
       header: "Playbook",
       sortable: true,
       render: (order) =>
-        order.productSlug === "loops" ? (
+        order.productSlug ? (
           <span className="text-xs">
             {order.documentSentAt ? `Sent ${shortDate(order.documentSentAt)}` : "Not sent"}
           </span>
@@ -184,7 +184,7 @@ export function AdminOneTimeOrders() {
         const invoiceBusy = busy === `${order.id}:invoice`;
         const documentBusy = busy === `${order.id}:document`;
         const hasInvoice = Boolean(order.invoice);
-        const hasDocument = order.productSlug === "loops" && order.status === "paid";
+        const hasDocument = Boolean(order.productSlug) && order.status === "paid";
         if (!hasInvoice && !hasDocument) {
           return <span className="text-xs text-muted-foreground">No actions</span>;
         }

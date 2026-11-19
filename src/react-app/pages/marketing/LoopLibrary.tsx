@@ -11,6 +11,7 @@ const TRADES = [
   "Electrical",
   "Roofing",
   "General contracting",
+  "Others",
 ];
 
 const CATEGORIES = [
@@ -72,9 +73,9 @@ export function LoopLibrary() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              The full playbook includes the eight revenue loops, six trade chapters, the customer lifecycle
-              map, sample recipes and a follow-up script library. The discount is applied automatically at
-              checkout.
+              The playbook includes the eight revenue loops, the chapter for your trade, the customer
+              lifecycle map, sample recipes and a follow-up script library. Choose Others to get the
+              combined all-trade edition. The discount is applied automatically at checkout.
             </p>
             <OfferCtaButton stack={OFFER_STACKS.loops} />
           </CardContent>

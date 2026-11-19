@@ -606,10 +606,24 @@ describe("one-time confirm", () => {
     expect((await getOneTimeOrder(db, session.orderId))?.status).toBe("paid");
     const storedOrder = await getOneTimeOrder(db, session.orderId);
     expect(storedOrder).toMatchObject({ firstName: "Ada", lastName: "Owner", name: "Ada Owner" });
-    expect(outbox).toHaveLength(3);
+    expect(outbox).toHaveLength(4);
     expect(outbox[0]?.subject).toContain("SNIPE Diagnostic");
     expect(outbox[1]?.subject).toContain("is underway");
     expect(outbox[2]?.subject.toLowerCase()).toContain("connect your software");
+    expect(outbox[3]?.subject).toContain("playbook is ready");
+    expect((await getOneTimeOrder(db, session.orderId))?.documentSentAt).toBeTruthy();
+    const loopsDocUrl = outbox[3]?.html.match(
+      /https:\/\/growthsnipe\.test\/api\/one-time\/loops\/[^"<]+/,
+    )?.[0];
+    expect(loopsDocUrl).toBeTruthy();
+    const parsedLoopsDoc = new URL(loopsDocUrl!);
+    const loopsDoc = await app.request(
+      `${parsedLoopsDoc.pathname}${parsedLoopsDoc.search}`,
+      { method: "GET" },
+      ENV,
+    );
+    expect(loopsDoc.status).toBe(200);
+    expect(loopsDoc.headers.get("content-type")).toBe("application/pdf");
 
     const invoice = await getOneTimeInvoiceByOrderId(db, session.orderId);
     expect(invoice).toMatchObject({
@@ -637,7 +651,7 @@ describe("one-time confirm", () => {
     const again = await req(app, "/api/one-time/confirm", { orderId: session.orderId, tracker: session.tracker });
     expect(again.status).toBe(200);
     expect(((await again.json()) as { cached: boolean }).cached).toBe(true);
-    expect(outbox).toHaveLength(3);
+    expect(outbox).toHaveLength(4);
   });
 
   it("rejects tracker mismatch and pending payments", async () => {
@@ -703,11 +717,11 @@ describe("one-time webhook reconcile", () => {
     const out = await handleSafepayWebhook(ENV, store, body, await sign(body), undefined, oneTimeAdapter(db));
     expect(out.ack).toBe("reconciled");
     expect((await getOneTimeOrder(db, session.orderId))?.status).toBe("paid");
-    expect(outbox).toHaveLength(3);
+    expect(outbox).toHaveLength(4);
 
     const dupBody = envelope("evt_1", "payment.succeeded", { tracker: session.tracker });
     expect((await handleSafepayWebhook(ENV, store, dupBody, await sign(dupBody), undefined, oneTimeAdapter(db))).ack).toBe("duplicate");
-    expect(outbox).toHaveLength(3);
+    expect(outbox).toHaveLength(4);
   });
 
   it("fails pending orders on payment.failed and 401s bad signatures", async () => {
@@ -778,7 +792,7 @@ describe("credit coupons", () => {
     expect(confirm.status).toBe(200);
     expect((await store.getCouponById(coupon.id))?.redeemedCount).toBe(1);
 
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
     expect(outbox[0]?.html).toContain("Credit applied");
     expect(outbox[0]?.html).toContain(coupon.code);
     expect(outbox[0]?.html).toContain("Engine");
@@ -822,7 +836,7 @@ describe("credit coupons", () => {
     });
     expect(confirm.status).toBe(200);
 
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
     expect(outbox[0]?.html).toContain("Engine");
     expect(outbox[1]?.html).toContain("already have your baseline");
     expect(outbox[1]?.html).not.toContain("Connect your booking software");
@@ -860,7 +874,7 @@ describe("credit coupons", () => {
     });
     expect(confirm.status).toBe(200);
 
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
     expect(outbox[1]?.html).toContain("still being prepared");
     const runs = await db.select().from(schema.diagnosticRuns);
     expect(runs).toHaveLength(1);
@@ -888,11 +902,13 @@ describe("credit coupons", () => {
     });
     expect(confirm.status).toBe(200);
 
-    expect(outbox).toHaveLength(2);
+    expect(outbox).toHaveLength(3);
     expect(outbox[1]?.html).toContain("flow=blueprint");
     expect(outbox[1]?.html).toContain("To build your SNIPE Blueprint");
     expect(outbox[1]?.html).not.toContain("Complete the Blueprint intake");
     expect(outbox[1]?.html).not.toContain("Your intake checklist");
+    expect(outbox[2]?.subject).toContain("playbook is ready");
+    expect((await getOneTimeOrder(db, body.orderId))?.documentSentAt).toBeTruthy();
 
     const runs = await db.select().from(schema.diagnosticRuns);
     expect(runs).toHaveLength(1);
@@ -1036,7 +1052,7 @@ describe("credit coupons", () => {
       maxRedemptions: 1,
     });
     expect(coupon?.validUntil).toBeGreaterThan(Math.floor(Date.now() / 1000));
-    expect(outbox).toHaveLength(3);
+    expect(outbox).toHaveLength(4);
     const all = outbox.map((email) => email.html).join("\n");
     expect(all).toContain(coupon!.code);
     expect(all).toContain("$199");
@@ -1085,7 +1101,7 @@ describe("credit coupons", () => {
     const invoice = await getOneTimeInvoiceByOrderId(db, body.orderId);
     expect(invoice).toMatchObject({ status: "paid", amountMinor: 0 });
     expect(invoice?.emailSentAt).toBeTruthy();
-    expect(outbox).toHaveLength(3);
+    expect(outbox).toHaveLength(4);
     expect(outbox[0]?.subject).toContain("Invoice");
     expect(outbox[0]?.html).toContain("No payment was due");
     expect(outbox[0]?.html).toContain("/api/one-time/invoices/");
